@@ -107,6 +107,9 @@ if ((params.reads && params.samplePlan) || (params.readPaths && params.samplePla
   exit 1, "Input reads must be defined using either '--reads' or '--samplePlan' parameters. Please choose one way."
 }
 
+//------- Metadata ---------
+//--------------------------
+
 if ( params.metadata ){
   Channel
     .fromPath( params.metadata )
@@ -116,6 +119,62 @@ if ( params.metadata ){
   metadataCh = Channel.empty()
 }
 
+//------- Genomes ---------
+//-------------------------
+genomeRef = params.genome
+
+params.starIndex = genomeRef ? params.genomes[ genomeRef ].starIndex ?: false : false
+if (params.starIndex){
+  Channel
+    .fromPath(params.starIndex, checkIfExists: true)
+    .ifEmpty {exit 1, "STAR index file not found: ${params.starIndex}"}
+    .set { chStar }
+} else {
+  exit 1, "STAR index file not found: ${params.starIndex}"
+}
+
+params.gtf = genomeRef ? params.genomes[ genomeRef ].gtf ?: false : false
+if (params.gtf) {
+  Channel
+    .fromPath(params.gtf, checkIfExists: true)
+    .into { chGtfSTAR; chGtfFC }
+}else {
+  exit 1, "GTF annotation file not not found: ${params.gtf}"
+}
+
+params.bed12 = genomeRef ? params.genomes[ genomeRef ].bed12 ?: false : false
+if (params.bed12) {
+  Channel  
+    .fromPath(params.bed12)
+    .ifEmpty { exit 1, "BED12 annotation file not found: ${params.bed12}" }
+    .set { chBedGeneCov } 
+}else {
+  exit 1, "BED12 annotation file not not found: ${params.bed12}"
+}
+
+//------- Custom --------
+//-----------------------
+for ( idx in params.barcodes.keySet() ){
+  if ( params.barcodes[ idx ].bwt2 ){
+    lastPath = params.barcodes[ idx ].bwt2.lastIndexOf(File.separator)
+    bt2Dir = params.barcodes[ idx ].bwt2.substring(0,lastPath+1)
+    bt2Base = params.barcodes[ idx ].bwt2.substring(lastPath+1)
+    params.barcodes[ idx ].base = bt2Base
+    params.barcodes[ idx ].dir = bt2Dir
+  }
+}
+
+Channel
+   .from(params.barcodes)
+   .flatMap()
+   .map { it -> [ it.key, file(it.value['dir']) ] }
+   .ifEmpty { exit 1, "Bowtie2 index not found" }
+   .set { chIndexBwt2 } 
+
+
+//------- Reads ---------
+//-----------------------
+
 // Create a channel for input read files
 if(params.samplePlan){
   if(params.singleEnd){
@@ -123,13 +182,13 @@ if(params.samplePlan){
       .from(file("${params.samplePlan}"))
       .splitCsv(header: false)
       .map{ row -> [ row[0], [file(row[2])]] }
-      .set { rawReadsFastqc }
+      .set { chRawReadsBowtie2 }
   }else{
     Channel
       .from(file("${params.samplePlan}"))
       .splitCsv(header: false)
       .map{ row -> [ row[0], [file(row[2]), file(row[3])]] }
-      .set { rawReadsFastqc }
+      .set { chRawReadsBowtie2 }
    }
   params.reads=false
 }
@@ -139,19 +198,19 @@ else if(params.readPaths){
       .from(params.readPaths)
       .map { row -> [ row[0], [file(row[1][0])]] }
       .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied." }
-      .set { rawReadsFastqc }
+      .set { chRawReadsBowtie2 }
   } else {
     Channel
       .from(params.readPaths)
       .map { row -> [ row[0], [file(row[1][0]), file(row[1][1])]] }
       .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied." }
-      .set { rawReadsFastqc }
+      .set { chRawReadsBowtie2 }
   }
 } else {
   Channel
     .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
     .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nNB: Path requires at least one * wildcard!\nIf this is single-end data, please specify --singleEnd on the command line." }
-    .set { rawReadsFastqc }
+    .set { chRawReadsBowtie2 }
 }
 
 // Make sample plan if not available
@@ -190,7 +249,6 @@ if (params.samplePlan){
       .set { samplePlanCh }
    }
 }
-
 
 /***************
  * Design file *
@@ -243,13 +301,89 @@ log.info summary.collect { k,v -> "${k.padRight(15)}: $v" }.join("\n")
 log.info "========================================="
 
 
-
-
-
-
-
-
 // TODO - ADD YOUR NEXTFLOW PROCESS HERE
+
+process bcMapping {
+  tag "${prefix} - ${index}"
+  label 'bowtie2'
+  label 'highCpu'
+  label 'highMem'
+
+  publishDir "${params.outdir}/bcMapping", mode: 'copy'
+
+  input:
+  set val(prefix), file(reads), val(index), file(bwt2Idx) from chRawReadsBowtie2.combine(chIndexBwt2)
+ 
+  output:
+  set val(prefix), file("*ReadsMatching.txt") into chBarcodeMapped
+  file "*Bowtie2.log" into barcodeLogs
+
+  script:
+  start = params.barcodes[ index ].start
+  size = params.barcodes[ index ].size
+  base = params.barcodes[ index ].base
+  oprefix = "${prefix}_${index}"
+
+  """
+  ##Extract read ids and their index sequences
+  gzip -cd  ${reads[1]} | awk -v startIndex=${start} -v sizeIndex=${size} 'NR%4==1{print \">\"substr(\$0,2)}; NR%4==2{print substr(\$0,startIndex,sizeIndex)}' > ${oprefix}Reads.fasta
+  #Map indexes (-f) against Index libraries (-x)
+  bowtie2 \
+    -x ${bwt2Idx}/${base} \
+    -f ${oprefix}Reads.fasta \
+    -N 1 -L 8 \
+    --rdg 0,7 --rfg 0,7 --mp 7,7 \
+    --ignore-quals --score-min L,0,-1 \
+    -t --no-hd \
+    --reorder \
+    -p ${task.cpus} > ${oprefix}Bowtie2.sam 2> ${oprefix}Bowtie2.log
+ 
+  ## Keep all alignments, so that ReadsMatching files always have the same size
+  # \$1 = read ID and \$3 = barcode number
+  awk '/XS/{\$3="*"} {print \$1,\$3}' ${oprefix}Bowtie2.sam > ${oprefix}ReadsMatching.txt
+  """
+}
+
+/*
+process bcSubset {
+  tag "${prefix}"
+  publishDir "${params.outdir}/bcSubset", mode: 'copy'
+
+  input:
+  set val(prefix), file(reads), file(barcodesMapped) from chRawReadsWhiteList.combine(chBarcodeMapped.groupTuple(), by: 0)
+
+  output:
+  set val(prefix), file("*_whitelist.R1.fastq"), file("*_whitelist.R2.fastq") into whiteListFastq
+  set val(prefix), file("*_whitelist.R2.fasta") into whiteListFasta
+  set val(prefix), file("*_readBarcodes.txt") into readBcNames
+  set val(prefix), file("*_NOTjoinedBarcodes.txt") into NOTBarcoded
+  set val(prefix), file("*_NOTwhitelist.R1.fastq") into NOTWhitelistFastq
+  set val(prefix), file ("*_indexes_mqc.log") into indexcount
+
+  script:
+  """  
+  #####  1st - Extract barcoded reads
+  xjoin.sh ${barcodesMapped} > ${prefix}_joined 
+  grep -v "*" ${prefix}_joined > ${prefix}joinedBarcodes.txt
+  # print read ID with joined index number and add 'BC' before to have ex: BC014012
+  awk '{print substr(\$1,1) \"\tBC\" substr(\$2,2) substr(\$3,2) substr(\$4,2)}' ${prefix}joinedBarcodes.txt > ${prefix}_readBarcodes.txt
+  # Select reads that have a correct barcode
+  awk '{print \$1}' ${prefix}joinedBarcodes.txt > ${prefix}alignedFastqNames
+  seqtk subseq <( gzip -cd ${reads[0]} ) ${prefix}alignedFastqNames > ${prefix}_whitelist.R1.fastq
+  seqtk subseq <( gzip -cd ${reads[1]} ) ${prefix}alignedFastqNames > ${prefix}_whitelist.R2.fastq
+  seqtk seq -a ${prefix}_whitelist.R2.fastq > ${prefix}_whitelist.R2.fasta 
+
+  #####   2nd - Extract not barcoded reads
+  grep  "*" ${prefix}_joined > ${prefix}_NOTjoinedBarcodes.txt
+  awk '{print \$1}' ${prefix}_NOTjoinedBarcodes.txt > ${prefix}NOTalignedFastqNames
+  seqtk subseq <( gzip -cd ${reads[0]} ) ${prefix}NOTalignedFastqNames > ${prefix}_NOTwhitelist.R1.fastq
+  
+  ##### 3rd - Count indexes matches
+  count_BCIndexes.sh 
+  """
+}
+
+*/
 
 /***********
  * MultiQC *

@@ -4,9 +4,14 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - bioconda::fastqc=0.11.8=1
-  - conda-forge::python=3.7.6=cpython_h8356626_6
-  - conda-forge::pymdown-extensions=7.1
-  - bioconda::multiqc=1.8=py_2
-  - conda-forge::r-base=4.0.0=hdca8982_3
+  - python=3.7.9=hffdb5ce_0_cpython
+  - pymdown-extensions=7.1=pyh9f0ad1d_0
+  - conda-forge::biopython=1.78=py37h5e8e339_1
+  - bioconda::bowtie2=2.3.5.1
 
+  #- bioconda::samtools=1.11=h6270b1f_0
+  #- bioconda::star=2.7.6a=0
+  #- bioconda::fastx_toolkit=0.0.14
+  #- bioconda::bwa=0.7.17
+  #- bioconda::bedtools=2.30.0
+  #- conda-forge::r-base=4.0.3=hd23ff56_6
