@@ -95,7 +95,7 @@ if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
 }
 
 // Stage config files
-multiqcConfigCh = Channel.fromPath(params.multiqcConfig)
+multiqcConfigCh = Channel.fromPath(params.chMultiqcConfig)
 OutputDocsCh = Channel.fromPath("$baseDir/docs/output.md")
 
 /************
@@ -114,7 +114,7 @@ if ( params.metadata ){
   Channel
     .fromPath( params.metadata )
     .ifEmpty { exit 1, "Metadata file not found: ${params.metadata}" }
-    .set { metadataCh }
+    .set { chMetadata }
 }else{
   metadataCh = Channel.empty()
 }
@@ -215,7 +215,7 @@ else if(params.readPaths){
 
 // Make sample plan if not available
 if (params.samplePlan){
-  samplePlanCh = Channel.fromPath(params.samplePlan)
+  chSplan = Channel.fromPath(params.samplePlan)
 }else if(params.readPaths){
   if (params.singleEnd){
     Channel
@@ -223,14 +223,14 @@ if (params.samplePlan){
       .collectFile() {
         item -> ["samplePlan.csv", item[0] + ',' + item[0] + ',' + item[1][0] + '\n']
        }
-      .set{ samplePlanCh }
+      .set{ chSplan }
   }else{
      Channel
        .from(params.readPaths)
        .collectFile() {
          item -> ["samplePlan.csv", item[0] + ',' + item[0] + ',' + item[1][0] + ',' + item[1][1] + '\n']
         }
-       .set{ samplePlanCh }
+       .set{ chSplan }
   }
 }else{
   if (params.singleEnd){
@@ -239,14 +239,14 @@ if (params.samplePlan){
       .collectFile() {
         item -> ["samplePlan.csv", item[0] + ',' + item[0] + ',' + item[1][0] + '\n']
        }
-      .set { samplePlanCh }
+      .set { chSplan }
   }else{
     Channel
       .fromFilePairs( params.reads, size: 2 )
       .collectFile() {
         item -> ["samplePlan.csv", item[0] + ',' + item[0] + ',' + item[1][0] + ',' + item[1][1] + '\n']
       }
-      .set { samplePlanCh }
+      .set { chSplan }
    }
 }
 
@@ -423,7 +423,6 @@ process multiqc {
   input:
   file splan from chSplan.collect()
   file multiqcConfig from chMultiqcConfig
-  file design from chDesignMqc.collect().ifEmpty([])
   file metadata from chMetadata.ifEmpty([])
   file ('software_versions/*') from softwareVersionsYaml.collect().ifEmpty([])
   file ('workflow_summary/*') from workflowSummaryYaml.collect()
