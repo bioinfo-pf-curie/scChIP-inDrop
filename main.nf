@@ -399,7 +399,6 @@ process getSoftwareVersions{
   !params.skipSoftVersions
 
   input:
-  file 'v_fastqc.txt' from chFastqcVersion.first().ifEmpty([])
 
   output:
   file 'software_versions_mqc.yaml' into softwareVersionsYaml
