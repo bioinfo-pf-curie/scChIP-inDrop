@@ -395,7 +395,7 @@ process bcSubset {
  * MultiQC *
  ***********/
 
-process getSoftwareVersions{
+/*process getSoftwareVersions{
   label 'python'
   label 'lowCpu'
   label 'lowMem'
@@ -416,6 +416,7 @@ process getSoftwareVersions{
   scrape_software_versions.py &> software_versions_mqc.yaml
   """
 }
+*/
 
 process workflowSummaryMqc {
   when:
