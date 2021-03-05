@@ -1,4 +1,4 @@
-name: test-1.0
+name: scChIPseq-1.0
 channels:
   - conda-forge
   - bioconda
@@ -7,7 +7,7 @@ dependencies:
   - python=3.7.9=hffdb5ce_0_cpython
   - pymdown-extensions=7.1=pyh9f0ad1d_0
   - conda-forge::biopython=1.78=py37h5e8e339_1
-  - bioconda::bowtie2=2.3.5.1
+  - bioconda::bowtie2=2.4.2
 
   #- bioconda::samtools=1.11=h6270b1f_0
   #- bioconda::star=2.7.6a=0

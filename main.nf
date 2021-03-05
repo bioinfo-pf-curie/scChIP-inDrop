@@ -319,7 +319,8 @@ process bcMapping {
  
   output:
   set val(prefix), file("*ReadsMatching.txt") into chBarcodeMapped
-  file "*Bowtie2.log" into barcodeLogs
+  set val(prefix), file("*_bowtie2.log") into chBowtie2Logs
+  file ("v_bowtie2.txt") into chBowtie2version
 
   script:
   start = params.barcodes[ index ].start
@@ -339,11 +340,13 @@ process bcMapping {
     --ignore-quals --score-min L,0,-1 \
     -t --no-hd \
     --reorder \
-    -p ${task.cpus} > ${oprefix}Bowtie2.sam 2> ${oprefix}Bowtie2.log
+    -p ${task.cpus} > ${oprefix}Bowtie2.sam 2> ${oprefix}_bowtie2.log
  
   ## Keep all alignments, so that ReadsMatching files always have the same size
   # \$1 = read ID and \$3 = barcode number
   awk '/XS/{\$3="*"} {print \$1,\$3}' ${oprefix}Bowtie2.sam > ${oprefix}ReadsMatching.txt
+
+
   """
 }
 
