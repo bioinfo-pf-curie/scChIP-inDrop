@@ -94,9 +94,12 @@ if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
   customRunName = workflow.runName
 }
 
-// Stage config files
-multiqcConfigCh = Channel.fromPath(params.chMultiqcConfig)
-OutputDocsCh = Channel.fromPath("$baseDir/docs/output.md")
+//Stage config files
+Channel
+  .fromPath(params.multiqcConfig, checkIfExists: true)
+  .set{chMultiqcConfig}
+chOutputDocs = file("$baseDir/docs/output.md", checkIfExists: true)
+chOutputDocsImages = file("$baseDir/docs/images/", checkIfExists: true)
 
 /************
  * CHANNELS *
