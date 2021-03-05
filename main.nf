@@ -416,7 +416,7 @@ process bcSubset {
   scrape_software_versions.py &> software_versions_mqc.yaml
   """
 }
-*/
+
 
 process workflowSummaryMqc {
   when:
@@ -478,6 +478,7 @@ process multiqc {
  * Sub-routines *
  ****************/
 
+/*
 process outputDocumentation {
   label 'python'
   label 'lowCpu'
@@ -562,3 +563,4 @@ workflow.onComplete {
     log.info "FAILED: $workflow.runName"
   }
 }
+*/
