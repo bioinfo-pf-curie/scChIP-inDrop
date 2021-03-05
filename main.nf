@@ -453,7 +453,7 @@ process multiqc {
   file splan from chSplan.collect()
   file multiqcConfig from chMultiqcConfig
   file metadata from chMetadata.ifEmpty([])
-  file ('software_versions/*') from softwareVersionsYaml.collect().ifEmpty([])
+  //file ('software_versions/*') from softwareVersionsYaml.collect().ifEmpty([])
   file ('workflow_summary/*') from workflowSummaryYaml.collect()
 
   output: 
