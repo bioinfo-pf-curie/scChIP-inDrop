@@ -375,9 +375,6 @@ process fastxTrimmer {
   fastx_trimmer -i <(gzip -cd ${reads[1]}) -Q 33 -f ${linker_length} -o ${prefix}_trimmed_G.R2.fastq > ${prefix}_fastx.log
 
   fastx_trimmer -h | grep "FASTX Toolkit" > v_fastx.txt
-
-  # fastx_trimmer_func ${REVERSE} ${BARCODE_LINKER_LENGTH} ${ODIR}/trimming ${LOGDIR} 
-  # fastx_trimmer -Q 33 -f $2 -i <(gzip -cd $1) -o ${ofile}" 
   """
 }
 
