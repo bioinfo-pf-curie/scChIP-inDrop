@@ -363,7 +363,7 @@ process fastxTrimmer {
   set val(prefix), file(reads) from chRawReadsFastx
 
   output:
-  set val(prefix), file("*_trimmed_G.R2.fastq") into chTrimmedBc
+  set val(prefix), file("*_trimmed_G.R2.fastq.gz") into chTrimmedBc
   set val(prefix), file("*_fastx.log") into chFastxLogs
   file ("v_fastx.txt") into chFastxVersion
 
@@ -375,6 +375,8 @@ process fastxTrimmer {
   fastx_trimmer -i <(gzip -cd ${reads[1]}) -Q 33 -f ${linker_length} -o ${prefix}_trimmed_G.R2.fastq > ${prefix}_fastx.log
 
   fastx_trimmer -h | grep "FASTX Toolkit" > v_fastx.txt
+
+  gzip ${prefix}_trimmed_G.R2.fastq
   """
 }
 
