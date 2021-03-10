@@ -387,7 +387,7 @@ process readsAlignment {
   publishDir "${params.outDir}/readsAlignment", mode: 'copy'
 
   input :
-  //file genomeIndex from chStar.collect()
+  file genomeIndex from chStar.collect()
   set val(prefix), file(trimmedR2) from chTrimmedBc
   set val(prefix), file(reads) from chAlignment
 	
@@ -402,7 +402,7 @@ process readsAlignment {
   # Run STAR on barcoded reads
   STAR --alignEndsType EndToEnd --outFilterMultimapScoreRange 2 --winAnchorMultimapNmax 1000 --alignIntronMax 1 --peOverlapNbasesMin 10 --alignMatesGapMax 450 --limitGenomeGenerateRAM 25000000000 --outSAMunmapped Within \
     --runThreadN ${task.cpus} \
-    --genomeDir /data/annotations/Mouse/mm10/complete/STAR_indexes \
+    --genomeDir $genomeIndex \
     --readFilesIn ${reads[0]} ${trimmedR2} \
     --runMode alignReads
   """
