@@ -352,7 +352,7 @@ process bcMapping {
 }
 
 process fastxTrimmer {
-  tag "${prefix} - ${index}"
+  tag "${prefix}"
   label 'fastx'
   label 'medCpu'
   label 'medMem'
