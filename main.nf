@@ -346,6 +346,7 @@ process bcMapping {
   # \$1 = read ID and \$3 = barcode number
   awk '/XS/{\$3="*"} {print \$1,\$3}' ${oprefix}Bowtie2.sam > ${oprefix}ReadsMatching.txt
 
+  bowtie2 --version > v_bowtie2.txt
 
   """
 }
