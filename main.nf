@@ -185,13 +185,13 @@ if(params.samplePlan){
       .from(file("${params.samplePlan}"))
       .splitCsv(header: false)
       .map{ row -> [ row[0], [file(row[2])]] }
-      .set { chRawReadsBowtie2 }
+      .set { chRawReadsBowtie2, chRawReadsFastx }
   }else{
     Channel
       .from(file("${params.samplePlan}"))
       .splitCsv(header: false)
       .map{ row -> [ row[0], [file(row[2]), file(row[3])]] }
-      .set { chRawReadsBowtie2 }
+      .set { chRawReadsBowtie2, chRawReadsFastx}
    }
   params.reads=false
 }
@@ -201,19 +201,19 @@ else if(params.readPaths){
       .from(params.readPaths)
       .map { row -> [ row[0], [file(row[1][0])]] }
       .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied." }
-      .set { chRawReadsBowtie2 }
+      .set { chRawReadsBowtie2, chRawReadsFastx }
   } else {
     Channel
       .from(params.readPaths)
       .map { row -> [ row[0], [file(row[1][0]), file(row[1][1])]] }
       .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied." }
-      .set { chRawReadsBowtie2 }
+      .set { chRawReadsBowtie2 , chRawReadsFastx}
   }
 } else {
   Channel
     .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
     .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nNB: Path requires at least one * wildcard!\nIf this is single-end data, please specify --singleEnd on the command line." }
-    .set { chRawReadsBowtie2 }
+    .set { chRawReadsBowtie2 , chRawReadsFastx}
 }
 
 // Make sample plan if not available
@@ -312,7 +312,7 @@ process bcMapping {
   label 'highCpu'
   label 'highMem'
 
-  publishDir "${params.outdir}/bcMapping", mode: 'copy'
+  publishDir "${params.outDir}/bcMapping", mode: 'copy'
 
   input:
   set val(prefix), file(reads), val(index), file(bwt2Idx) from chRawReadsBowtie2.combine(chIndexBwt2)
@@ -351,10 +351,41 @@ process bcMapping {
   """
 }
 
+process fastxTrimmer {
+  tag "${prefix} - ${index}"
+  label 'fastx'
+  label 'medCpu'
+  label 'medMem'
+
+  publishDir "${params.outDir}/fastxTrimmer", mode: 'copy'
+
+  input:
+  set val(prefix), file(reads) from chRawReadsFastx
+
+  output:
+  set val(prefix), file("*_trimmed_G.R2.fastq") into chTrimmedBc
+  set val(prefix), file("*_fastx.log") into chFastxLogs
+  file ("v_fastx.txt") into chFastxVersion
+
+
+  script:
+  linker_length = params.barcodes.linker_length
+  """
+  # Trim linker + barcode from R2 reads for genome aligning	
+  fastx_trimmer -i <(gzip -cd ${reads[1]}) -Q 33 -f ${linker_length} -o ${prefix}_trimmed_G.R2.fastq > ${prefix}_fastx.log
+
+  fastx_trimmer -h | grep "FASTX Toolkit" > v_fastx.txt
+
+  # fastx_trimmer_func ${REVERSE} ${BARCODE_LINKER_LENGTH} ${ODIR}/trimming ${LOGDIR} 
+  # fastx_trimmer -Q 33 -f $2 -i <(gzip -cd $1) -o ${ofile}" 
+  """
+}
+
+
 /*
 process bcSubset {
   tag "${prefix}"
-  publishDir "${params.outdir}/bcSubset", mode: 'copy'
+  publishDir "${params.outDir}/bcSubset", mode: 'copy'
 
   input:
   set val(prefix), file(reads), file(barcodesMapped) from chRawReadsWhiteList.combine(chBarcodeMapped.groupTuple(), by: 0)
@@ -389,7 +420,6 @@ process bcSubset {
   count_BCIndexes.sh 
   """
 }
-
 */
 
 /***********
