@@ -185,13 +185,13 @@ if(params.samplePlan){
       .from(file("${params.samplePlan}"))
       .splitCsv(header: false)
       .map{ row -> [ row[0], [file(row[2])]] }
-      .into { chRawReadsBowtie2; chRawReadsFastx }
+      .into { chRawReadsBowtie2; chRawReadsFastx; chAlignment }
   }else{
     Channel
       .from(file("${params.samplePlan}"))
       .splitCsv(header: false)
       .map{ row -> [ row[0], [file(row[2]), file(row[3])]] }
-      .into { chRawReadsBowtie2; chRawReadsFastx}
+      .into { chRawReadsBowtie2; chRawReadsFastx; chAlignment}
    }
   params.reads=false
 }
@@ -201,19 +201,19 @@ else if(params.readPaths){
       .from(params.readPaths)
       .map { row -> [ row[0], [file(row[1][0])]] }
       .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied." }
-      .into { chRawReadsBowtie2; chRawReadsFastx }
+      .into { chRawReadsBowtie2; chRawReadsFastx ; chAlignment}
   } else {
     Channel
       .from(params.readPaths)
       .map { row -> [ row[0], [file(row[1][0]), file(row[1][1])]] }
       .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied." }
-      .into { chRawReadsBowtie2 ; chRawReadsFastx}
+      .into { chRawReadsBowtie2 ; chRawReadsFastx; chAlignment}
   }
 } else {
   Channel
     .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
     .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nNB: Path requires at least one * wildcard!\nIf this is single-end data, please specify --singleEnd on the command line." }
-    .into { chRawReadsBowtie2 ; chRawReadsFastx}
+    .into { chRawReadsBowtie2 ; chRawReadsFastx; chAlignment}
 }
 
 // Make sample plan if not available
@@ -378,52 +378,48 @@ process fastxTrimmer {
   """
 }
 
-
-/*
-process bcSubset {
+process readsAlignment {
   tag "${prefix}"
-  publishDir "${params.outDir}/bcSubset", mode: 'copy'
+  label 'star'
+  label 'extraCpu'
+  label 'extraMem'
 
-  input:
-  set val(prefix), file(reads), file(barcodesMapped) from chRawReadsWhiteList.combine(chBarcodeMapped.groupTuple(), by: 0)
+  publishDir "${params.outDir}/readsAlignment", mode: 'copy'
 
-  output:
-  set val(prefix), file("*_whitelist.R1.fastq"), file("*_whitelist.R2.fastq") into whiteListFastq
-  set val(prefix), file("*_whitelist.R2.fasta") into whiteListFasta
-  set val(prefix), file("*_readBarcodes.txt") into readBcNames
-  set val(prefix), file("*_NOTjoinedBarcodes.txt") into NOTBarcoded
-  set val(prefix), file("*_NOTwhitelist.R1.fastq") into NOTWhitelistFastq
-  set val(prefix), file ("*_indexes_mqc.log") into indexcount
+  input :
+  //file genomeIndex from chStar.collect()
+  set val(prefix), file(trimmedR2) from chTrimmedBc
+  set val(prefix), file(reads) from chAlignment
+	
+  output :
+  //set val(prefix), file("*Aligned.sortedByCoord.out.bam") into ch
+  file "*.out" into chStarLogs
+  //set val(prefix), file ("*_index_mqc.log") into indexCounts
 
   script:
-  """  
-  #####  1st - Extract barcoded reads
-  xjoin.sh ${barcodesMapped} > ${prefix}_joined 
-  grep -v "*" ${prefix}_joined > ${prefix}joinedBarcodes.txt
-  # print read ID with joined index number and add 'BC' before to have ex: BC014012
-  awk '{print substr(\$1,1) \"\tBC\" substr(\$2,2) substr(\$3,2) substr(\$4,2)}' ${prefix}joinedBarcodes.txt > ${prefix}_readBarcodes.txt
-  # Select reads that have a correct barcode
-  awk '{print \$1}' ${prefix}joinedBarcodes.txt > ${prefix}alignedFastqNames
-  seqtk subseq <( gzip -cd ${reads[0]} ) ${prefix}alignedFastqNames > ${prefix}_whitelist.R1.fastq
-  seqtk subseq <( gzip -cd ${reads[1]} ) ${prefix}alignedFastqNames > ${prefix}_whitelist.R2.fastq
-  seqtk seq -a ${prefix}_whitelist.R2.fastq > ${prefix}_whitelist.R2.fasta 
-
-  #####   2nd - Extract not barcoded reads
-  grep  "*" ${prefix}_joined > ${prefix}_NOTjoinedBarcodes.txt
-  awk '{print \$1}' ${prefix}_NOTjoinedBarcodes.txt > ${prefix}NOTalignedFastqNames
-  seqtk subseq <( gzip -cd ${reads[0]} ) ${prefix}NOTalignedFastqNames > ${prefix}_NOTwhitelist.R1.fastq
-  
-  ##### 3rd - Count indexes matches
-  count_BCIndexes.sh 
+  """
+  # Align R2 reads on genome indexes - paired end with R1 - (STAR)
+  # Run STAR on barcoded reads
+  STAR --alignEndsType EndToEnd --outFilterMultimapScoreRange 2 --winAnchorMultimapNmax 1000 --alignIntronMax 1 --peOverlapNbasesMin 10 --alignMatesGapMax 450 --limitGenomeGenerateRAM 25000000000 --outSAMunmapped Within \
+    --runThreadN ${task.cpus} \
+    --genomeDir /data/annotations/Mouse/mm10/complete/STAR_indexes \
+    --readFilesIn ${reads[0]} ${trimmedR2} \
+    --runMode alignReads
   """
 }
-*/
+
 
 /***********
  * MultiQC *
  ***********/
 
 /*process getSoftwareVersions{
+
+  # Add the number of barcoded reads as first line of the index count file
+  barcoded=`grep "Number of input reads" ${prefix}Log.final.out | cut -d'|' -f2 ` 
+  echo "\$(echo 'Barcoded,'\$barcoded | cat - ${bcIndxCounts} )" > ${prefix}_index_mqc.log
+
+
   label 'python'
   label 'lowCpu'
   label 'lowMem'
