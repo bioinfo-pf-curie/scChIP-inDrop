@@ -394,7 +394,7 @@ process fastxTrimmer {
 
   output:
   set val(prefix), file("*_trimmed.R2.fastq.gz") into chTrimmedBc
-  set val(prefix), file("*_fastx.log") into chFastxLogs
+  //set val(prefix), file("*_fastx.log") into chFastxLogs
   file ("v_fastx.txt") into chFastxVersion
 
 
