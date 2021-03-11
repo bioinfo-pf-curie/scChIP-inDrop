@@ -351,6 +351,7 @@ process bcMapping {
   """
 }
 
+/*
 process fastxTrimmer {
   tag "${prefix}"
   label 'fastx'
@@ -363,7 +364,36 @@ process fastxTrimmer {
   set val(prefix), file(reads) from chRawReadsFastx
 
   output:
-  set val(prefix), file("*_trimmed_G.R2.fastq.gz") into chTrimmedBc
+  // set val(prefix), file("*_trimmed_G.R2.fastq.gz") into chTrimmedBc
+  // set val(prefix), file("*_fastx.log") into chFastxLogs
+  // file ("v_fastx.txt") into chFastxVersion
+  set val(prefix), file("*_trimmed.R1.fastq"), file("*_trimmed.R2.fastq") into chTrimmedReads
+  set val(prefix), file("*_trimmed.log") into chtrimmedReadsLog
+  file("v_cutadapt.txt") into chCutadaptVersion
+
+  script:
+  linker_length = params.linker_length
+  //  fastx_trimmer -i <(gzip -cd ${reads[1]}) -Q 33 -f ${linker_length} -z -o ${prefix}_trimmed_G.R2.fastq > ${prefix}_fastx.log
+  // fastx_trimmer -h | grep "FASTX Toolkit" > v_fastx.txt
+  """  
+  cutadapt -q 33 -G TACGCTACGAACGA --minimum-length=15 --cores=${task.cpus} -o ${prefix}_trimmed.R1.fastq -p ${prefix}_trimmed.R2.fastq ${reads[0]} ${reads[1]} > ${prefix}_trimmed.log
+  """
+}
+*/
+
+process fastxTrimmer {
+  tag "${prefix}"
+  label 'fastx'
+  label 'medCpu'
+  label 'medMem'
+
+  publishDir "${params.outDir}/fastxTrimmer", mode: 'copy'
+
+  input:
+  set val(prefix), file(reads) from chRawReadsFastx
+
+  output:
+  set val(prefix), file("*_trimmed.R2.fastq.gz") into chTrimmedBc
   set val(prefix), file("*_fastx.log") into chFastxLogs
   file ("v_fastx.txt") into chFastxVersion
 
@@ -372,11 +402,9 @@ process fastxTrimmer {
   linker_length = params.linker_length
   """
   # Trim linker + barcode from R2 reads for genome aligning	
-  fastx_trimmer -i <(gzip -cd ${reads[1]}) -Q 33 -f ${linker_length} -o ${prefix}_trimmed_G.R2.fastq > ${prefix}_fastx.log
+  fastx_trimmer -i <(gzip -cd ${reads[1]}) -z -Q 33 -f ${linker_length} -o ${prefix}_trimmed.R2.fastq > ${prefix}_fastx.log
 
   fastx_trimmer -h | grep "FASTX Toolkit" > v_fastx.txt
-
-  gzip ${prefix}_trimmed_G.R2.fastq
   """
 }
 
@@ -402,7 +430,7 @@ process readsAlignment {
   """
   # Align R2 reads on genome indexes - paired end with R1 - (STAR)
   # Run STAR on barcoded reads
-  STAR --alignEndsType EndToEnd --outFilterMultimapScoreRange 2 --winAnchorMultimapNmax 1000 --alignIntronMax 1 --peOverlapNbasesMin 10 --alignMatesGapMax 450 --limitGenomeGenerateRAM 25000000000 --outSAMunmapped Within \
+  STAR --alignEndsType EndToEnd  \
     --runThreadN ${task.cpus} \
     --genomeDir $genomeIndex \
     --readFilesIn ${reads[0]} ${trimmedR2} \
