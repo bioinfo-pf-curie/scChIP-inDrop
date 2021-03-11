@@ -377,6 +377,9 @@ process fastxTrimmer {
   // fastx_trimmer -h | grep "FASTX Toolkit" > v_fastx.txt
   """  
   cutadapt -q 33 -G CAACGTGATTGCTTGTGACTTAAA --minimum-length=15 --cores=${task.cpus} -o ${prefix}_trimmed.R1.fastq -p ${prefix}_trimmed.R2.fastq ${reads[0]} ${reads[1]} > ${prefix}_trimmed.log
+     # cutadapt -u 84 --minimum-length=15 --cores=6 test.R2.fastq.gz -o test_trimmed.R2.fastq SAME 
+
+  cutadapt -u 84 --minimum-length=15 --cores=6 test.R2.fastq.gz -o test_trimmed.R2.fastq
   """
 }
 */
@@ -396,7 +399,6 @@ process fastxTrimmer {
   set val(prefix), file("*_trimmed.R2.fastq.gz") into chTrimmedBc
   //set val(prefix), file("*_fastx.log") into chFastxLogs
   file ("v_fastx.txt") into chFastxVersion
-
 
   script:
   linker_length = params.linker_length
@@ -433,6 +435,7 @@ process readsAlignment {
   STAR --alignEndsType EndToEnd  \
     --runThreadN ${task.cpus} \
     --genomeDir $genomeIndex \
+    --readFilesCommand gunzip \
     --readFilesIn ${reads[0]} ${trimmedR2} \
     --runMode alignReads
   """
