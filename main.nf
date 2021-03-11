@@ -376,7 +376,7 @@ process fastxTrimmer {
   //  fastx_trimmer -i <(gzip -cd ${reads[1]}) -Q 33 -f ${linker_length} -z -o ${prefix}_trimmed_G.R2.fastq > ${prefix}_fastx.log
   // fastx_trimmer -h | grep "FASTX Toolkit" > v_fastx.txt
   """  
-  cutadapt -q 33 -G TACGCTACGAACGA --minimum-length=15 --cores=${task.cpus} -o ${prefix}_trimmed.R1.fastq -p ${prefix}_trimmed.R2.fastq ${reads[0]} ${reads[1]} > ${prefix}_trimmed.log
+  cutadapt -q 33 -G CAACGTGATTGCTTGTGACTTAAA --minimum-length=15 --cores=${task.cpus} -o ${prefix}_trimmed.R1.fastq -p ${prefix}_trimmed.R2.fastq ${reads[0]} ${reads[1]} > ${prefix}_trimmed.log
   """
 }
 */
@@ -402,7 +402,7 @@ process fastxTrimmer {
   linker_length = params.linker_length
   """
   # Trim linker + barcode from R2 reads for genome aligning	
-  fastx_trimmer -i <(gzip -cd ${reads[1]}) -Q 33 -f ${linker_length} -z -o ${prefix}_trimmed.R2.fastq.gz > ${prefix}_fastx.log
+  fastx_trimmer -i <(gzip -cd ${reads[1]}) -Q 33 -f ${linker_length} -z -o ${prefix}_trimmed.R2.fastq.gz 
 
   fastx_trimmer -h | grep "FASTX Toolkit" > v_fastx.txt
   """
