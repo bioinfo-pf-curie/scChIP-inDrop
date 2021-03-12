@@ -387,6 +387,7 @@ process bcSubset {
   """
 }
 
+/*
 process fastxTrimmer {
   tag "${prefix}"
   label 'fastx'
@@ -411,7 +412,7 @@ process fastxTrimmer {
   fastx_trimmer -h | grep "FASTX Toolkit" > v_fastx.txt
   """
 }
-
+*/
 
 process fastxTrimmer {
   tag "${prefix}"
