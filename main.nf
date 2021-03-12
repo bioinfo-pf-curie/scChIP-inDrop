@@ -427,12 +427,14 @@ process fastxTrimmer {
 
   output:
   set val(prefix), file("*_trimmed.R2.fastq.gz") into chTrimmedBc
-  //file ("v_fastx.txt") into chFastxVersion
+  file ("v_fastx.txt") into chFastxVersion
 
   script:
   linker_length = params.linker_length
   """
-  # Trim linker + barcode from R2 reads for genome aligning
+  # Trim linker + barcode from R2 reads for genome aligning	
+  fastx_trimmer -h | grep "FASTX Toolkit" > v_fastx.txt
+
   cutadapt -u ${linker_length} --minimum-length=15 --cores=${task.cpus} ${reads[1]} -o ${prefix}_trimmed.R2.fastq
   gzip ${prefix}_trimmed.R2.fastq
   """
