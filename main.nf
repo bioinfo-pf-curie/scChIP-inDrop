@@ -321,6 +321,7 @@ process fastxTrimmer {
 
   script:
   linker_length = params.linker_length
+  
   """
   # Trim linker + barcode from R2 reads for genome aligning	
   fastx_trimmer -i <(gzip -cd ${reads[1]}) -f ${linker_length} -z -o ${prefix}_trimmed.R2.fastq.gz 
