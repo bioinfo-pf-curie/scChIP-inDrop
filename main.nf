@@ -474,7 +474,7 @@ process  addBarcodes {
   # Remove comments from the header that produce bugs in the count phase
   samtools view -H ${alignedBam} | sed '/^@CO/ d' > ${prefix}_header.sam
 
-  cat ${prefix}_2.sam >> ${prefix}_header.sam && mv ${prefix}_header.sam ${prefix}.sam && samtools view -b -@ ${NB_PROC} ${prefix}.sam > ${prefix}_unique.bam
+  cat ${prefix}_2.sam >> ${prefix}_header.sam && mv ${prefix}_header.sam ${prefix}.sam && samtools view -b -@ ${task.cpus} ${prefix}.sam > ${prefix}_unique.bam
 
   rm -f ${prefix}_2.sam ${prefix}.sam"
   
@@ -482,7 +482,7 @@ process  addBarcodes {
   samtools view ${prefix}_unique.bam | awk '{OFS = \"\t\" ; if(NR%2==1 && !(\$3==\"*\")) {R1=\$0} else if(NR%2==1){R1=0}; if(NR%2==0 && !(R1==0)){tagR2Seq=\"XD:Z:\"\$10; tagR2Pos=\"XS:i:\"\$4;print R1,tagR2Pos,tagR2Seq}}' > ${prefix}_unique.sam
   
   #Sort and join on read names reads barcoded and reads mapped to genome (barcode as tag 'XB') --> filter out unbarcoded OR unmapped reads
-  sort -T ${TMP_DIR} --parallel=${NB_PROC} -k1,1 ${prefix}_unique.sam > ${prefix}_unique_sorted.sam"
+  sort -T ${TMP_DIR} --parallel=${task.cpus} -k1,1 ${prefix}_unique.sam > ${prefix}_unique_sorted.sam"
   
   join -1 1  -2 1  ${prefix}_unique_sorted.sam <(awk -v OFS=\"\t\" '{print \$1,\"XB:Z:\"\$2}' ${barcodedReadIDs}) > ${prefix}_flagged.sam
   
@@ -491,7 +491,7 @@ process  addBarcodes {
   #Remove comments from the header that produce bugs in the count phase
   samtools view -H ${prefix}_unique.bam | sed '/^@CO/ d' > ${prefix}_header.sam
   
-  cat ${prefix}_flagged.sam >> ${prefix}_header.sam && mv ${prefix}_header.sam ${prefix}_flagged.sam && samtools view -@ ${NB_PROC} -b ${prefix}_flagged.sam > ${prefix}_flagged.bam
+  cat ${prefix}_flagged.sam >> ${prefix}_header.sam && mv ${prefix}_header.sam ${prefix}_flagged.sam && samtools view -@ ${task.cpus} -b ${prefix}_flagged.sam > ${prefix}_flagged.bam
   
   #Cleaning
   rm -f ${prefix}_unique.bam ${prefix}_flagged.sam ${prefix}_unique_sorted.sam
