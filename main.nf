@@ -424,9 +424,9 @@ process readsAlignment {
   set val(prefix), file(reads) from chAlignment
 	
   output :
-  //set val(prefix), file("*Aligned.sortedByCoord.out.bam") into ch
-  file "*.out" into chStarLogs
-  //set val(prefix), file ("*_index_mqc.log") into indexCounts
+  set val(prefix), file("*Aligned.sortedByCoord.out.bam") into chAlignedBam
+  file "*.out" into chAlignmentLogs
+  file("v_star.txt") into chStarVersion
 
   script:
   """
@@ -437,11 +437,26 @@ process readsAlignment {
     --genomeDir $genomeIndex \
     --readFilesCommand gunzip \
     --readFilesIn ${reads[0]} ${trimmedR2} \
-    --runMode alignReads
+    --runMode alignReads \
+    --outSAMtype BAM SortedByCoordinate 
   """
 }
 
+/*
+process  addBarcodes {
 
+
+  script:
+  """
+  samtools view -F 256 .bam | awk -v OFS='\t' 'NR%2==1{if(\$12==\"NH:i:1\"){mapped=1;print \$0} else{mapped=0;\$2=4;\$3=\"*\";\$4=0;\$6=\"*\";print \$0}} NR%2==0{if(mapped==1){print \$0} else{\$2=4;\$3=\"*\";\$4=0;\$6=\"*\";print \$0} }' > ${prefix}.sam
+
+
+
+
+
+  """
+}
+*/
 /***********
  * MultiQC *
  ***********/
