@@ -407,7 +407,7 @@ process fastxTrimmer {
   linker_length = params.linker_length
   """
   # Trim linker + barcode from R2 reads for genome aligning	
-  fastx_trimmer -i <(gzip -cd ${barcodedR2}) -f ${linker_length} -o ${prefix}_trimmed.R2.fastq
+  fastx_trimmer -i ${barcodedR2} -f ${linker_length} -o ${prefix}_trimmed.R2.fastq
 
   fastx_trimmer -h | grep "FASTX Toolkit" > v_fastx.txt
   """
@@ -443,8 +443,6 @@ process readsAlignment {
     --outFileNamePrefix ${prefix} 
 
   STAR --version &> v_star.txt
-
-  rm *.fastq
 
   samtools view -@ ${task.cpus} -bS ${prefix}Aligned.out.sam > ${prefix}_aligned.bam
   samtools sort -n -@ ${task.cpus} ${prefix}_aligned.bam -o ${prefix}_nsorted.bam && mv ${prefix}_nsorted.bam ${prefix}_aligned.bam
