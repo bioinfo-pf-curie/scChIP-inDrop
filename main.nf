@@ -439,7 +439,10 @@ process readsAlignment {
     --genomeDir $genomeIndex \
     --readFilesIn R1.fastq R2.fastq \
     --runMode alignReads \
+    --outFileNamePrefix ${prefix} \
     --outSAMtype BAM SortedByCoordinate 
+
+  STAR --version &> v_star.txt
 
   rm *.fastq
   """
