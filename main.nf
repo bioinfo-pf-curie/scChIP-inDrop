@@ -335,11 +335,11 @@ process bcMapping {
   bowtie2 \
     -x ${bwt2Idx}/${base} \
     -f ${oprefix}Reads.fasta \
-    -N 1 -L 8 --rdg 0,7 --rfg 0,7 --mp 7,7 --ignore-quals --score-min L,0,-1 -t --no-unal --no-hd
     -N 1 -L 8 \
     --rdg 0,7 --rfg 0,7 --mp 7,7 \
     --ignore-quals --score-min L,0,-1 \
     -t --no-hd --no-unal \
+    --reorder \
     -p ${task.cpus} > ${oprefix}Bowtie2.sam 2> ${oprefix}_bowtie2.log
  
   ## Keep all alignments, so that ReadsMatching files always have the same size
