@@ -461,12 +461,23 @@ process  addBarcodes {
   set val(prefix), file(barcodedReadIDs) from chBarcodeMapped
 
   output:
-  set (prefix), file("*_flagged.bam") into ch
+  //set (prefix), file("*_flagged.bam") into chAddedBarcodes
 
   script:
   """
   # Remove secondary aligned reads (256 <=> "not primary alignment") & If R1 is unmapped or multimapped (NH != 1), tag R1 & R2 with flag "4" <=> "unmapped" & "chr" = '*'
   samtools view -F 256 ${alignedBam} | awk -v OFS='\t' 'NR%2==1{if(\$12==\"NH:i:1\"){mapped=1;print \$0} else{mapped=0;\$2=4;\$3=\"*\";\$4=0;\$6=\"*\";print \$0}} NR%2==0{if(mapped==1){print \$0} else{\$2=4;\$3=\"*\";\$4=0;\$6=\"*\";print \$0} }' > ${prefix}.sam
+
+  """
+}
+
+
+/***********
+ * MultiQC *
+ ***********/
+
+/*process getSoftwareVersions{
+
 
   # If read is mapped R1 & unmapped R2 -> set R2 position as '2147483647'
   cat ${prefix}.sam | awk -v OFS='\t' 'NR%2==1{print \$0} NR%2==0{if(\$3==\"*\"){\$4=2147483647;print \$0} else{print \$0} }' > ${prefix}_2.sam
@@ -495,20 +506,11 @@ process  addBarcodes {
   
   #Cleaning
   rm -f ${prefix}_unique.bam ${prefix}_flagged.sam ${prefix}_unique_sorted.sam
-  """
-}
 
 
-/***********
- * MultiQC *
- ***********/
 
-/*process getSoftwareVersions{
 
-  # Add the number of barcoded reads as first line of the index count file
-  barcoded=`grep "Number of input reads" ${prefix}Log.final.out | cut -d'|' -f2 ` 
-  echo "\$(echo 'Barcoded,'\$barcoded | cat - ${bcIndxCounts} )" > ${prefix}_index_mqc.log
-
+  
 
   label 'python'
   label 'lowCpu'
