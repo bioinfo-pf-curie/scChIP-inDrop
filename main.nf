@@ -335,10 +335,11 @@ process bcMapping {
   bowtie2 \
     -x ${bwt2Idx}/${base} \
     -f ${oprefix}Reads.fasta \
+    -N 1 -L 8 --rdg 0,7 --rfg 0,7 --mp 7,7 --ignore-quals --score-min L,0,-1 -t --no-unal --no-hd
     -N 1 -L 8 \
     --rdg 0,7 --rfg 0,7 --mp 7,7 \
     --ignore-quals --score-min L,0,-1 \
-    -t --no-hd \
+    -t --no-hd --no-unal \
     --reorder \
     -p ${task.cpus} > ${oprefix}Bowtie2.sam 2> ${oprefix}_bowtie2.log
  
@@ -400,7 +401,6 @@ process fastxTrimmer {
 
   output:
   set val(prefix), file("*_trimmed.R2.fastq") into chTrimmedBc
-  //set val(prefix), file("*_fastx.log") into chFastxLogs
   file ("v_fastx.txt") into chFastxVersion
 
   script:
