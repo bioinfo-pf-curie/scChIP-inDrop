@@ -352,7 +352,10 @@ process bcMapping {
 
 process bcSubset {
   tag "${prefix}"
-  publishDir "${params.outdir}/bcSubset", mode: 'copy'
+  label 'seqtk'
+  label 'medCpu'
+  label 'medMem'
+  publishDir "${params.outDir}/bcSubset", mode: 'copy'
 
   input:
   set val(prefix), file(reads), file(barcodesMapped) from chRawReadsWhiteList.combine(chBarcodeMapped.groupTuple(), by: 0)
