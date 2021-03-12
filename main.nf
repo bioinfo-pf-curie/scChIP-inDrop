@@ -185,13 +185,13 @@ if(params.samplePlan){
       .from(file("${params.samplePlan}"))
       .splitCsv(header: false)
       .map{ row -> [ row[0], [file(row[2])]] }
-      .into { chRawReadsBowtie2; chRawReadsFastx; chAlignment }
+      .into { chRawReadsBowtie2; chRawReadsFastx; chAlignment; chRawReadsWhiteList  }
   }else{
     Channel
       .from(file("${params.samplePlan}"))
       .splitCsv(header: false)
       .map{ row -> [ row[0], [file(row[2]), file(row[3])]] }
-      .into { chRawReadsBowtie2; chRawReadsFastx; chAlignment}
+      .into { chRawReadsBowtie2; chRawReadsFastx; chAlignment; chRawReadsWhiteList }
    }
   params.reads=false
 }
@@ -201,19 +201,19 @@ else if(params.readPaths){
       .from(params.readPaths)
       .map { row -> [ row[0], [file(row[1][0])]] }
       .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied." }
-      .into { chRawReadsBowtie2; chRawReadsFastx ; chAlignment}
+      .into { chRawReadsBowtie2; chRawReadsFastx ; chAlignment; chRawReadsWhiteList }
   } else {
     Channel
       .from(params.readPaths)
       .map { row -> [ row[0], [file(row[1][0]), file(row[1][1])]] }
       .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied." }
-      .into { chRawReadsBowtie2 ; chRawReadsFastx; chAlignment}
+      .into { chRawReadsBowtie2 ; chRawReadsFastx; chAlignment; chRawReadsWhiteList }
   }
 } else {
   Channel
     .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
     .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nNB: Path requires at least one * wildcard!\nIf this is single-end data, please specify --singleEnd on the command line." }
-    .into { chRawReadsBowtie2 ; chRawReadsFastx; chAlignment}
+    .into { chRawReadsBowtie2 ; chRawReadsFastx; chAlignment; chRawReadsWhiteList }
 }
 
 // Make sample plan if not available
@@ -347,42 +347,37 @@ process bcMapping {
   awk '/XS/{\$3="*"} {print \$1,\$3}' ${oprefix}Bowtie2.sam > ${oprefix}ReadsMatching.txt
 
   bowtie2 --version > v_bowtie2.txt
-
   """
 }
 
-/*
-process fastxTrimmer {
+process bcSubset {
   tag "${prefix}"
-  label 'fastx'
-  label 'medCpu'
-  label 'medMem'
-
-  publishDir "${params.outDir}/fastxTrimmer", mode: 'copy'
+  publishDir "${params.outdir}/bcSubset", mode: 'copy'
 
   input:
-  set val(prefix), file(reads) from chRawReadsFastx
+  set val(prefix), file(reads), file(barcodesMapped) from chRawReadsWhiteList.combine(chBarcodeMapped.groupTuple(), by: 0)
 
   output:
-  // set val(prefix), file("*_trimmed_G.R2.fastq.gz") into chTrimmedBc
-  // set val(prefix), file("*_fastx.log") into chFastxLogs
-  // file ("v_fastx.txt") into chFastxVersion
-  set val(prefix), file("*_trimmed.R1.fastq"), file("*_trimmed.R2.fastq") into chTrimmedReads
-  set val(prefix), file("*_trimmed.log") into chtrimmedReadsLog
-  file("v_cutadapt.txt") into chCutadaptVersion
+  set val(prefix), file("*_whitelist.R1.fastq"), file("*_whitelist.R2.fastq") into chBarcodedReads_Fastx, chBarcodedReads_Star
+  set val(prefix), file("*_readBarcodes.txt") into chReadBcNames
+  set val(prefix), file ("*_indexes_mqc.log") into chIndexCounts
 
   script:
-  linker_length = params.linker_length
-  //  fastx_trimmer -i <(gzip -cd ${reads[1]}) -Q 33 -f ${linker_length} -z -o ${prefix}_trimmed_G.R2.fastq > ${prefix}_fastx.log
-  // fastx_trimmer -h | grep "FASTX Toolkit" > v_fastx.txt
   """  
-  cutadapt -q 33 -G CAACGTGATTGCTTGTGACTTAAA --minimum-length=15 --cores=${task.cpus} -o ${prefix}_trimmed.R1.fastq -p ${prefix}_trimmed.R2.fastq ${reads[0]} ${reads[1]} > ${prefix}_trimmed.log
-     # cutadapt -u 84 --minimum-length=15 --cores=6 test.R2.fastq.gz -o test_trimmed.R2.fastq SAME 
+  #####  1st - Extract barcoded reads
+  xjoin.sh ${barcodesMapped} > ${prefix}_joined 
+  grep -v "*" ${prefix}_joined > ${prefix}joinedBarcodes.txt
+  # print read ID with joined index number and add 'BC' before to have ex: BC014012
+  awk '{print substr(\$1,1) \"\tBC\" substr(\$2,2) substr(\$3,2) substr(\$4,2)}' ${prefix}joinedBarcodes.txt > ${prefix}_readBarcodes.txt
+  # Select reads that have a correct barcode
+  awk '{print \$1}' ${prefix}joinedBarcodes.txt > ${prefix}alignedFastqNames
+  seqtk subseq <( gzip -cd ${reads[0]} ) ${prefix}alignedFastqNames > ${prefix}_whitelist.R1.fastq
+  seqtk subseq <( gzip -cd ${reads[1]} ) ${prefix}alignedFastqNames > ${prefix}_whitelist.R2.fastq
 
-  cutadapt -u 84 --minimum-length=15 --cores=6 test.R2.fastq.gz -o test_trimmed.R2.fastq
+  ##### 3rd - Count indexes matches
+  count_BCIndexes.sh 
   """
 }
-*/
 
 process fastxTrimmer {
   tag "${prefix}"
@@ -393,10 +388,10 @@ process fastxTrimmer {
   publishDir "${params.outDir}/fastxTrimmer", mode: 'copy'
 
   input:
-  set val(prefix), file(reads) from chRawReadsFastx
+  set val(prefix), file(barcodedR1), file(barcodedR2) from chBarcodedReads_Fastx
 
   output:
-  set val(prefix), file("*_trimmed.R2.fastq.gz") into chTrimmedBc
+  set val(prefix), file("*_trimmed.R2.fastq") into chTrimmedBc
   //set val(prefix), file("*_fastx.log") into chFastxLogs
   file ("v_fastx.txt") into chFastxVersion
 
@@ -404,7 +399,7 @@ process fastxTrimmer {
   linker_length = params.linker_length
   """
   # Trim linker + barcode from R2 reads for genome aligning	
-  fastx_trimmer -i <(gzip -cd ${reads[1]}) -f ${linker_length} -z -o ${prefix}_trimmed.R2.fastq.gz 
+  fastx_trimmer -i <(gzip -cd ${barcodedR2}) -f ${linker_length} -o ${prefix}_trimmed.R2.fastq
 
   fastx_trimmer -h | grep "FASTX Toolkit" > v_fastx.txt
   """
@@ -421,7 +416,7 @@ process readsAlignment {
   input :
   file genomeIndex from chStar.collect()
   set val(prefix), file(trimmedR2) from chTrimmedBc
-  set val(prefix), file(reads) from chAlignment
+  set val(prefix), file(barcodedR1), file(barcodedR2) from chBarcodedReads_Star
 	
   output :
   set val(prefix), file("*_aligned.bam") into chAlignedBam
@@ -430,15 +425,12 @@ process readsAlignment {
 
   script:
   """
-  gzip -cd ${reads[0]} > R1.fastq
-  gzip -cd ${trimmedR2} > R2.fastq
-
   # Align R2 reads on genome indexes - paired end with R1 - (STAR)
   # Run STAR on barcoded reads
    STAR --alignEndsType EndToEnd --outFilterMultimapScoreRange 2 --winAnchorMultimapNmax 1000 --alignIntronMax 1 --peOverlapNbasesMin 10 --alignMatesGapMax 450 --limitGenomeGenerateRAM 25000000000 --outSAMunmapped Within \
     --runThreadN ${task.cpus} \
     --genomeDir $genomeIndex \
-    --readFilesIn R1.fastq R2.fastq \
+    --readFilesIn ${barcodedR1} ${trimmedR2} \
     --runMode alignReads \
     --outFileNamePrefix ${prefix} 
 
@@ -461,7 +453,7 @@ process  addBarcodes {
 
   input:
   set val(prefix), file(alignedBam) from chAlignedBam
-  set val(prefix), file(barcodedReadIDs) from chBarcodeMapped
+  set val(prefix), file(readBarcodes) from chReadBcNames
 
   output:
   //set (prefix), file("*_flagged.bam") into chAddedBarcodes
@@ -487,7 +479,7 @@ process  addBarcodes {
   #Sort and join on read names reads barcoded and reads mapped to genome (barcode as tag 'XB') --> filter out unbarcoded OR unmapped reads
   sort -T /scratch/ --parallel=${task.cpus} -k1,1 ${prefix}_unique.sam > ${prefix}_unique_sorted.sam
   
-  join -1 1  -2 1  ${prefix}_unique_sorted.sam <(awk -v OFS=\"\t\" '{print \$1,\"XB:Z:\"\$2}' ${barcodedReadIDs}) > ${prefix}_flagged.sam
+  join -1 1  -2 1  ${prefix}_unique_sorted.sam <(awk -v OFS=\"\t\" '{print \$1,\"XB:Z:\"\$2}' ${readBarcodes}) > ${prefix}_flagged.sam
   
   sed -i 's/ /\t/g' ${prefix}_flagged.sam
   
