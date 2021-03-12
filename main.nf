@@ -425,7 +425,7 @@ process fastxTrimmer {
   set val(prefix), file(reads) from chRawReadsFastx
 
   output:
-  set val(prefix), file("*_trimmed.R2.fastq.gz") into chTrimmedBc
+  //set val(prefix), file("*_trimmed.R2.fastq.gz") into chTrimmedBc
   //file ("v_fastx.txt") into chFastxVersion
 
   script:
