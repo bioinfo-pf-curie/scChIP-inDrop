@@ -377,6 +377,11 @@ process bcSubset {
   seqtk subseq <( gzip -cd ${reads[0]} ) ${prefix}alignedFastqNames > ${prefix}_whitelist.R1.fastq
   seqtk subseq <( gzip -cd ${reads[1]} ) ${prefix}alignedFastqNames > ${prefix}_whitelist.R2.fastq
 
+  #####   2nd - Extract not barcoded reads
+  grep  "*" ${prefix}_joined > ${prefix}_NOTjoinedBarcodes.txt
+  awk '{print \$1}' ${prefix}_NOTjoinedBarcodes.txt > ${prefix}NOTalignedFastqNames
+  seqtk subseq <( gzip -cd ${reads[0]} ) ${prefix}NOTalignedFastqNames > ${prefix}_NOTwhitelist.R1.fastq
+
   ##### 3rd - Count indexes matches
   count_BCIndexes.sh 
   """
