@@ -458,7 +458,7 @@ process  addBarcodes {
 
   input:
   set val(prefix), file(alignedBam) from chAlignedBam
-  set val(prefix), file(barcodedReadIDs) into chBarcodeMapped
+  set val(prefix), file(barcodedReadIDs) from chBarcodeMapped
 
   output:
   set (prefix), file("*_flagged.bam") into ch
