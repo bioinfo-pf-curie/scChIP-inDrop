@@ -433,7 +433,7 @@ process fastxTrimmer {
   linker_length = params.linker_length
   """
   # Trim linker + barcode from R2 reads for genome aligning
-  cutadapt -u 84 --minimum-length=15 --cores=6 ${reads[1]} -o ${prefix}_trimmed.R2.fastq
+  cutadapt -u ${linker_length} --minimum-length=15 --cores=${task.cpus} ${reads[1]} -o ${prefix}_trimmed.R2.fastq
   gzip ${prefix}_trimmed.R2.fastq
   """
 }
