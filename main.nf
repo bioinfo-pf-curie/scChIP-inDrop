@@ -304,8 +304,6 @@ log.info summary.collect { k,v -> "${k.padRight(15)}: $v" }.join("\n")
 log.info "========================================="
 
 
-// TODO - ADD YOUR NEXTFLOW PROCESS HERE
-
 process bcMapping {
   tag "${prefix} - ${index}"
   label 'bowtie2'
@@ -350,7 +348,7 @@ process bcMapping {
   """
 }
 
-process bcSubset {
+/*process bcSubset {
   tag "${prefix}"
   label 'seqtk'
   label 'medCpu'
@@ -386,6 +384,7 @@ process bcSubset {
   count_BCIndexes.sh 
   """
 }
+*/
 
 /*
 process fastxTrimmer {
@@ -440,7 +439,7 @@ process fastxTrimmer {
   """
 }
 
-
+/*
 process readsAlignment {
   tag "${prefix}"
   label 'star'
@@ -531,7 +530,7 @@ process  addBarcodes {
   """
 }
 
-
+*/
 /***********
  * MultiQC *
  ***********/
