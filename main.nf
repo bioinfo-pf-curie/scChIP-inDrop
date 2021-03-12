@@ -497,7 +497,8 @@ process  addBarcodes {
   rm -f ${prefix}_unique.bam ${prefix}_flagged.sam ${prefix}_unique_sorted.sam
   """
 }
-*/
+
+
 /***********
  * MultiQC *
  ***********/
