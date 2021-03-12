@@ -303,7 +303,7 @@ summary['Config Profile'] = workflow.profile
 log.info summary.collect { k,v -> "${k.padRight(15)}: $v" }.join("\n")
 log.info "========================================="
 
-
+/*
 process bcMapping {
   tag "${prefix} - ${index}"
   label 'bowtie2'
@@ -347,8 +347,9 @@ process bcMapping {
   bowtie2 --version > v_bowtie2.txt
   """
 }
-
-/*process bcSubset {
+*/
+/*
+process bcSubset {
   tag "${prefix}"
   label 'seqtk'
   label 'medCpu'
@@ -425,8 +426,8 @@ process fastxTrimmer {
   set val(prefix), file(reads) from chRawReadsFastx
 
   output:
-  //set val(prefix), file("*_trimmed.R2.fastq.gz") into chTrimmedBc
-  //file ("v_fastx.txt") into chFastxVersion
+  set val(prefix), file("*_trimmed.R2.fastq.gz") into chTrimmedBc
+  file ("v_fastx.txt") into chFastxVersion
 
   script:
   linker_length = params.linker_length
@@ -437,113 +438,11 @@ process fastxTrimmer {
   """
 }
 
-/*
-process readsAlignment {
-  tag "${prefix}"
-  label 'star'
-  label 'extraCpu'
-  label 'extraMem'
-
-  publishDir "${params.outDir}/readsAlignment", mode: 'copy'
-
-  input :
-  file genomeIndex from chStar.collect()
-  set val(prefix), file(trimmedR2) from chTrimmedBc
-  //set val(prefix), file(barcodedR1), file(barcodedR2) from chBarcodedReads_Star
-  set val(prefix), file(reads) from chAlignment
-
-	
-  output :
-  set val(prefix), file("*_aligned.bam") into chAlignedBam
-  file "*.out" into chAlignmentLogs
-  file("v_star.txt") into chStarVersion
-
-  script:
-  """
-  gzip -cd ${reads[0]} > R1.fastq
-  gzip -cd ${trimmedR2} > R2.fastq
-  # Align R2 reads on genome indexes - paired end with R1 - (STAR)
-  # Run STAR on barcoded reads
-   STAR --alignEndsType EndToEnd --outFilterMultimapScoreRange 2 --winAnchorMultimapNmax 1000 --alignIntronMax 1 --peOverlapNbasesMin 10 --alignMatesGapMax 450 --limitGenomeGenerateRAM 25000000000 --outSAMunmapped Within \
-    --runThreadN ${task.cpus} \
-    --genomeDir $genomeIndex \
-    --readFilesIn R1.fastq R2.fastq \
-    --runMode alignReads \
-    --outFileNamePrefix ${prefix} 
-
-  STAR --version &> v_star.txt
-
-  samtools view -@ ${task.cpus} -bS ${prefix}Aligned.out.sam > ${prefix}_aligned.bam
-  samtools sort -n -@ ${task.cpus} ${prefix}_aligned.bam -o ${prefix}_nsorted.bam && mv ${prefix}_nsorted.bam ${prefix}_aligned.bam
-  rm ${prefix}Aligned.out.sam
-  """
-}
-
-
-process  addBarcodes {
-  tag "${prefix}"
-  label 'samtools'
-  label 'extraCpu'
-  label 'extraMem'
-
-  input:
-  set val(prefix), file(alignedBam) from chAlignedBam
-  set val(prefix), file(readBarcodes) from chReadBcNames
-
-  output:
-  //set (prefix), file("*_flagged.bam") into chAddedBarcodes
-
-  script:
-  """
-  # Remove secondary aligned reads (256 <=> "not primary alignment") & If R1 is unmapped or multimapped (NH != 1), tag R1 & R2 with flag "4" <=> "unmapped" & "chr" = '*'
-  samtools view -F 256 ${alignedBam} | awk -v OFS='\t' 'NR%2==1{if(\$12==\"NH:i:1\"){mapped=1;print \$0} else{mapped=0;\$2=4;\$3=\"*\";\$4=0;\$6=\"*\";print \$0}} NR%2==0{if(mapped==1){print \$0} else{\$2=4;\$3=\"*\";\$4=0;\$6=\"*\";print \$0} }' > ${prefix}.sam
-
-  # If read is mapped R1 & unmapped R2 -> set R2 position as '2147483647'
-  cat ${prefix}.sam | awk -v OFS='\t' 'NR%2==1{print \$0} NR%2==0{if(\$3==\"*\"){\$4=2147483647;print \$0} else{print \$0} }' > ${prefix}_2.sam
-
-  # Remove comments from the header that produce bugs in the count phase
-  samtools view -H ${alignedBam} | sed '/^@CO/ d' > ${prefix}_header.sam
-
-  cat ${prefix}_2.sam >> ${prefix}_header.sam && mv ${prefix}_header.sam ${prefix}.sam && samtools view -b -@ ${task.cpus} ${prefix}.sam > ${prefix}_unique.bam
-
-  rm -f ${prefix}_2.sam ${prefix}.sam
-  
-  #Keeping R1 aligned + R2 start as tag 'XS' (Switch from Paired End Bam to Single End Bam)
-  samtools view ${prefix}_unique.bam | awk '{OFS = \"\t\" ; if(NR%2==1 && !(\$3==\"*\")) {R1=\$0} else if(NR%2==1){R1=0}; if(NR%2==0 && !(R1==0)){tagR2Seq=\"XD:Z:\"\$10; tagR2Pos=\"XS:i:\"\$4;print R1,tagR2Pos,tagR2Seq}}' > ${prefix}_unique.sam
-  
-  #Sort and join on read names reads barcoded and reads mapped to genome (barcode as tag 'XB') --> filter out unbarcoded OR unmapped reads
-  sort -T /scratch/ --parallel=${task.cpus} -k1,1 ${prefix}_unique.sam > ${prefix}_unique_sorted.sam
-  
-  join -1 1  -2 1  ${prefix}_unique_sorted.sam <(awk -v OFS=\"\t\" '{print \$1,\"XB:Z:\"\$2}' ${readBarcodes}) > ${prefix}_flagged.sam
-  
-  sed -i 's/ /\t/g' ${prefix}_flagged.sam
-  
-  #Remove comments from the header that produce bugs in the count phase
-  samtools view -H ${prefix}_unique.bam | sed '/^@CO/ d' > ${prefix}_header.sam
-  
-  cat ${prefix}_flagged.sam >> ${prefix}_header.sam && mv ${prefix}_header.sam ${prefix}_flagged.sam && samtools view -@ ${task.cpus} -b ${prefix}_flagged.sam > ${prefix}_flagged.bam
-  
-  #Cleaning
-  rm -f ${prefix}_unique.bam ${prefix}_flagged.sam ${prefix}_unique_sorted.sam
-  """
-}
-
-*/
 /***********
  * MultiQC *
  ***********/
 
 /*process getSoftwareVersions{
-
-
-  
-  
-  
-
-
-
-  
-
   label 'python'
   label 'lowCpu'
   label 'lowMem'
