@@ -424,7 +424,7 @@ process readsAlignment {
   set val(prefix), file(reads) from chAlignment
 	
   output :
-  set val(prefix), file("*Aligned.sortedByCoord.out.bam") into chAlignedBam
+  set val(prefix), file("*_aligned.bam") into chAlignedBam
   file "*.out" into chAlignmentLogs
   file("v_star.txt") into chStarVersion
 
