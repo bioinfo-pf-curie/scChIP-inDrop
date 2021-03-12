@@ -362,7 +362,7 @@ process bcSubset {
 
   output:
   set val(prefix), file("*_whitelist.R1.fastq"), file("*_whitelist.R2.fastq") into chBarcodedReads_Fastx, chBarcodedReads_Star
-  set val(prefix), file("*_readBarcodes.txt") into chReadBcNames
+  set val(prefix), file("*_readBarcodes.txt") into chReadBcNames ////
   set val(prefix), file ("*_indexes_mqc.log") into chIndexCounts
 
   script:
@@ -412,6 +412,34 @@ process fastxTrimmer {
   """
 }
 
+
+process fastxTrimmer {
+  tag "${prefix}"
+  label 'fastx'
+  label 'medCpu'
+  label 'medMem'
+
+  publishDir "${params.outDir}/fastxTrimmer", mode: 'copy'
+
+  input:
+  set val(prefix), file(reads) from chRawReadsFastx
+
+  output:
+  set val(prefix), file("*_trimmed.R2.fastq.gz") into chTrimmedBc
+  //set val(prefix), file("*_fastx.log") into chFastxLogs
+  file ("v_fastx.txt") into chFastxVersion
+
+  script:
+  linker_length = params.linker_length
+  """
+  # Trim linker + barcode from R2 reads for genome aligning	
+  fastx_trimmer -i <(gzip -cd ${reads[1]}) -f ${linker_length} -z -o ${prefix}_trimmed.R2.fastq.gz 
+
+  fastx_trimmer -h | grep "FASTX Toolkit" > v_fastx.txt
+  """
+}
+
+
 process readsAlignment {
   tag "${prefix}"
   label 'star'
@@ -423,7 +451,9 @@ process readsAlignment {
   input :
   file genomeIndex from chStar.collect()
   set val(prefix), file(trimmedR2) from chTrimmedBc
-  set val(prefix), file(barcodedR1), file(barcodedR2) from chBarcodedReads_Star
+  //set val(prefix), file(barcodedR1), file(barcodedR2) from chBarcodedReads_Star
+  set val(prefix), file(reads) from chAlignment
+
 	
   output :
   set val(prefix), file("*_aligned.bam") into chAlignedBam
@@ -432,12 +462,14 @@ process readsAlignment {
 
   script:
   """
+  gzip -cd ${reads[0]} > R1.fastq
+  gzip -cd ${trimmedR2} > R2.fastq
   # Align R2 reads on genome indexes - paired end with R1 - (STAR)
   # Run STAR on barcoded reads
    STAR --alignEndsType EndToEnd --outFilterMultimapScoreRange 2 --winAnchorMultimapNmax 1000 --alignIntronMax 1 --peOverlapNbasesMin 10 --alignMatesGapMax 450 --limitGenomeGenerateRAM 25000000000 --outSAMunmapped Within \
     --runThreadN ${task.cpus} \
     --genomeDir $genomeIndex \
-    --readFilesIn ${barcodedR1} ${trimmedR2} \
+    --readFilesIn R1.fastq R2.fastq \
     --runMode alignReads \
     --outFileNamePrefix ${prefix} 
 
