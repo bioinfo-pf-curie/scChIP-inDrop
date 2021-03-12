@@ -340,7 +340,6 @@ process bcMapping {
     --rdg 0,7 --rfg 0,7 --mp 7,7 \
     --ignore-quals --score-min L,0,-1 \
     -t --no-hd --no-unal \
-    --reorder \
     -p ${task.cpus} > ${oprefix}Bowtie2.sam 2> ${oprefix}_bowtie2.log
  
   ## Keep all alignments, so that ReadsMatching files always have the same size
