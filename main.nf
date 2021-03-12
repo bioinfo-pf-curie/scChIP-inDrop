@@ -456,12 +456,12 @@ process  addBarcodes {
   label 'extraCpu'
   label 'extraMem'
 
-
   input:
   set val(prefix), file(alignedBam) from chAlignedBam
   set val(prefix), file(barcodedReadIDs) into chBarcodeMapped
 
   output:
+  set (prefix), file("*_flagged.bam") into ch
 
   script:
   """
@@ -472,7 +472,7 @@ process  addBarcodes {
   cat ${prefix}.sam | awk -v OFS='\t' 'NR%2==1{print \$0} NR%2==0{if(\$3==\"*\"){\$4=2147483647;print \$0} else{print \$0} }' > ${prefix}_2.sam
 
   # Remove comments from the header that produce bugs in the count phase
-  samtools view -H $1 | sed '/^@CO/ d' > ${prefix}_header.sam
+  samtools view -H ${alignedBam} | sed '/^@CO/ d' > ${prefix}_header.sam
 
   cat ${prefix}_2.sam >> ${prefix}_header.sam && mv ${prefix}_header.sam ${prefix}.sam && samtools view -b -@ ${NB_PROC} ${prefix}.sam > ${prefix}_unique.bam
 
