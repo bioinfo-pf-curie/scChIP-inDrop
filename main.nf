@@ -303,7 +303,7 @@ summary['Config Profile'] = workflow.profile
 log.info summary.collect { k,v -> "${k.padRight(15)}: $v" }.join("\n")
 log.info "========================================="
 
-/*
+
 process bcMapping {
   tag "${prefix} - ${index}"
   label 'bowtie2'
@@ -347,8 +347,7 @@ process bcMapping {
   bowtie2 --version > v_bowtie2.txt
   """
 }
-*/
-/*
+
 process bcSubset {
   tag "${prefix}"
   label 'seqtk'
@@ -371,6 +370,7 @@ process bcSubset {
   grep -v "*" ${prefix}_joined > ${prefix}joinedBarcodes.txt
   # print read ID with joined index number and add 'BC' before to have ex: BC014012
   awk '{print substr(\$1,1) \"\tBC\" substr(\$2,2) substr(\$3,2) substr(\$4,2)}' ${prefix}joinedBarcodes.txt > ${prefix}_readBarcodes.txt
+  
   # Select reads that have a correct barcode
   awk '{print \$1}' ${prefix}joinedBarcodes.txt > ${prefix}alignedFastqNames
   seqtk subseq <( gzip -cd ${reads[0]} ) ${prefix}alignedFastqNames > ${prefix}_whitelist.R1.fastq
@@ -385,62 +385,33 @@ process bcSubset {
   count_BCIndexes.sh 
   """
 }
-*/
 
-/*
-process fastxTrimmer {
+process trimReads {
   tag "${prefix}"
-  label 'fastx'
+  label 'cutadapt'
   label 'medCpu'
   label 'medMem'
 
-  publishDir "${params.outDir}/fastxTrimmer", mode: 'copy'
-
-  input:
-  set val(prefix), file(barcodedR1), file(barcodedR2) from chBarcodedReads_Fastx
-
-  output:
-  set val(prefix), file("*_trimmed.R2.fastq") into chTrimmedBc
-  file ("v_fastx.txt") into chFastxVersion
-
-  script:
-  linker_length = params.linker_length
-  """
-  # Trim linker + barcode from R2 reads for genome aligning	
-  fastx_trimmer -i ${barcodedR2} -f ${linker_length} -o ${prefix}_trimmed.R2.fastq
-
-  fastx_trimmer -h | grep "FASTX Toolkit" > v_fastx.txt
-  """
-}
-*/
-
-process fastxTrimmer {
-  tag "${prefix}"
-  label 'fastx'
-  label 'medCpu'
-  label 'medMem'
-
-  publishDir "${params.outDir}/fastxTrimmer", mode: 'copy'
+  publishDir "${params.outDir}/trimR2", mode: 'copy'
 
   input:
   set val(prefix), file(reads) from chRawReadsFastx
 
   output:
-  set val(prefix), file("*_trimmed.R2.fastq.gz") into chTrimmedBc
-  file ("v_fastx.txt") into chFastxVersion
+  set val(prefix), file("*_trimmed.R2.fastq.gz") into chTrimmedReads
+  set val(prefix), file("*_trimmed.log") into chTrimmedReadsLog
+  file("v_cutadapt.txt") into chCutadaptVersion
 
   script:
   linker_length = params.linker_length
   """
   # Trim linker + barcode from R2 reads for genome aligning	
-  fastx_trimmer -h | grep "FASTX Toolkit" > v_fastx.txt
-
-  cutadapt -u ${linker_length} --minimum-length=15 --cores=${task.cpus} ${reads[1]} -o ${prefix}_trimmed.R2.fastq
-  gzip ${prefix}_trimmed.R2.fastq
+  cutadapt -u ${linker_length} --cores=${task.cpus} ${reads[1]} -o ${prefix}_trimmed.R2.fastq > ${prefix}_trimmed.log
+  cutadapt --version &> v_cutadapt.txt
   """
 }
 
-/*
+
 process readsAlignment {
   tag "${prefix}"
   label 'star'
@@ -451,11 +422,10 @@ process readsAlignment {
 
   input :
   file genomeIndex from chStar.collect()
-  set val(prefix), file(trimmedR2) from chTrimmedBc
-  //set val(prefix), file(barcodedR1), file(barcodedR2) from chBarcodedReads_Star
   set val(prefix), file(reads) from chAlignment
+  set val(prefix), file(trimmedR2) from chTrimmedReads
+  //set val(prefix), file(barcodedR1), file(barcodedR2) from chBarcodedReads_Star
 
-	
   output :
   set val(prefix), file("*_aligned.bam") into chAlignedBam
   file "*.out" into chAlignmentLogs
@@ -464,13 +434,12 @@ process readsAlignment {
   script:
   """
   gzip -cd ${reads[0]} > R1.fastq
-  gzip -cd ${trimmedR2} > R2.fastq
   # Align R2 reads on genome indexes - paired end with R1 - (STAR)
   # Run STAR on barcoded reads
    STAR --alignEndsType EndToEnd --outFilterMultimapScoreRange 2 --winAnchorMultimapNmax 1000 --alignIntronMax 1 --peOverlapNbasesMin 10 --alignMatesGapMax 450 --limitGenomeGenerateRAM 25000000000 --outSAMunmapped Within \
     --runThreadN ${task.cpus} \
     --genomeDir $genomeIndex \
-    --readFilesIn R1.fastq R2.fastq \
+    --readFilesIn R1.fastq ${trimmedR2} \
     --runMode alignReads \
     --outFileNamePrefix ${prefix} 
 
@@ -481,7 +450,6 @@ process readsAlignment {
   rm ${prefix}Aligned.out.sam
   """
 }
-
 
 process  addBarcodes {
   tag "${prefix}"
@@ -494,7 +462,7 @@ process  addBarcodes {
   set val(prefix), file(readBarcodes) from chReadBcNames
 
   output:
-  //set (prefix), file("*_flagged.bam") into chAddedBarcodes
+  set (prefix), file("*_flagged.bam") into chAddedBarcodes
 
   script:
   """
@@ -531,7 +499,7 @@ process  addBarcodes {
   """
 }
 
-*/
+
 /***********
  * MultiQC *
  ***********/
