@@ -398,7 +398,7 @@ process trimReads {
   set val(prefix), file(reads) from chRawReadsFastx
 
   output:
-  set val(prefix), file("*_trimmed.R2.fastq.gz") into chTrimmedReads
+  set val(prefix), file("*_trimmed.R2.fastq") into chTrimmedReads
   set val(prefix), file("*_trimmed.log") into chTrimmedReadsLog
   file("v_cutadapt.txt") into chCutadaptVersion
 
