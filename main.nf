@@ -367,7 +367,7 @@ process bcMapping {
   
   
   #Join indexes 1 & 2 together (inner join)
-  join -t$' ' -1 1 -2 1 reads_matching_index_1_sorted.txt reads_matching_index_2_sorted.txt > tmp
+  join -t\$' ' -1 1 -2 1 reads_matching_index_1_sorted.txt reads_matching_index_2_sorted.txt > tmp
   
   
   #Count matched index 1 & 2
