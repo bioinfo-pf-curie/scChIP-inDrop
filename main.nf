@@ -332,7 +332,7 @@ process bcMapping {
   
   
   #Keep only reads that were matched by a unique index 1 + counting matched index1
-  awk -v out=\"\" '/XS/{next} \$2!=4{print \$1,\$3;count++} ;END{print count > \"count_index_1\"}' index_1_bowtie2.sam > reads_matching_index_1.txt
+  awk -v '/XS/{next} \$2!=4{print \$1,\$3;count++} ;END{print count > \"count_index_1\"}' index_1_bowtie2.sam > reads_matching_index_1.txt
   
 
   #Map INDEXES 2 against Index2 library
