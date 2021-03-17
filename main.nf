@@ -480,6 +480,7 @@ process bcSubset {
 
 */
 
+/*
 process trimReads {
   tag "${prefix}"
   label 'cutadapt'
@@ -593,6 +594,7 @@ process  addBarcodes {
   """
 }
 
+*/
 
 /***********
  * MultiQC *
