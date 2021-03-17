@@ -357,13 +357,13 @@ process bcMapping {
   sort -T /scratch/ --parallel=${task.cpus} -k1,1 reads_matching_index_2.txt > reads_matching_index_2_sorted.txt
   
   
-  rm reads_matching_index_2.txt"
+  rm reads_matching_index_2.txt
   
   
   sort -T /scratch/ --parallel=${task.cpus} -k1,1 reads_matching_index_3.txt > reads_matching_index_3_sorted.txt
   
   
-  rm reads_matching_index_3.txt"
+  rm reads_matching_index_3.txt
   
   
   #Join indexes 1 & 2 together (inner join)
