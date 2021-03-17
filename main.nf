@@ -375,7 +375,7 @@ process bcMapping {
   	
   
   #Join indexes (1 & 2) & 3 together to recompose full barcode (inner join)
-  join -t$' ' -1 1 -2 1 tmp reads_matching_index_3_sorted.txt > final
+  join -t\$' ' -1 1 -2 1 tmp reads_matching_index_3_sorted.txt > final
   
   
   #Reformat & count matched index (1 & 2 & 3) <=> barcode
