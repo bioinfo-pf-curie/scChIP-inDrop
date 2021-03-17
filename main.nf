@@ -316,7 +316,7 @@ process bcMapping {
   set val(prefix), file(reads) from chRawReadsBowtie2
  
   output:
-  set val(prefix), file("*_read_barcodes.txt") into chBarcodeMapped
+  set val(prefix), file("*_read_barcodes.txt") into chReadBcNames
 
   script:
   """
