@@ -305,7 +305,7 @@ log.info "========================================="
 
 
 process bcMapping {
-  tag "${prefix} - ${index}"
+  tag "${prefix}"
   label 'bowtie2'
   label 'highCpu'
   label 'highMem'
@@ -332,21 +332,21 @@ process bcMapping {
   
   
   #Keep only reads that were matched by a unique index 1 + counting matched index1
-  awk -v out=\"\" '/XS/{next} \$2!=4{print \$1,\$3;count++} ;END{print count > out\"/count_index_1\"}' index_1_bowtie2.sam > reads_matching_index_1.txt
+  awk -v out=\"\" '/XS/{next} \$2!=4{print \$1,\$3;count++} ;END{print count > \"/count_index_1\"}' index_1_bowtie2.sam > reads_matching_index_1.txt
   
 
   #Map INDEXES 2 against Index2 library
   bowtie2 -x /data/users/lhadjabe/Gitlab/ChIP-seq_single-cell_LBC/Barcodes/LBC/bowtie_2_index_short/ref_index_2 -f read_indexes_2.fasta -N 1 -L 8 --rdg 0,7 --rfg 0,7 --mp 7,7 --ignore-quals --score-min L,0,-1 -t --no-unal --no-hd -p ${task.cpus} > index_2_bowtie2.sam
   
   #Keep only reads that were matched by a unique index 2 + counting matched index2
-  awk -v out=\"\" '/XS/{next} \$2!=4{print \$1,\$3;count++} ;END{print count > out\"count_index_2\"}' index_2_bowtie2.sam > reads_matching_index_2.txt
+  awk -v =\"\" '/XS/{next} \$2!=4{print \$1,\$3;count++} ;END{print count > \"count_index_2\"}' index_2_bowtie2.sam > reads_matching_index_2.txt
   
   
   #Map INDEXES 3 against Index3 library
   bowtie2 -x /data/users/lhadjabe/Gitlab/ChIP-seq_single-cell_LBC/Barcodes/LBC/bowtie_2_index_short/ref_index_3 -f read_indexes_3.fasta -N 1 -L 8 --rdg 0,7 --rfg 0,7 --mp 7,7 --ignore-quals --score-min L,0,-1 -t --no-unal --no-hd -p ${task.cpus} > index_3_bowtie2.sam
   
   #Keep only reads that were matched by a unique index 3 + counting matched index3
-  awk -v out=\"\" '/XS/{next} \$2!=4{print \$1,\$3;count++} ;END{print count > out\"count_index_3\"}' index_3_bowtie2.sam > reads_matching_index_3.txt
+  awk -v =\"\" '/XS/{next} \$2!=4{print \$1,\$3;count++} ;END{print count > \"count_index_3\"}' index_3_bowtie2.sam > reads_matching_index_3.txt
   
   ##Sort indexes by read name: 
   sort -T /scratch/ --parallel=${task.cpus} -k1,1 reads_matching_index_1.txt > reads_matching_index_1_sorted.txt
@@ -379,7 +379,7 @@ process bcMapping {
   
   
   #Reformat & count matched index (1 & 2 & 3) <=> barcode
-  awk -v out=\"\" '{print substr(\$1,1)\"\tBC\"substr(\$2,2)substr(\$3,2)substr(\$4,2);count++} ;END{print count > out\"count_index_1_2_3\"}' final > ${prefix}_read_barcodes.txt
+  awk -v =\"\" '{print substr(\$1,1)\"\tBC\"substr(\$2,2)substr(\$3,2)substr(\$4,2);count++} ;END{print count > \"count_index_1_2_3\"}' final > ${prefix}_read_barcodes.txt
   
   
   ##Write logs
