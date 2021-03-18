@@ -351,19 +351,19 @@ process bcMapping {
   ##Sort indexes by read name: 
   sort -T /scratch/ --parallel=${task.cpus} -k1,1 reads_matching_index_1.txt > reads_matching_index_1_sorted.txt
   
-  rm reads_matching_index_1.txt
+  #rm reads_matching_index_1.txt
   
   
   sort -T /scratch/ --parallel=${task.cpus} -k1,1 reads_matching_index_2.txt > reads_matching_index_2_sorted.txt
   
   
-  rm reads_matching_index_2.txt
+  #rm reads_matching_index_2.txt
   
   
   sort -T /scratch/ --parallel=${task.cpus} -k1,1 reads_matching_index_3.txt > reads_matching_index_3_sorted.txt
   
   
-  rm reads_matching_index_3.txt
+  #rm reads_matching_index_3.txt
   
   
   #Join indexes 1 & 2 together (inner join)
@@ -593,6 +593,25 @@ process  addBarcodes {
   rm -f ${prefix}_unique.bam ${prefix}_flagged.sam ${prefix}_unique_sorted.sam
   """
 }
+
+process  addBarcodes {
+  tag "${prefix}"
+  label 'samtools'
+  label 'extraCpu'
+  label 'extraMem'
+
+  input:
+  set val(prefix), file(alignedBam) from chAlignedBam
+  set val(prefix), file(readBarcodes) from chReadBcNames
+
+  output:
+  set (prefix), file("*_flagged.bam") into chAddedBarcodes
+
+  script:
+  """
+
+  """
+  }
 
 */
 
