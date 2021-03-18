@@ -321,15 +321,15 @@ process bcMapping {
   script:
   """
   ##Extract three indexes from reads : 1 - 16 = index 1 ; 21 - 36 = index 2; 41 - 56 = index 3
-  gzip -cd  ${reads[1]} | awk -v start_index_1=1 -v size_index=20  'NR%4==1{print \">\"substr(\$0,2)}; NR%4==2{print substr(\$0,start_index_1,size_index)}' > read_indexes_1.fasta
+  gzip -cd  ${reads[1]} | awk -v start_index_1=1 -v size_index=16  'NR%4==1{print \">\"substr(\$0,2)}; NR%4==2{print substr(\$0,start_index_1,size_index)}' > read_indexes_1.fasta
   
-  gzip -cd  ${reads[1]} | awk -v start_index_2=21 -v size_index=20 'NR%4==1{print  \">\"substr(\$0,2)}; NR%4==2{print substr(\$0,start_index_2,size_index)}' > read_indexes_2.fasta
+  gzip -cd  ${reads[1]} | awk -v start_index_2=21 -v size_index=16 'NR%4==1{print  \">\"substr(\$0,2)}; NR%4==2{print substr(\$0,start_index_2,size_index)}' > read_indexes_2.fasta
   
-  gzip -cd  ${reads[1]} | awk -v start_index_3=41 -v size_index=20 'NR%4==1{print \">\"substr(\$0,2)}; NR%4==2{print substr(\$0,start_index_3,size_index)}' > read_indexes_3.fasta
+  gzip -cd  ${reads[1]} | awk -v start_index_3=41 -v size_index=16 'NR%4==1{print \">\"substr(\$0,2)}; NR%4==2{print substr(\$0,start_index_3,size_index)}' > read_indexes_3.fasta
   
   #Map INDEXES 1 against Index1 library
-  bowtie2 -x /data/users/lhadjabe/Gitlab/ChIP-seq_single-cell_LBC/Barcodes/LBC/bowtie_2_index_short/ref_index_1 -f read_indexes_1.fasta -N 1 -L 8 --rdg 0,7 --rfg 0,7 --mp 7,7 --ignore-quals --score-min L,0,-1 -t --no-unal --no-hd -p ${task.cpus} > index_1_bowtie2.sam
-  
+  bowtie2 -x /data/users/lhadjabe/Gitlab/ChIP-seq_single-cell_LBC/Barcodes/LBC/bowtie_2_index_short/ref_index_1 -f read_indexes_1.fasta \
+          -N 1 -L 8 --rdg 0,7 --rfg 0,7 --mp 7,7 --ignore-quals --score-min L,0,-1 -t --no-unal --no-hd -p ${task.cpus} > index_1_bowtie2.sam
   
   #Keep only reads that were matched by a unique index 1 + counting matched index1
   awk '/XS/{next} \$2!=4{print \$1,\$3;count++} ;END{print count > \"count_index_1\"}' index_1_bowtie2.sam > reads_matching_index_1.txt
