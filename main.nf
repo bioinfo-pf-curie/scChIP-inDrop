@@ -702,13 +702,13 @@ process  removePcrRtDup {
   ## Rename flagged.sorted -> flagged
   mv ${prefix}_flagged.sorted.bam ${prefix}_flagged.bam
   
-  n_unique_except_R1_unmapped_R2=\$(($n_mapped_barcoded - $n_pcr_duplicates - $n_rt_duplicates))
+  n_unique_except_R1_unmapped_R2=\$((\$n_mapped_barcoded - \$n_pcr_duplicates - \$n_rt_duplicates))
   
-  echo "## Number of reads mapped and barcoded: $n_mapped_barcoded" >> removePcrRtDup_counts.txt
-  echo "## Number of pcr duplicates: $n_pcr_duplicates" >> removePcrRtDup_counts.txt
-  echo "## Number of rt duplicates: $n_rt_duplicates" >> removePcrRtDup_counts.txt
-  echo "## Number of R1 mapped but R2 unmapped: $n_R1_mapped_R2_unmapped" >> removePcrRtDup_counts.txt
-  echo "## Number of reads after PCR and RT removal (not R1 unmapped R2): $n_unique_except_R1_unmapped_R2" >> removePcrRtDup_counts.txt
+  echo "## Number of reads mapped and barcoded: \$n_mapped_barcoded" >> removePcrRtDup_counts.txt
+  echo "## Number of pcr duplicates: \$n_pcr_duplicates" >> removePcrRtDup_counts.txt
+  echo "## Number of rt duplicates: \$n_rt_duplicates" >> removePcrRtDup_counts.txt
+  echo "## Number of R1 mapped but R2 unmapped: \$n_R1_mapped_R2_unmapped" >> removePcrRtDup_counts.txt
+  echo "## Number of reads after PCR and RT removal (not R1 unmapped R2): \$n_unique_except_R1_unmapped_R2" >> removePcrRtDup_counts.txt
 
   ## Remove all non used files
   rm -f count* *.sam
