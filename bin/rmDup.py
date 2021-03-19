@@ -17,7 +17,7 @@ import sys
 import os
 import re
 import pysam
-from itertools import izip
+import itertools 
 
 
 def get_args():
@@ -30,7 +30,7 @@ def get_args():
              "dist=",
              "output=",
              "tag=", 
-             "verbose", "help"])
+             , "help"])
     except getopt.GetoptError:
         usage()
         sys.exit(-1)
@@ -86,8 +86,6 @@ if __name__ == "__main__":
             tag = arg
         elif opt in ("-d", "--dist"):
             dist = int(arg)
-        elif opt in ("-v", "--verbose"):
-            verbose = True
         else:
             assert False, "unhandled option"
 

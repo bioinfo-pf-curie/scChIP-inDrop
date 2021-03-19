@@ -738,9 +738,9 @@ process  removeDup {
   """
   # window param
   if [ ! -z ${params.window} ]; then
-	  rmDup.py -i ${noPcrRtBam} -o ${prefix}_rmDup.bam -d ${params.window} -v
+	  rmDup.py -i ${noPcrRtBam} -o ${prefix}_rmDup.bam -d ${params.window} 
   else
-	  rmDup.py -i ${noPcrRtBam} -o ${prefix}_rmDup.bam -v 
+	  rmDup.py -i ${noPcrRtBam} -o ${prefix}_rmDup.bam
   fi
     
   #Create count Table from flagged - PCR dups - RT dups and window-based rmDup (need to sort by b arcode)
