@@ -16,17 +16,6 @@ import re
 import pysam
 from itertools import izip
 
-def usage():
-    """Usage function"""
-    print "Usage : python addBarcodeFlag.py"
-    print "-i/--input < mapped file [BAM]>"
-    print "[-d/--dist] <distance to consider reads as duplicates [INT]>"
-    print "[-o/--ofile] <output file [BAM]>"
-    print "[-t/--tag] <tag>"
-    print "[-v/--verbose] <Verbose>"
-    print "[-h/--help] <Help>"
-    return
-
 
 def get_args():
     """Get arguments"""
