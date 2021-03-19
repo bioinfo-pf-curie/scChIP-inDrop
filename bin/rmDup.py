@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# coding: utf-8
+
 """
 Mapping Research Pipeline                                                                                                                                                                                
 Copyleft 2018 Institut Curie                                                                                                                                                                             
