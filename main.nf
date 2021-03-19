@@ -543,7 +543,7 @@ process readsAlignment {
    STAR --alignEndsType EndToEnd --outFilterMultimapScoreRange 2 --winAnchorMultimapNmax 1000 --alignIntronMax 1 --peOverlapNbasesMin 10 --alignMatesGapMax 450 --limitGenomeGenerateRAM 25000000000 --outSAMunmapped Within \
     --runThreadN ${task.cpus} \
     --genomeDir $genomeIndex \
-    --readFilesIn barcodedR1 ${trimmedR2} \
+    --readFilesIn ${barcodedR1} ${trimmedR2} \
     --runMode alignReads \
     --outFileNamePrefix ${prefix} 
 
