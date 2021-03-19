@@ -306,7 +306,7 @@ summary['Config Profile'] = workflow.profile
 log.info summary.collect { k,v -> "${k.padRight(15)}: $v" }.join("\n")
 log.info "========================================="
 
-
+/*
 process bcMapping {
   tag "${prefix}"
   label 'bowtie2'
@@ -397,8 +397,8 @@ process bcMapping {
   n_index_1_2_3=\$(cat count_index_1_2_3)
   """
 }
+*/
 
-/*
 process bcMapping {
   tag "${prefix} - ${index}"
   label 'bowtie2'
@@ -485,7 +485,6 @@ process bcSubset {
   """
 }
 
-*/
 
 /*
 process trimReads {
