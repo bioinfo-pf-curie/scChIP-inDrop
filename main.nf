@@ -399,6 +399,7 @@ process bcMapping {
 }
 */
 
+//1- Align R2 reads on barcode indexes
 process bcMapping {
   tag "${prefix} - ${index}"
   label 'bowtie2'
@@ -435,7 +436,7 @@ process bcMapping {
     -N 1 -L 8 \
     --rdg 0,7 --rfg 0,7 --mp 7,7 \
     --ignore-quals --score-min L,0,-1 \
-    -t --no-hd \
+    -t --no-hd --no-unal\
     --reorder \
     -p ${task.cpus} > ${oprefix}Bowtie2.sam 2> ${oprefix}_bowtie2.log
  
@@ -447,6 +448,7 @@ process bcMapping {
   """
 }
 
+//1bis- Align R2 reads on barcode indexes
 process bcSubset {
   tag "${prefix}"
   label 'seqtk'
@@ -459,7 +461,7 @@ process bcSubset {
 
   output:
   set val(prefix), file("*_whitelist.R1.fastq"), file("*_whitelist.R2.fastq") into chBarcodedReads_Fastx, chBarcodedReads_Star
-  set val(prefix), file("*_readBarcodes.txt") into chReadBcNames ////
+  set val(prefix), file("*_readBarcodes.txt") into chReadBcNames 
   set val(prefix), file ("*_indexes_mqc.log") into chIndexCounts
 
   script:
@@ -486,7 +488,7 @@ process bcSubset {
 }
 
 
-
+//2-  Trim R2 reads for genome aligning	
 process trimReads {
   tag "${prefix}"
   label 'cutadapt'
@@ -512,6 +514,7 @@ process trimReads {
   """
 }
 
+//3- Align R2 reads on genome indexes - paired end with R1 - (STAR)
 process readsAlignment {
   tag "${prefix}"
   label 'star'
@@ -551,6 +554,7 @@ process readsAlignment {
   """
 }
 
+//4- Add cellular Barcode  - (STAR)
 process  addBarcodes {
   tag "${prefix}"
   label 'samtools'
@@ -601,6 +605,8 @@ process  addBarcodes {
   """
 }
 
+
+//5- Remove PCR and Reverse Transcription duplicate  - (STAR)
 process  removePcrRtDup {
   tag "${prefix}"
   label 'samtools'
@@ -707,7 +713,9 @@ process  removePcrRtDup {
   ## Remove all non used files
   rm -f count* *.sam
   """
-  }
+}
+
+// 6-bis Removing encode black regions
 
 
 
