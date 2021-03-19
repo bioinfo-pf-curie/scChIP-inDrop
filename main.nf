@@ -663,7 +663,7 @@ process  removePcrRtDup {
   then
 
     #Remove RT duplicates (if two consecutive reads have the same barcode and same R2 chr&start) but not same R1 
-    cat ${prefix}_flagged_rmPCR.sam | awk -v bc_field=\$barcode_field -v R2_field=\$posR2_field -v  'BEGIN{count=0};NR==1{print \$0;lastChrom=\$3;lastBarcode=\$bc_field; split( \$R2_field,lastR2Pos,\":\")} ; NR>=2{split( \$R2_field,R2Pos,\":\");if((R2Pos[3]==lastR2Pos[3]) && (R2Pos[3]!=2147483647) && (lastR2Pos[3]!=2147483647)  && ( \$3==lastChrom ) && (\$bc_field==lastBarcode) ){count++;next} {print \$0;lastChrom=\$3;lastBarcode=\$bc_field; split( \$R2_field,lastR2Pos,\":\") }} END {print count > \"count_RT_duplicates\"}' > ${prefix}_flagged_rmPCR_RT.sam
+    cat ${prefix}_flagged_rmPCR.sam | awk -v bc_field=\$barcode_field -v R2_field=\$posR2_field 'BEGIN{count=0};NR==1{print \$0;lastChrom=\$3;lastBarcode=\$bc_field; split( \$R2_field,lastR2Pos,\":\")} ; NR>=2{split( \$R2_field,R2Pos,\":\");if((R2Pos[3]==lastR2Pos[3]) && (R2Pos[3]!=2147483647) && (lastR2Pos[3]!=2147483647)  && ( \$3==lastChrom ) && (\$bc_field==lastBarcode) ){count++;next} {print \$0;lastChrom=\$3;lastBarcode=\$bc_field; split( \$R2_field,lastR2Pos,\":\") }} END {print count > \"count_RT_duplicates\"}' > ${prefix}_flagged_rmPCR_RT.sam
     
     samtools view -H ${prefix}_flagged.bam  | sed '/^@CO/ d' > ${prefix}_header.sam
 
@@ -718,8 +718,40 @@ process  removePcrRtDup {
   """
 }
 
-// 6-bis Removing encode black regions
+// 6-Remove duplicates by window (if R2 is unmapped) - prime (STAR)
+process  removeDup {
+  tag "${prefix}"
+  label 'samtools'
+  label 'extraCpu'
+  label 'extraMem'
 
+  publishDir "${params.outDir}/removeDup", mode: 'copy'
+
+  input:
+  set (prefix), file(noPcrRtBam) from chRTremoved
+
+  output:
+  
+
+  script:
+  """
+  if [ ! -z ${DUPLICATES_WINDOW} ]; then
+	cmd="${PYTHON_PATH}/python ${SCRIPTS_PATH}/rmDup.py -i ${prefix}.bam -o ${prefix}_rmDup.bam -d ${DUPLICATES_WINDOW} -v "
+    else
+	cmd="${PYTHON_PATH}/python ${SCRIPTS_PATH}/rmDup.py -i ${prefix}.bam -o ${prefix}_rmDup.bam -v "
+    fi
+    exec_cmd ${cmd} > ${log} 2>&1
+    #Create count Table from flagged - PCR dups - RT dups and window-based rmDup (need to sort by b arcode)
+    cmd="barcode_field=\$(samtools view ${prefix}_rmDup.bam  | sed -n \"1 s/XB.*//p\" | sed 's/[^\t]//g' | wc -c)"
+    exec_cmd ${cmd} >> $log 2>&1
+    cmd="samtools view ${prefix}_rmDup.bam | awk -v bc_field=$barcode_field '{print substr(\$bc_field,6)}' | sort | uniq -c > ${prefix}_rmDup.count"		
+    exec_cmd ${cmd} >> $log 2>&1
+
+    ## Index BAM file
+    cmd="samtools index ${prefix}_rmDup.bam"
+
+  """
+}
 
 
 /***********
