@@ -90,16 +90,7 @@ if __name__ == "__main__":
             verbose = True
         else:
             assert False, "unhandled option"
-
-    if verbose:
-        print "## rmDup.py"
-        print "## input =", inputFile
-        print "## dist =", dist
-        print "## tag =", tag
-        print "## output =", output
-        print "## verbose =", verbose
-        print
-
+            
     ## Read bam file
     if verbose:
         print "## Reading BAM file ..."
