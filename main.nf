@@ -711,38 +711,7 @@ process  removePcrRtDup {
   """
   }
 */
-/*
-## Remove Duplicates by "Window"
-remove_duplicates()
-{
-    ## logs
-    local log=$3/rmDup.log
-    echo -e "Removing window duplicates ..."
-    echo -e "Logs: $log"
-    echo
 
-    local odir=$2
-    mkdir -p ${odir}
-    local prefix=${odir}/$(basename $1 | sed -e 's/.bam$//')
-
-    if [ ! -z ${DUPLICATES_WINDOW} ]; then
-	cmd="${PYTHON_PATH}/python ${SCRIPTS_PATH}/rmDup.py -i ${prefix}.bam -o ${prefix}_rmDup.bam -d ${DUPLICATES_WINDOW} -v "
-    else
-	cmd="${PYTHON_PATH}/python ${SCRIPTS_PATH}/rmDup.py -i ${prefix}.bam -o ${prefix}_rmDup.bam -v "
-    fi
-    exec_cmd ${cmd} > ${log} 2>&1
-    #Create count Table from flagged - PCR dups - RT dups and window-based rmDup (need to sort by b arcode)
-    cmd="barcode_field=\$(samtools view ${prefix}_rmDup.bam  | sed -n \"1 s/XB.*//p\" | sed 's/[^\t]//g' | wc -c)"
-    
-    cmd="samtools view ${prefix}_rmDup.bam | awk -v bc_field=$barcode_field '{print substr(\$bc_field,6)}' | sort | uniq -c > ${prefix}_rmDup.count"		
-    
-
-    ## Index BAM file
-    cmd="samtools index ${prefix}_rmDup.bam"
-    
-    
-}
-*/
 
 /***********
  * MultiQC *
