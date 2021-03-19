@@ -500,8 +500,8 @@ process trimReads {
   publishDir "${params.outDir}/trimR2", mode: 'copy'
 
   input:
-  set val(prefix), file(barcodedR1), file(barcodedR2) from chBarcodedReads_Fastx
-  //set val(prefix), file(reads) from chRawReadsFastx
+  //set val(prefix), file(barcodedR1), file(barcodedR2) from chBarcodedReads_Fastx
+  set val(prefix), file(reads) from chRawReadsFastx
 
   output:
   set val(prefix), file("*_trimmed.R2.fastq") into chTrimmedReads
@@ -512,7 +512,7 @@ process trimReads {
   barcode_linker_len = params.barcode_linker_length
   """
   # Trim linker + barcode from R2 reads for genome aligning	
-  cutadapt -u ${barcode_linker_len} --cores=${task.cpus} ${barcodedR2} -o ${prefix}_trimmed.R2.fastq > ${prefix}_trimmed.log
+  cutadapt -u ${barcode_linker_len} --cores=${task.cpus} ${reads[1]} -o ${prefix}_trimmed.R2.fastq > ${prefix}_trimmed.log
   cutadapt --version &> v_cutadapt.txt
   """
 }
@@ -528,9 +528,9 @@ process readsAlignment {
 
   input :
   file genomeIndex from chStar.collect()
-  //set val(prefix), file(reads) from chAlignment
+  set val(prefix), file(reads) from chAlignment
   set val(prefix), file(trimmedR2) from chTrimmedReads
-  set val(prefix), file(barcodedR1), file(barcodedR2) from chBarcodedReads_Star
+  //set val(prefix), file(barcodedR1), file(barcodedR2) from chBarcodedReads_Star
 
   output :
   set val(prefix), file("*_aligned.bam") into chAlignedBam
@@ -539,13 +539,13 @@ process readsAlignment {
 
   script:
   """
-  # gzip -cd \${reads[0]} > R1.fastq
+  gzip -cd ${reads[0]} > R1.fastq
   # Align R2 reads on genome indexes - paired end with R1 - (STAR)
   # Run STAR on barcoded reads
    STAR --alignEndsType EndToEnd --outFilterMultimapScoreRange 2 --winAnchorMultimapNmax 1000 --alignIntronMax 1 --peOverlapNbasesMin 10 --alignMatesGapMax 450 --limitGenomeGenerateRAM 25000000000 --outSAMunmapped Within \
     --runThreadN ${task.cpus} \
     --genomeDir $genomeIndex \
-    --readFilesIn ${barcodedR1} ${trimmedR2} \
+    --readFilesIn R1.fastq ${trimmedR2} \
     --runMode alignReads \
     --outFileNamePrefix ${prefix} 
 
