@@ -56,6 +56,7 @@ def helpMessage() {
     -oldDesign [bool]             If dark cycles are used write this option as true. Default is false.
     -keepRTdup [bool]             Keep RT duplicats. Default is false.
     -window [int]                 Select the window size. Default is 50.
+    -minCounts [int]              Select the minimum count per barcodes after removing duplicates. Default is 1000.
  
   =======================================================
   Available Profiles
@@ -721,7 +722,7 @@ process  removePcrRtDup {
 // 6-Remove duplicates by window (if R2 is unmapped) - prime (STAR)
 process  removeDup {
   tag "${prefix}"
-  label 'samtools'
+  label 'python'
   label 'extraCpu'
   label 'extraMem'
 
@@ -731,7 +732,7 @@ process  removeDup {
   set (prefix), file(noPcrRtBam) from chRTremoved
 
   output:
-  set (prefix), file("*_rmDup.bam") into chNoDup
+  set (prefix), file("*_rmDup.bam") into chNoDup, chNoDup_blackReg
   set (prefix), file("*_rmDup.count") into chDupCounts
   
   script:
@@ -752,6 +753,108 @@ process  removeDup {
   samtools index ${prefix}_rmDup.bam
   """
 }
+
+// 6-bis Removing encode black regions
+/*
+process  removeBlackReg {
+  tag "${prefix}"
+  label 'bedtools'
+  label 'extraCpu'
+  label 'extraMem'
+
+  publishDir "${params.outDir}/removeBlackReg", mode: 'copy'
+
+  when:
+  !params.removeBlackRegion
+
+  input:
+  set (prefix), file (rmDupBam) from chNoDup_blackReg
+  file bedPath from chBlackRegBed ??????? 
+
+  output:
+  set (prefix), file("*_rmDup.bam") into chBlackRegBam
+  
+  script:
+  """
+  bedtools intersect -v -abam ${rmDupBam} -b ${bedPath} > ${rmDupBam}.2 && mv ${rmDupBam}.2 ${rmDupBam}
+  """
+}
+*/
+
+//7-Generate BedGraph file
+
+// TO CONTINUE !!!!!
+process bamToScBed{
+  tag "${prefix}"
+  label 'samtools'
+  label 'extraCpu'
+  label 'extraMem'
+
+  publishDir "${params.outDir}/bamToScBed", mode: 'copy'
+
+  when:
+  !params.removeBlackRegion
+
+  input:
+  set (prefix), file (rmDupBam) from chNoDup
+
+  output:
+  
+  script:
+  """
+  #Get barcode field & read length
+  barcode_field=$(samtools view ${rmDupBam}  | sed -n "1 s/XB.*//p" | sed 's/[^\t]//g' | wc -c)
+
+  #Create header
+  samtools view -H ${rmDupBam} | sed '/^@HD/ d' > ${prefix}_tmp_header.sam
+    
+  #Sort by Barcode, Chr, Pos R1 :
+  samtools view ${rmDupBam} | LC_ALL=C sort -T /scratch/ --parallel=${task.cpus} -t $'\t' -k \"\$barcode_field.8,\$barcode_field\"n -k 3.4,3g -k 4,4n >> ${prefix}_tmp_header.sam
+    
+  samtools view -@ ${task.cpus} -b ${prefix}_tmp_header.sam > ${prefix}_tmp.sorted.bam
+  
+  #Convert to bedgraph: Input must be sorted by barcode, chr, position R1
+  samtools view ${prefix}_tmp.sorted.bam | awk -v odir=scBed -v bc_field=\$barcode_field -v OFS="\t" -v count=${params.minCounts} '
+  BEGIN{
+    split(count,min_counts,",")
+  }
+  NR==1{
+    lastBC=substr(\$bc_field,6,15);
+    i=1
+    chr[i] = tracks/
+    start[i] = ${params.minCounts}
+    end[i] = ${params.minCounts} +1
+  }
+  NR>1{
+  if(lastBC==substr(\$bc_field,6,15)){
+    i = i +1
+    chr[i] = tracks/
+    start[i] = ${params.minCounts}
+    end[i] = ${params.minCounts} +1
+    }
+    else{
+    for(m=1; m<=length(min_counts);m++){
+      if(i > min_counts[m]){
+        for (x=1; x<=i; x++){
+          out = odir"_"min_counts[m]"/"lastBC".bed"
+          print chr[x],start[x],end[x] >> out
+        }
+      }
+    }
+    i=0
+    }
+     lastBC=substr(\$bc_field,6,15);
+}
+'
+
+  #Gzip
+  if [ -f scBed*/*.bed ];then
+  	for i in scBed*/*.bed; do gzip -9 \$i; done"
+  	exec_cmd ${cmd} >> ${log} 2>&1
+  fi
+  """
+}
+
 
 
 /***********
