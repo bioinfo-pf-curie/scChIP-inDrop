@@ -306,7 +306,6 @@ summary['Config Profile'] = workflow.profile
 log.info summary.collect { k,v -> "${k.padRight(15)}: $v" }.join("\n")
 log.info "========================================="
 
-/*
 process bcMapping {
   tag "${prefix}"
   label 'bowtie2'
@@ -397,8 +396,9 @@ process bcMapping {
   n_index_1_2_3=\$(cat count_index_1_2_3)
   """
 }
-*/
 
+
+/*
 //1- Align R2 reads on barcode indexes
 process bcMapping {
   tag "${prefix} - ${index}"
@@ -486,7 +486,7 @@ process bcSubset {
   count_BCIndexes.sh 
   """
 }
-
+*/
 
 //2-  Trim R2 reads for genome aligning	
 process trimReads {
