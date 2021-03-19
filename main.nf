@@ -321,11 +321,11 @@ process bcMapping {
   script:
   """
   ##Extract three indexes from reads : 1 - 16 = index 1 ; 21 - 36 = index 2; 41 - 56 = index 3
-  gzip -cd  ${reads[1]} | awk -v start_index_1=1 -v size_index=16  'NR%4==1{print \">\"substr(\$0,2)}; NR%4==2{print substr(\$0,start_index_1,size_index)}' > read_indexes_1.fasta
+  gzip -cd  ${reads[1]} | awk -v start_index_1=5 -v size_index=16  'NR%4==1{print ">"substr($0,2)}; NR%4==2{print substr(\$0,start_index_1,size_index)}' > read_indexes_1.fasta
   
-  gzip -cd  ${reads[1]} | awk -v start_index_2=21 -v size_index=16 'NR%4==1{print  \">\"substr(\$0,2)}; NR%4==2{print substr(\$0,start_index_2,size_index)}' > read_indexes_2.fasta
+  gzip -cd  ${reads[1]} | awk -v start_index_2=25 -v size_index=16 'NR%4==1{print  \">\"substr(\$0,2)}; NR%4==2{print substr(\$0,start_index_2,size_index)}' > read_indexes_2.fasta
   
-  gzip -cd  ${reads[1]} | awk -v start_index_3=41 -v size_index=16 'NR%4==1{print \">\"substr(\$0,2)}; NR%4==2{print substr(\$0,start_index_3,size_index)}' > read_indexes_3.fasta
+  gzip -cd  ${reads[1]} | awk -v start_index_3=45 -v size_index=16 'NR%4==1{print \">\"substr(\$0,2)}; NR%4==2{print substr(\$0,start_index_3,size_index)}' > read_indexes_3.fasta
   
   #Map INDEXES 1 against Index1 library
   bowtie2 -x /data/users/lhadjabe/Gitlab/ChIP-seq_single-cell_LBC/Barcodes/LBC/bowtie_2_index_short/ref_index_1 -f read_indexes_1.fasta \
@@ -552,6 +552,8 @@ process  addBarcodes {
   label 'extraCpu'
   label 'extraMem'
 
+  publishDir "${params.outDir}/addBarcodes", mode: 'copy'
+
   input:
   set val(prefix), file(alignedBam) from chAlignedBam
   set val(prefix), file(readBarcodes) from chReadBcNames
@@ -594,24 +596,293 @@ process  addBarcodes {
   """
 }
 
-process  addBarcodes {
+process  removePcrRtDup {
   tag "${prefix}"
   label 'samtools'
   label 'extraCpu'
   label 'extraMem'
 
+  publishDir "${params.outDir}/removePcrRtDup", mode: 'copy'
+
   input:
-  set val(prefix), file(alignedBam) from chAlignedBam
-  set val(prefix), file(readBarcodes) from chReadBcNames
+  set (prefix), file(flaggedBam) from chAddedBarcodes
 
   output:
   set (prefix), file("*_flagged.bam") into chAddedBarcodes
 
   script:
   """
+  barcode_field=\$(samtools view ${flaggedBam} | sed -n \"1 s/XB.*//p\" | sed 's/[^\t]//g' | wc -c)
+  posR2_field=\$(samtools view ${flaggedBam} | sed -n \"1 s/XS.*//p\" | sed 's/[^\t]//g' | wc -c)
+  printf '@HD\tVN:1.4\tSO:unsorted\n' > ${prefix}_header.sam
+  samtools view -H ${prefix}_flagged.bam | sed '/^@HD/ d' >> ${prefix}_header.sam
+  samtools view ${prefix}_flagged.bam | LC_ALL=C sort -T /scratch/ --parallel=${task.cpus} -t $'\t' -k \"$barcode_field.8,$barcode_field\"n -k 3.4,3g -k \"$posR2_field.6,$posR2_field\"n -k 4,4n >> ${prefix}_header.sam && samtools view -@ ${NB_PROC} -b ${prefix}_header.sam > ${prefix}_flagged.sorted.bam
 
+
+  samtools view ${prefix}_flagged.sorted.bam | awk -v bc_field=$barcode_field '{print substr(\$bc_field,6)}' |  uniq -c > ${prefix}_flagged.count
+  samtools view ${out_prefix}_flagged.sorted.bam | awk -v bc_field=$barcode_field -v R2_field=$posR2_field -v out=${out}/ 'BEGIN{countR1unmappedR2=0;countPCR=0};NR==1{print \$0;lastChrom=\$3;lastBarcode=\$bc_field; split( \$R2_field,lastR2Pos,\":\"); lastR1Pos=\$4} ; NR>=2{split( \$R2_field,R2Pos,\":\");R1Pos=\$4; if(R2Pos[3]==2147483647){print \$0;countR1unmappedR2++; next}; if( (R1Pos==lastR1Pos) && (R2Pos[3]==lastR2Pos[3]) && ( \$3==lastChrom ) && (\$bc_field==lastBarcode) ){countPCR++;next} {print \$0;lastR1Pos=\$4;lastChrom=\$3;lastBarcode=\$bc_field; split( \$R2_field,lastR2Pos,\":\") }} END {print countPCR > out\"count_PCR_duplicates\";print countR1unmappedR2 > out\"countR1unmappedR2\"}' > ${out_prefix}_flagged_rmPCR.sam
+  
+  samtools view -H ${prefix}_flagged.sorted.bam  | sed '/^@CO/ d' > ${prefix}_header.sam
+  
+  cat ${prefix}_flagged_rmPCR.sam >> ${prefix}_header.sam && samtools view -@ ${NB_PROC} -b ${prefix}_header.sam > ${prefix}_flagged_rmPCR.bam
+  
+  #Create count Table from flagged - PCR dups (already sorted by barcode)
+  cmd="samtools view ${prefix}_flagged_rmPCR.bam | awk -v bc_field=$barcode_field '{print substr(\$bc_field,6)}' |  uniq -c > ${prefix}_flagged_rmPCR.count"
+  exec_cmd ${cmd} >> $log 2>&1
+  
+  ## Sort flagged_rmPCR file
+  cmd="samtools sort -@ ${NB_PROC} ${prefix}_flagged_rmPCR.bam > ${prefix}_flagged_rmPCR_sorted.bam"
+  exec_cmd ${cmd} >> $log 2>&1
+  
+  ## Rename flagged_rmPCR file
+  cmd="mv ${prefix}_flagged_rmPCR_sorted.bam ${prefix}_flagged_rmPCR.bam"
+  exec_cmd ${cmd} >> $log 2>&1
+  
+  ## Index flagged_rmPCR file
+  cmd="samtools index ${prefix}_flagged_rmPCR.bam"
+  exec_cmd ${cmd} >> $log 2>&1
+  
+  if [ ${REMOVE_RT_DUPLICATES} == 'TRUE' ] 
+  then
+  echo -e "Removing RT duplicates"
+  #Remove RT duplicates (if two consecutive reads have the same barcode and same R2 chr&start) but not same R1 
+  cmd="cat ${prefix}_flagged_rmPCR.sam | awk -v bc_field=$barcode_field -v R2_field=$posR2_field -v out=${out}/ 'BEGIN{count=0};NR==1{print \$0;lastChrom=\$3;lastBarcode=\$bc_field; split( \$R2_field,lastR2Pos,\":\")} ; NR>=2{split( \$R2_field,R2Pos,\":\");if((R2Pos[3]==lastR2Pos[3]) && (R2Pos[3]!=2147483647) && (lastR2Pos[3]!=2147483647)  && ( \$3==lastChrom ) && (\$bc_field==lastBarcode) ){count++;next} {print \$0;lastChrom=\$3;lastBarcode=\$bc_field; split( \$R2_field,lastR2Pos,\":\") }} END {print count > out\"count_RT_duplicates\"}' > ${prefix}_flagged_rmPCR_RT.sam"
+  
+  
+  cmd="samtools view -H ${prefix}_flagged.bam  | sed '/^@CO/ d' > ${prefix}_header.sam"
+  
+  
+  cmd="cat ${prefix}_flagged_rmPCR_RT.sam >> ${prefix}_header.sam && samtools view -@ ${NB_PROC} -b ${prefix}_header.sam > ${prefix}_flagged_rmPCR_RT.bam"
+  
+  
+  #Create count Table from flagged - PCR dups - RT dups  (already sorted by barcode)
+  cmd="samtools view ${prefix}_flagged_rmPCR_RT.bam | awk -v bc_field=$barcode_field '{print substr(\$bc_field,6)}' | uniq -c > ${prefix}_flagged_rmPCR_RT.count"
+  
+  
+  ## Sort flagged_rmPCR_RT file
+  cmd="samtools sort -@ ${NB_PROC} ${prefix}_flagged_rmPCR_RT.bam > ${prefix}_flagged_rmPCR_RT_sorted.bam"
+  exec_cmd ${cmd} >> $log 2>&1
+  
+  ## Rename flagged_rmPCR_RT file
+  cmd="mv ${prefix}_flagged_rmPCR_RT_sorted.bam ${prefix}_flagged_rmPCR_RT.bam"
+  exec_cmd ${cmd} >> $log 2>&1
+  
+  else
+  echo -e "Not removing RT duplicates"
+  ## Copy flagged_rmPCR to flagged_rmPCR_RT
+  cmd="cp ${prefix}_flagged_rmPCR.bam ${prefix}_flagged_rmPCR_RT.bam"
+  exec_cmd ${cmd} >> $log 2>&1
+  cmd="cp ${prefix}_flagged_rmPCR.count ${prefix}_flagged_rmPCR_RT.count"
+  exec_cmd ${cmd} >> $log 2>&1
+  ## Set RT duplicate count to 0
+  cmd="echo 0 > ${out}/count_RT_duplicates"
+  exec_cmd ${cmd} >> $log 2>&1
+  fi
+  
+  ## Index flagged_rmPCR_RT file
+  cmd="samtools index ${prefix}_flagged_rmPCR_RT.bam"
+  exec_cmd ${cmd} >> $log 2>&1
+  
+  #Write logs
+  cmd="n_mapped_barcoded=\$(samtools view -c  ${prefix}_flagged.bam)"
+  exec_cmd ${cmd} >> $log 2>&1
+  cmd="n_pcr_duplicates=\$(cat ${out}/count_PCR_duplicates)"
+  exec_cmd ${cmd} >> $log 2>&1
+  cmd="n_rt_duplicates=\$(cat ${out}/count_RT_duplicates)"
+  exec_cmd ${cmd} >> $log 2>&1
+  cmd="n_R1_mapped_R2_unmapped=\$(cat ${out}/countR1unmappedR2)"
+  exec_cmd ${cmd} >> $log 2>&1
+  
+  ## Rename flagged.sorted -> flagged
+  cmd="mv ${prefix}_flagged.sorted.bam ${prefix}_flagged.bam"
+  exec_cmd ${cmd} >> $log 2>&1
+ 
+  cmd="n_unique_except_R1_unmapped_R2=\$(($n_mapped_barcoded - $n_pcr_duplicates - $n_rt_duplicates))"
+  exec_cmd ${cmd} >> $log 2>&1
+  
+  echo "## Number of reads mapped and barcoded: $n_mapped_barcoded" >> ${log}
+  echo "## Number of pcr duplicates: $n_pcr_duplicates" >> ${log}
+  echo "## Number of rt duplicates: $n_rt_duplicates" >> ${log}
+  echo "## Number of R1 mapped but R2 unmapped: $n_R1_mapped_R2_unmapped" >> ${log}
+  echo "## Number of reads after PCR and RT removal (not R1 unmapped R2): $n_unique_except_R1_unmapped_R2" >> ${log}
+  ## Remove all non used files
+  cmd="rm -f ${out}/count* ${out}/*.sam"
+  
   """
   }
+
+  remove_PCR_RT_duplicates_func(){
+  ## logs
+  local log=$3/remove_PCR_RT_duplicates_func.log 
+  echo -e "Running remove_PCR_RT_duplicates_func..."
+  echo -e "Logs: $log"
+  echo
+  local out=$2
+  local prefix=${out}/$(basename $1 | sed -e 's/_flagged.bam$//')
+    
+  ##Sort by barcode then chromosome then position R2
+  #Find the column containing the barcode tag XB
+  cmd="barcode_field=\$(samtools view ${prefix}_flagged.bam  | sed -n \"1 s/XB.*//p\" | sed 's/[^\t]//g' | wc -c)"
+  exec_cmd ${cmd} > ${log} 2>&1
+  
+  echo "The barcode field is $barcode_field" >> ${log}
+  
+  #Find the column containing the position R2 tag XS
+  cmd="posR2_field=\$(samtools view ${prefix}_flagged.bam  | sed -n \"1 s/XS.*//p\" | sed 's/[^\t]//g' | wc -c)"
+  exec_cmd ${cmd} >> ${log} 2>&1
+  
+  echo "The position R2 field is $posR2_field" >> ${log}
+  
+  cmd="printf '@HD\tVN:1.4\tSO:unsorted\n' > ${prefix}_header.sam"
+  exec_cmd ${cmd} >> ${log} 2>&1
+  
+  cmd="samtools view -H ${prefix}_flagged.bam | sed '/^@HD/ d' >> ${prefix}_header.sam"
+  exec_cmd ${cmd} >> ${log} 2>&1
+  
+  #Sort by barcode then chromosome then position R2 then Position R1 (for the PCR removal) 
+  #It is important to sort by R1 pos also	because the removal is done by comparing consecutive lines ! 
+  cmd="samtools view ${prefix}_flagged.bam | LC_ALL=C sort -T ${TMP_DIR} --parallel=${NB_PROC} -t $'\t' -k \"$barcode_field.8,$barcode_field\"n -k 3.4,3g -k \"$posR2_field.6,$posR2_field\"n -k 4,4n >> ${prefix}_header.sam && samtools view -@ ${NB_PROC} -b ${prefix}_header.sam > ${prefix}_flagged.sorted.bam"
+  exec_cmd ${cmd} >> ${log} 2>&1
+  
+  #Create count Table from flagged (already sorted by barcode)
+  cmd="samtools view ${prefix}_flagged.sorted.bam | awk -v bc_field=$barcode_field '{print substr(\$bc_field,6)}' |  uniq -c > ${prefix}_flagged.count"
+  exec_cmd ${cmd} >> ${log} 2>&1
+  
+  if [ ${REMOVE_BY} == 'position' ]
+  then
+  echo -e "Removing PCR duplicates using R2 POSITION"
+  #Remove PCR duplicates = read having same barcode, R1 position, same R2 POSITION, same chr ("exactly equal")
+  cmd="samtools view ${prefix}_flagged.sorted.bam | awk -v bc_field=$barcode_field -v R2_field=$posR2_field -v out=${out}/ 'BEGIN{countR1unmappedR2=0;countPCR=0};NR==1{print \$0;lastChrom=\$3;lastBarcode=\$bc_field; split( \$R2_field,lastR2Pos,\":\"); lastR1Pos=\$4} ; NR>=2{split( \$R2_field,R2Pos,\":\");R1Pos=\$4; if(R2Pos[3]==2147483647){print \$0;countR1unmappedR2++; next}; if( (R1Pos==lastR1Pos) && (R2Pos[3]==lastR2Pos[3]) && ( \$3==lastChrom ) && (\$bc_field==lastBarcode) ){countPCR++;next} {print \$0;lastR1Pos=\$4;lastChrom=\$3;lastBarcode=\$bc_field; split( \$R2_field,lastR2Pos,\":\") }} END {print countPCR > out\"count_PCR_duplicates\";print countR1unmappedR2 > out\"countR1unmappedR2\"}' > ${prefix}_flagged_rmPCR.sam"
+  exec_cmd ${cmd} >> $log 2>&1
+  else
+  echo -e "Removing PCR duplicates using R2 SEQUENCE"
+  cmd="seqR2_field=\$(samtools view ${prefix}_flagged.bam  | sed -n \"1 s/XD.*//p\" | sed 's/[^\t]//g' | wc -c)"
+  exec_cmd ${cmd} >> ${log} 2>&1
+  #Remove PCR duplicates = read having same barcode, R1 position, same R2 SEQUENCE, same chr
+  cmd="samtools view ${prefix}_flagged.sorted.bam | awk -v bc_field=$barcode_field -v R2_field=$seqR2_field -v out=${out}/ 'BEGIN{countR1unmappedR2=0;countPCR=0};NR==1{print \$0;lastChrom=\$3;lastBarcode=\$bc_field; split( \$R2_field,lastR2Seq,\":\"); lastR1Pos=\$4} ; NR>=2{split( \$R2_field,R2Seq,\":\");R1Pos=\$4; if( (R1Pos==lastR1Pos) && (R2Seq[3]==lastR2Seq[3]) && ( \$3==lastChrom ) && (\$bc_field==lastBarcode) ){countPCR++;next} {print \$0;lastR1Pos=\$4;lastChrom=\$3;lastBarcode=\$bc_field; split( \$R2_field,lastR2Seq,\":\") }} END {print countPCR > out\"count_PCR_duplicates\";print countR1unmappedR2 > out\"countR1unmappedR2\"}' > ${prefix}_flagged_rmPCR.sam"
+  exec_cmd ${cmd} >> $log 2>&1
+  fi
+  
+  cmd="samtools view -H ${prefix}_flagged.sorted.bam  | sed '/^@CO/ d' > ${prefix}_header.sam"
+  exec_cmd ${cmd} >> ${log} 2>&1
+  cmd="cat ${prefix}_flagged_rmPCR.sam >> ${prefix}_header.sam && samtools view -@ ${NB_PROC} -b ${prefix}_header.sam > ${prefix}_flagged_rmPCR.bam"
+  exec_cmd ${cmd} >> ${log} 2>&1
+  
+  #Create count Table from flagged - PCR dups (already sorted by barcode)
+  cmd="samtools view ${prefix}_flagged_rmPCR.bam | awk -v bc_field=$barcode_field '{print substr(\$bc_field,6)}' |  uniq -c > ${prefix}_flagged_rmPCR.count"
+  exec_cmd ${cmd} >> $log 2>&1
+  
+  ## Sort flagged_rmPCR file
+  cmd="samtools sort -@ ${NB_PROC} ${prefix}_flagged_rmPCR.bam > ${prefix}_flagged_rmPCR_sorted.bam"
+  exec_cmd ${cmd} >> $log 2>&1
+  
+  ## Rename flagged_rmPCR file
+  cmd="mv ${prefix}_flagged_rmPCR_sorted.bam ${prefix}_flagged_rmPCR.bam"
+  exec_cmd ${cmd} >> $log 2>&1
+  
+  ## Index flagged_rmPCR file
+  cmd="samtools index ${prefix}_flagged_rmPCR.bam"
+  exec_cmd ${cmd} >> $log 2>&1
+  
+  if [ ${REMOVE_RT_DUPLICATES} == 'TRUE' ] 
+  then
+  echo -e "Removing RT duplicates"
+  #Remove RT duplicates (if two consecutive reads have the same barcode and same R2 chr&start) but not same R1 
+  cmd="cat ${prefix}_flagged_rmPCR.sam | awk -v bc_field=$barcode_field -v R2_field=$posR2_field -v out=${out}/ 'BEGIN{count=0};NR==1{print \$0;lastChrom=\$3;lastBarcode=\$bc_field; split( \$R2_field,lastR2Pos,\":\")} ; NR>=2{split( \$R2_field,R2Pos,\":\");if((R2Pos[3]==lastR2Pos[3]) && (R2Pos[3]!=2147483647) && (lastR2Pos[3]!=2147483647)  && ( \$3==lastChrom ) && (\$bc_field==lastBarcode) ){count++;next} {print \$0;lastChrom=\$3;lastBarcode=\$bc_field; split( \$R2_field,lastR2Pos,\":\") }} END {print count > out\"count_RT_duplicates\"}' > ${prefix}_flagged_rmPCR_RT.sam"
+  exec_cmd ${cmd} >> ${log} 2>&1
+  
+  cmd="samtools view -H ${prefix}_flagged.bam  | sed '/^@CO/ d' > ${prefix}_header.sam"
+  exec_cmd ${cmd} >> ${log} 2>&1
+  
+  cmd="cat ${prefix}_flagged_rmPCR_RT.sam >> ${prefix}_header.sam && samtools view -@ ${NB_PROC} -b ${prefix}_header.sam > ${prefix}_flagged_rmPCR_RT.bam"
+  exec_cmd ${cmd} >> ${log} 2>&1
+  
+  #Create count Table from flagged - PCR dups - RT dups  (already sorted by barcode)
+  cmd="samtools view ${prefix}_flagged_rmPCR_RT.bam | awk -v bc_field=$barcode_field '{print substr(\$bc_field,6)}' | uniq -c > ${prefix}_flagged_rmPCR_RT.count"
+  exec_cmd ${cmd} >> ${log} 2>&1
+  
+  ## Sort flagged_rmPCR_RT file
+  cmd="samtools sort -@ ${NB_PROC} ${prefix}_flagged_rmPCR_RT.bam > ${prefix}_flagged_rmPCR_RT_sorted.bam"
+  exec_cmd ${cmd} >> $log 2>&1
+  
+  ## Rename flagged_rmPCR_RT file
+  cmd="mv ${prefix}_flagged_rmPCR_RT_sorted.bam ${prefix}_flagged_rmPCR_RT.bam"
+  exec_cmd ${cmd} >> $log 2>&1
+  
+  else
+  echo -e "Not removing RT duplicates"
+  ## Copy flagged_rmPCR to flagged_rmPCR_RT
+  cmd="cp ${prefix}_flagged_rmPCR.bam ${prefix}_flagged_rmPCR_RT.bam"
+  exec_cmd ${cmd} >> $log 2>&1
+  cmd="cp ${prefix}_flagged_rmPCR.count ${prefix}_flagged_rmPCR_RT.count"
+  exec_cmd ${cmd} >> $log 2>&1
+  ## Set RT duplicate count to 0
+  cmd="echo 0 > ${out}/count_RT_duplicates"
+  exec_cmd ${cmd} >> $log 2>&1
+  fi
+  
+  ## Index flagged_rmPCR_RT file
+  cmd="samtools index ${prefix}_flagged_rmPCR_RT.bam"
+  exec_cmd ${cmd} >> $log 2>&1
+  
+  #Write logs
+  cmd="n_mapped_barcoded=\$(samtools view -c  ${prefix}_flagged.bam)"
+  exec_cmd ${cmd} >> $log 2>&1
+  cmd="n_pcr_duplicates=\$(cat ${out}/count_PCR_duplicates)"
+  exec_cmd ${cmd} >> $log 2>&1
+  cmd="n_rt_duplicates=\$(cat ${out}/count_RT_duplicates)"
+  exec_cmd ${cmd} >> $log 2>&1
+  cmd="n_R1_mapped_R2_unmapped=\$(cat ${out}/countR1unmappedR2)"
+  exec_cmd ${cmd} >> $log 2>&1
+  
+  ## Rename flagged.sorted -> flagged
+  cmd="mv ${prefix}_flagged.sorted.bam ${prefix}_flagged.bam"
+  exec_cmd ${cmd} >> $log 2>&1
+ 
+  cmd="n_unique_except_R1_unmapped_R2=\$(($n_mapped_barcoded - $n_pcr_duplicates - $n_rt_duplicates))"
+  exec_cmd ${cmd} >> $log 2>&1
+  
+  echo "## Number of reads mapped and barcoded: $n_mapped_barcoded" >> ${log}
+  echo "## Number of pcr duplicates: $n_pcr_duplicates" >> ${log}
+  echo "## Number of rt duplicates: $n_rt_duplicates" >> ${log}
+  echo "## Number of R1 mapped but R2 unmapped: $n_R1_mapped_R2_unmapped" >> ${log}
+  echo "## Number of reads after PCR and RT removal (not R1 unmapped R2): $n_unique_except_R1_unmapped_R2" >> ${log}
+  ## Remove all non used files
+  cmd="rm -f ${out}/count* ${out}/*.sam"
+  exec_cmd ${cmd} >> $log 2>&1
+}
+
+## Remove Duplicates by "Window"
+remove_duplicates()
+{
+    ## logs
+    local log=$3/rmDup.log
+    echo -e "Removing window duplicates ..."
+    echo -e "Logs: $log"
+    echo
+
+    local odir=$2
+    mkdir -p ${odir}
+    local prefix=${odir}/$(basename $1 | sed -e 's/.bam$//')
+
+    if [ ! -z ${DUPLICATES_WINDOW} ]; then
+	cmd="${PYTHON_PATH}/python ${SCRIPTS_PATH}/rmDup.py -i ${prefix}.bam -o ${prefix}_rmDup.bam -d ${DUPLICATES_WINDOW} -v "
+    else
+	cmd="${PYTHON_PATH}/python ${SCRIPTS_PATH}/rmDup.py -i ${prefix}.bam -o ${prefix}_rmDup.bam -v "
+    fi
+    exec_cmd ${cmd} > ${log} 2>&1
+    #Create count Table from flagged - PCR dups - RT dups and window-based rmDup (need to sort by b arcode)
+    cmd="barcode_field=\$(samtools view ${prefix}_rmDup.bam  | sed -n \"1 s/XB.*//p\" | sed 's/[^\t]//g' | wc -c)"
+    exec_cmd ${cmd} >> $log 2>&1
+    cmd="samtools view ${prefix}_rmDup.bam | awk -v bc_field=$barcode_field '{print substr(\$bc_field,6)}' | sort | uniq -c > ${prefix}_rmDup.count"		
+    exec_cmd ${cmd} >> $log 2>&1
+
+    ## Index BAM file
+    cmd="samtools index ${prefix}_rmDup.bam"
+    exec_cmd ${cmd} >> $log 2>&1
+    
+}
+
 
 */
 
