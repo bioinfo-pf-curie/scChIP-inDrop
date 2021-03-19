@@ -30,7 +30,7 @@ def get_args():
              "dist=",
              "output=",
              "tag=", 
-             , "help"])
+             "help"])
     except getopt.GetoptError:
         usage()
         sys.exit(-1)
