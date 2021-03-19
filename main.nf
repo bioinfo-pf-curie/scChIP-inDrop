@@ -613,7 +613,7 @@ process  removePcrRtDup {
   set (prefix), file(flaggedBam) from chAddedBarcodes
 
   output:
-  set (prefix), file("*_flagged.bam") into chAddedBarcodes
+  set (prefix), file("*_flagged_rmPCR_RT.bam") into chRTremoved
   file("removePcrRtDup_counts.txt") into chPcrRtCounts
 
   script:
