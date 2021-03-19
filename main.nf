@@ -622,9 +622,9 @@ process  removePcrRtDup {
   """
   ##Sort by barcode then chromosome then position R2
   #Find the column containing the barcode tag XB
-  barcode_field=\$(samtools view ${flaggedBam} | sed -n \"1 s/XB.*//p\" | sed 's/[^\t]//g' | wc -c)
+  barcode_field=\$(samtools view ${flaggedBam} | sed -n \"1 s/XB.*\//p\" | sed 's/[^\t]//g' | wc -c)
   #Find the column containing the position R2 tag XS
-  posR2_field=\$(samtools view ${flaggedBam} | sed -n \"1 s/XS.*//p\" | sed 's/[^\t]//g' | wc -c)
+  posR2_field=\$(samtools view ${flaggedBam} | sed -n \"1 s/XS.*\//p\" | sed 's/[^\t]//g' | wc -c)
 
   printf '@HD\tVN:1.4\tSO:unsorted\n' > ${prefix}_header.sam
   samtools view -H ${prefix}_flagged.bam | sed '/^@HD/ d' >> ${prefix}_header.sam
