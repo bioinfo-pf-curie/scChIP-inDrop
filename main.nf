@@ -486,7 +486,7 @@ process bcSubset {
 }
 
 
-/*
+
 process trimReads {
   tag "${prefix}"
   label 'cutadapt'
@@ -504,14 +504,13 @@ process trimReads {
   file("v_cutadapt.txt") into chCutadaptVersion
 
   script:
-  linker_length = params.linker_length
+  barcode_linker_len = params.barcode_linker_length
   """
   # Trim linker + barcode from R2 reads for genome aligning	
-  cutadapt -u ${linker_length} --cores=${task.cpus} ${reads[1]} -o ${prefix}_trimmed.R2.fastq > ${prefix}_trimmed.log
+  cutadapt -u ${barcode_linker_len} --cores=${task.cpus} ${reads[1]} -o ${prefix}_trimmed.R2.fastq > ${prefix}_trimmed.log
   cutadapt --version &> v_cutadapt.txt
   """
 }
-
 
 process readsAlignment {
   tag "${prefix}"
@@ -709,7 +708,7 @@ process  removePcrRtDup {
   rm -f count* *.sam
   """
   }
-*/
+
 
 
 /***********
