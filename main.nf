@@ -731,25 +731,25 @@ process  removeDup {
   set (prefix), file(noPcrRtBam) from chRTremoved
 
   output:
+  set (prefix), file("*_rmDup.bam") into chNoDup
+  set (prefix), file("*_rmDup.count") into chDupCounts
   
-
   script:
   """
-  if [ ! -z ${DUPLICATES_WINDOW} ]; then
-	cmd="${PYTHON_PATH}/python ${SCRIPTS_PATH}/rmDup.py -i ${prefix}.bam -o ${prefix}_rmDup.bam -d ${DUPLICATES_WINDOW} -v "
-    else
-	cmd="${PYTHON_PATH}/python ${SCRIPTS_PATH}/rmDup.py -i ${prefix}.bam -o ${prefix}_rmDup.bam -v "
-    fi
-    exec_cmd ${cmd} > ${log} 2>&1
-    #Create count Table from flagged - PCR dups - RT dups and window-based rmDup (need to sort by b arcode)
-    cmd="barcode_field=\$(samtools view ${prefix}_rmDup.bam  | sed -n \"1 s/XB.*//p\" | sed 's/[^\t]//g' | wc -c)"
-    exec_cmd ${cmd} >> $log 2>&1
-    cmd="samtools view ${prefix}_rmDup.bam | awk -v bc_field=$barcode_field '{print substr(\$bc_field,6)}' | sort | uniq -c > ${prefix}_rmDup.count"		
-    exec_cmd ${cmd} >> $log 2>&1
-
-    ## Index BAM file
-    cmd="samtools index ${prefix}_rmDup.bam"
-
+  # window param
+  if [ ! -z ${params.window} ]; then
+	  rmDup.py -i ${noPcrRtBam} -o ${prefix}_rmDup.bam -d ${params.window} -v
+  else
+	  rmDup.py -i ${noPcrRtBam} -o ${prefix}_rmDup.bam -v 
+  fi
+    
+  #Create count Table from flagged - PCR dups - RT dups and window-based rmDup (need to sort by b arcode)
+  barcode_field=\$(samtools view ${prefix}_rmDup.bam  | sed -n \"1 s/XB.*//p\" | sed 's/[^\t]//g' | wc -c)
+  
+  samtools view ${prefix}_rmDup.bam | awk -v bc_field=\$barcode_field '{print substr(\$bc_field,6)}' | sort | uniq -c > ${prefix}_rmDup.count	
+  
+  ## Index BAM file
+  samtools index ${prefix}_rmDup.bam
   """
 }
 
