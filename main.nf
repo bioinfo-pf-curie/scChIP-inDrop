@@ -321,7 +321,7 @@ process bcMapping {
   script:
   """
   ##Extract three indexes from reads : 1 - 16 = index 1 ; 21 - 36 = index 2; 41 - 56 = index 3
-  gzip -cd  ${reads[1]} | awk -v start_index_1=5 -v size_index=16  'NR%4==1{print ">"substr($0,2)}; NR%4==2{print substr(\$0,start_index_1,size_index)}' > read_indexes_1.fasta
+  gzip -cd  ${reads[1]} | awk -v start_index_1=5 -v size_index=16  'NR%4==1{print ">"substr(\$0,2)}; NR%4==2{print substr(\$0,start_index_1,size_index)}' > read_indexes_1.fasta
   
   gzip -cd  ${reads[1]} | awk -v start_index_2=25 -v size_index=16 'NR%4==1{print  \">\"substr(\$0,2)}; NR%4==2{print substr(\$0,start_index_2,size_index)}' > read_indexes_2.fasta
   
