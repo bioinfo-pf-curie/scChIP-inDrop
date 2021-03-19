@@ -90,10 +90,8 @@ if __name__ == "__main__":
             verbose = True
         else:
             assert False, "unhandled option"
-            
+
     ## Read bam file
-    if verbose:
-        print "## Reading BAM file ..."
     samfile = pysam.Samfile(inputFile, "rb")
 
     ## output
@@ -142,13 +140,5 @@ if __name__ == "__main__":
 ##                    ref_perbarcode_rev[barcode] = r1
 # #                   outfile.write(r1)
         
-        if (reads_counter % 1000000 == 0 and verbose):
-            print "##", reads_counter
 
 samfile.close()
-
-if verbose:
-    print "## Number of reads: " + str(reads_counter)
-    print "## Number of duplicates: " + str(dup_counter)
-    print "## Number of reads after duplicates removal: " + str(reads_counter - dup_counter)
-
