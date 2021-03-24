@@ -811,9 +811,9 @@ process bamToBigWig{
   script:
   """
   if [[ ${params.removeBlackRegion}==true]]; then
-      local cmd="bamCoverage --bam ${chBlackRegBam} --outFileName ${prefix}.bw --numberOfProcessors ${task.cpus} --normalizeUsing CPM --ignoreForNormalization chrX --binSize 50 --smoothLength 500 --extendReads 150 --blackListFileName ${params.removeBlackRegion}"
+      bamCoverage --bam ${chBlackRegBam} --outFileName ${prefix}.bw --numberOfProcessors ${task.cpus} --normalizeUsing CPM --ignoreForNormalization chrX --binSize 50 --smoothLength 500 --extendReads 150 --blackListFileName ${params.removeBlackRegion}
   else
-      local cmd="bamCoverage --bam ${chNoDup_bigWig} --outFileName ${prefix}.bw --numberOfProcessors ${task.cpus} --normalizeUsing CPM --ignoreForNormalization chrX --binSize 50 --smoothLength 500 --extendReads 150"
+      bamCoverage --bam ${chNoDup_bigWig} --outFileName ${prefix}.bw --numberOfProcessors ${task.cpus} --normalizeUsing CPM --ignoreForNormalization chrX --binSize 50 --smoothLength 500 --extendReads 150
   fi
 
   """
