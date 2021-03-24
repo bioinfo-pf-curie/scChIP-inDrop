@@ -782,12 +782,11 @@ process  removeBlackReg {
   file blackListBed from chFilterBlackReg  
 
   output:
-  set (prefix), file("*_rmDup.bam") into chBlackRegBam
+  set (prefix), file("*_rmDup_rmBlackReg.bam") into chBlackRegBam
   
   script:
   """
-  bedtools intersect -v -abam ${rmDupBam} -b ${blackListBed} > "${rmDupBam}.2"
-  mv "${rmDupBam}.2" ${rmDupBam}
+  bedtools intersect -v -abam ${rmDupBam} -b ${blackListBed} > ${prefix}_rmDup_rmBlackReg.bam
   """
 }
 
