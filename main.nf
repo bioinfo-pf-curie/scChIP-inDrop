@@ -821,14 +821,14 @@ process bamToScBed{
   NR==1{
     lastBC=substr(\$bc_field,6,15);
     i=1
-    chr[i] = tracks/
+    chr[i] = tracks
     start[i] = ${params.minCounts}
     end[i] = ${params.minCounts} +1
   }
   NR>1{
   if(lastBC==substr(\$bc_field,6,15)){
     i = i +1
-    chr[i] = tracks/
+    chr[i] = tracks
     start[i] = ${params.minCounts}
     end[i] = ${params.minCounts} +1
     }
