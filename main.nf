@@ -817,7 +817,7 @@ process bamToScBed{
   samtools view -@ ${task.cpus} -b ${prefix}_tmp_header.sam > ${prefix}_tmp.sorted.bam
   
   #Convert to bedgraph: Input must be sorted by barcode, chr, position R1
-  samtools view ${prefix}_tmp.sorted.bam | awk -v odir=scBed -v bc_field=\$barcode_field -v OFS="\t" -v count=${params.minCounts} '
+  samtools view ${prefix}_tmp.sorted.bam | awk -v odir=tracks/scBed -v bc_field=\$barcode_field -v OFS="\t" -v count=${params.minCounts} '
   BEGIN{
     split(count,min_counts,",")
   }
