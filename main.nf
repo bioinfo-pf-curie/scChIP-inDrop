@@ -809,7 +809,7 @@ process bamToScBed{
   samtools view -H ${rmDupBam} | sed '/^@HD/ d' > ${prefix}_tmp_header.sam
     
   #Sort by Barcode, Chr, Pos R1 :
-  samtools view ${rmDupBam} | LC_ALL=C sort -T /scratch/ --parallel=${task.cpus} -t $'\t' -k \"\$barcode_field.8,\$barcode_field\"n -k 3.4,3g -k 4,4n >> ${prefix}_tmp_header.sam
+  samtools view ${rmDupBam} | LC_ALL=C sort -T /scratch/ --parallel=${task.cpus} -t \$'\t' -k \"\$barcode_field.8,\$barcode_field\"n -k 3.4,3g -k 4,4n >> ${prefix}_tmp_header.sam
     
   samtools view -@ ${task.cpus} -b ${prefix}_tmp_header.sam > ${prefix}_tmp.sorted.bam
   
