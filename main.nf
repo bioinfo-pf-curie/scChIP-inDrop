@@ -802,6 +802,9 @@ process bamToScBed{
   
   script:
   """
+  mkdir -p tracks
+  for i in $(echo ${params.minCounts} | sed 's/,/ /g'); do mkdir -p tracks/scBed_\$i/ ; done
+  
   #Get barcode field & read length
   barcode_field=\$(samtools view ${rmDupBam}  | sed -n "1 s/XB.*//p" | sed 's/[^\t]//g' | wc -c)
 
