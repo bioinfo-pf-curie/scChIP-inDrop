@@ -786,7 +786,8 @@ process  removeBlackReg {
   
   script:
   """
-  bedtools intersect -v -abam ${rmDupBam} -b ${blackListBed} > ${rmDupBam}.2 && mv ${rmDupBam}.2 ${rmDupBam}
+  bedtools intersect -v -abam ${rmDupBam} -b ${blackListBed} > "${rmDupBam}.2"
+  mv "${rmDupBam}.2" ${rmDupBam}
   """
 }
 
