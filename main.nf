@@ -850,7 +850,6 @@ process bamToScBed{
   #Gzip
   if [ -f scBed*/*.bed ];then
   	for i in scBed*/*.bed; do gzip -9 \$i; done"
-  	exec_cmd ${cmd} >> ${log} 2>&1
   fi
   """
 }
