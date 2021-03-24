@@ -57,6 +57,7 @@ def helpMessage() {
     -keepRTdup [bool]             Keep RT duplicats. Default is false.
     -window [int]                 Select the window size. Default is 50.
     -minCounts [int]              Select the minimum count per barcodes after removing duplicates. Default is 1000.
+    -removeBlackRegion [bool]     Remove black region. Default is true.
  
   =======================================================
   Available Profiles
@@ -156,6 +157,16 @@ if (params.bed12) {
     .fromPath(params.bed12)
     .ifEmpty { exit 1, "BED12 annotation file not found: ${params.bed12}" }
     .set { chBedGeneCov } 
+}else {
+  exit 1, "BED12 annotation file not not found: ${params.bed12}"
+}
+
+params.blackList = genomeRef ? params.genomes[ genomeRef ].blackList ?: false : false
+if (params.blackList) {
+  Channel  
+    .fromPath(params.blackList)
+    .ifEmpty { exit 1, "blackList annotation file not found: ${params.bed12}" }
+    .into { chFilterBlackReg; chFilterBlackReg_bamToBigWig } 
 }else {
   exit 1, "BED12 annotation file not not found: ${params.bed12}"
 }
@@ -732,7 +743,7 @@ process  removeDup {
   set (prefix), file(noPcrRtBam) from chRTremoved
 
   output:
-  set (prefix), file("*_rmDup.bam") into chNoDup, chNoDup_blackReg
+  set (prefix), file("*_rmDup.bam") into chNoDup, chNoDup_blackReg, chNoDup_bigWig
   set (prefix), file("*_rmDup.count") into chDupCounts
   
   script:
@@ -755,7 +766,6 @@ process  removeDup {
 }
 
 // 6-bis Removing encode black regions
-/*
 process  removeBlackReg {
   tag "${prefix}"
   label 'bedtools'
@@ -765,25 +775,52 @@ process  removeBlackReg {
   publishDir "${params.outDir}/removeBlackReg", mode: 'copy'
 
   when:
-  !params.removeBlackRegion
+  params.removeBlackRegion
 
   input:
   set (prefix), file (rmDupBam) from chNoDup_blackReg
-  file bedPath from chBlackRegBed ??????? 
+  file blackListBed from chFilterBlackReg  
 
   output:
   set (prefix), file("*_rmDup.bam") into chBlackRegBam
   
   script:
   """
-  bedtools intersect -v -abam ${rmDupBam} -b ${bedPath} > ${rmDupBam}.2 && mv ${rmDupBam}.2 ${rmDupBam}
+  bedtools intersect -v -abam ${rmDupBam} -b ${blackListBed} > ${rmDupBam}.2 && mv ${rmDupBam}.2 ${rmDupBam}
   """
 }
-*/
 
-//7-Generate BedGraph file
+//7-Generate BigWig file
+process bamToBigWig{
+  tag "${prefix}"
+  label 'deeptools'
+  label 'extraCpu'
+  label 'extraMem'
 
-// TO CONTINUE !!!!!
+  publishDir "${params.outDir}/bamToBigWig", mode: 'copy'
+
+  input:
+  // si pas de remove black list
+  set (prefix), file (rmDupBam) from chNoDup_bigWig
+  // si remove blacklist
+  set (prefix), file(rmDupBlackListBam) from chBlackRegBam
+  file blackListBed from chFilterBlackReg_bamToBigWig
+  
+  output:
+  
+  script:
+  """
+  if [[ ${params.removeBlackRegion}==true]]; then
+      local cmd="bamCoverage --bam ${chBlackRegBam} --outFileName ${prefix}.bw --numberOfProcessors ${task.cpus} --normalizeUsing CPM --ignoreForNormalization chrX --binSize 50 --smoothLength 500 --extendReads 150 --blackListFileName ${params.removeBlackRegion}"
+  else
+      local cmd="bamCoverage --bam ${chNoDup_bigWig} --outFileName ${prefix}.bw --numberOfProcessors ${task.cpus} --normalizeUsing CPM --ignoreForNormalization chrX --binSize 50 --smoothLength 500 --extendReads 150"
+  fi
+
+  """
+}
+
+
+//7bis-Generate BedGraph file
 process bamToScBed{
   tag "${prefix}"
   label 'samtools'
@@ -791,9 +828,6 @@ process bamToScBed{
   label 'extraMem'
 
   publishDir "${params.outDir}/bamToScBed", mode: 'copy'
-
-  when:
-  !params.removeBlackRegion
 
   input:
   set (prefix), file (rmDupBam) from chNoDup

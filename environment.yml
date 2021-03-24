@@ -12,6 +12,8 @@ dependencies:
   - bioconda::samtools
   - conda-forge::more-itertools
   - bioconda::pysam
+  - bioconda::bedtools=2.30.0
+  - bioconda::deeptools=3.5.1
 
   #- bioconda::samtools=1.11=h6270b1f_0
   #- bioconda::star=2.7.6a=0
