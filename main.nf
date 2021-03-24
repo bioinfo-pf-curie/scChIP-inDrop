@@ -558,7 +558,7 @@ process readsAlignment {
   """
 }
 
-//4- Add cellular Barcode  - (STAR)
+//4- Add cellular Barcode - (STAR)
 process  addBarcodes {
   tag "${prefix}"
   label 'samtools'
