@@ -852,8 +852,10 @@ process bamToScBed{
 
   #Gzip
   if [ -f scBed*/*.bed ];then
-  	for i in scBed*/*.bed; do gzip -9 \$i; done"
+  	for i in scBed*/*.bed; do gzip -9 \$i; done
   fi
+
+  rm -f ${prefix}_tmp_header.sam ${prefix}_tmp.sorted.bam
   """
 }
 
