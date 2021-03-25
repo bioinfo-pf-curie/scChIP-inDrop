@@ -832,12 +832,10 @@ process bamToBigWig{
   else
       bamCoverage --bam ${rmDupBlackListBam} --outFileName ${prefix}.bw --numberOfProcessors ${task.cpus} --normalizeUsing CPM --ignoreForNormalization chrX --binSize 50 --smoothLength 500 --extendReads 150
   fi
-
   """
 }
 
-
-//7bis-Generate scBed file
+// 7bis-Generate scBed file
 process bamToScBed{
   tag "${prefix}"
   label 'samtools'
