@@ -787,6 +787,9 @@ process  removeBlackReg {
   script:
   """
   bedtools intersect -v -abam ${rmDupBam} -b ${blackListBed} > ${prefix}_rmDup_rmBlackReg.bam
+
+  ## Index BAM file
+  samtools index ${prefix}_rmDup_rmBlackReg.bam
   """
 }
 
