@@ -851,7 +851,7 @@ process bamToScBed{
   // pas le rm black region ?
 
   output:
-  file ("scBed_${params.minCounts}/*.bed") into chScBed
+  set ("scBed_${params.minCounts}/"), file ("*.bed") into chScBed
   
   script:
   """
@@ -860,13 +860,13 @@ process bamToScBed{
   
   #Get barcode field & read length
   barcode_field=\$(samtools view ${rmDupBam}  | sed -n "1 s/XB.*//p" | sed 's/[^\t]//g' | wc -c)
-
+  
   #Create header
   samtools view -H ${rmDupBam} | sed '/^@HD/ d' > ${prefix}_tmp_header.sam
-    
+  
   #Sort by Barcode, Chr, Pos R1 :
   samtools view ${rmDupBam} | LC_ALL=C sort -T /scratch/ --parallel=${task.cpus} -t \$'\t' -k \"\$barcode_field.8,\$barcode_field\"n -k 3.4,3g -k 4,4n >> ${prefix}_tmp_header.sam
-    
+  
   samtools view -@ ${task.cpus} -b ${prefix}_tmp_header.sam > ${prefix}_tmp.sorted.bam
   
   #Convert to bedgraph: Input must be sorted by barcode, chr, position R1
@@ -903,13 +903,13 @@ process bamToScBed{
 }
 '
 
-  #Gzip
-  if [ -f scBed*/*.bed ];then
-  	for i in scBed*/*.bed; do gzip -9 \$i; done
-  fi
+#Gzip
+if [ -f scBed*/*.bed ];then
+  for i in scBed*/*.bed; do gzip -9 \$i; done
+fi
 
-  rm -f ${prefix}_tmp_header.sam ${prefix}_tmp.sorted.bam
-  """
+rm -f ${prefix}_tmp_header.sam ${prefix}_tmp.sorted.bam
+"""
 }
 
 
