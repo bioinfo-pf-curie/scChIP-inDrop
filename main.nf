@@ -755,7 +755,7 @@ process  removeDup {
   set (prefix), file(noPcrRtBam) from chRTremoved
 
   output:
-  set (prefix), file("*_rmDup.bam"), ,  file("*_rmDup.bam.bai") into chNoDup, chNoDup_blackReg, chNoDup_bigWig, chNoDup_countMatrices
+  set (prefix), file("*_rmDup.bam"),  file("*_rmDup.bam.bai") into chNoDup, chNoDup_blackReg, chNoDup_bigWig, chNoDup_countMatrices
   set (prefix), file("*_rmDup.count") into chDupCounts
   
   script:
