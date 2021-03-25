@@ -806,7 +806,7 @@ process bamToBigWig{
   // si pas de remove black list
   set (prefix), file (rmDupBam) from chNoDup_bigWig
   // si remove blacklist
-  set (prefix), file(rmDupBlackListBam) from chBlackRegBam
+  set (prefix), file(rmDupBlackListBam), file(rmDupBlackListBai) from chBlackRegBam
   file blackListBed from chFilterBlackReg_bamToBigWig
   
   output:
