@@ -851,7 +851,7 @@ process bamToScBed{
   // pas le rm black region ?
 
   output:
-  file ("*.bed") into chScBed
+  set (prefix), file ("*.bed") into chScBed
   
   script:
   """
@@ -870,43 +870,38 @@ process bamToScBed{
   samtools view -@ ${task.cpus} -b ${prefix}_tmp_header.sam > ${prefix}_tmp.sorted.bam
   
   #Convert to bedgraph: Input must be sorted by barcode, chr, position R1
-  samtools view ${prefix}_tmp.sorted.bam | awk -v odir=tracks/scBed -v bc_field=\$barcode_field -v OFS="\t" -v count=${params.minCounts} '
+  samtools view ${prefix}_tmp.sorted.bam | awk  -v bc_field=\$barcode_field -v OFS="\t" -v count=${params.minCounts} '
   BEGIN{
     split(count,min_counts,",")
   }
   NR==1{
     lastBC=substr(\$bc_field,6,15);
     i=1
-    chr[i] = tracks
     start[i] = ${params.minCounts}
     end[i] = ${params.minCounts} +1
   }
   NR>1{
   if(lastBC==substr(\$bc_field,6,15)){
     i = i +1
-    chr[i] = tracks
     start[i] = ${params.minCounts}
     end[i] = ${params.minCounts} +1
-    }
-    else{
+  }else{
     for(m=1; m<=length(min_counts);m++){
       if(i > min_counts[m]){
         for (x=1; x<=i; x++){
-          out = odir"_"min_counts[m]"/"lastBC".bed"
+          out = "${prefix}_"min_counts[m]"/"lastBC".bed"
           print chr[x],start[x],end[x] >> out
         }
       }
     }
-    i=0
-    }
-     lastBC=substr(\$bc_field,6,15);
+  i=0
+  }
+  lastBC=substr(\$bc_field,6,15);
 }
 '
 
 #Gzip
-if [ -f scBed*/*.bed ];then
-  for i in scBed*/*.bed; do gzip -9 \$i; done
-fi
+gzip -9 ${prefix}*.bed
 
 rm -f ${prefix}_tmp_header.sam ${prefix}_tmp.sorted.bam
 """
@@ -945,17 +940,17 @@ process countMatrices {
         sc2counts.py -i ${rmDupBam} -o ${prefix}_counts_\$bsize.tsv \$opts -s \$barcodes -v
   done
 
-    for bed in $bed
-    do
-      opts="-B \$bed"
-      if [ ! -z ${params.minCounts} ]; then
-          opts="\$opts -f ${params.minCounts} "
-      fi
-	    osuff=\$(basename \$bed | sed -e 's/.bed//')
-      sc2counts.py -i ${rmDupBam} -o ${prefix}_counts_\$osuff.tsv \$opts -s \$barcodes -v
-    done
-   
-     for i in ${prefix}*.tsv; do gzip -9 \$i; done
+  for bed in $bed
+  do
+    opts="-B \$bed"
+    if [ ! -z ${params.minCounts} ]; then
+        opts="\$opts -f ${params.minCounts} "
+    fi
+    osuff=\$(basename \$bed | sed -e 's/.bed//')
+    sc2counts.py -i ${rmDupBam} -o ${prefix}_counts_\$osuff.tsv \$opts -s \$barcodes -v
+  done
+  
+    for i in ${prefix}*.tsv; do gzip -9 \$i; done
   """
 }
 
