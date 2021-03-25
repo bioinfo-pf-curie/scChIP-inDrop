@@ -807,10 +807,11 @@ process bamToBigWig{
   file blackListBed from chFilterBlackReg_bamToBigWig
   
   output:
+  set (prefix), file("*.bw") into chBigWig
   
   script:
   """
-  if [[ ${params.removeBlackRegion}==true ]]
+  if [[${params.removeBlackRegion}==true]]
   then
       bamCoverage --bam ${chBlackRegBam} --outFileName ${prefix}.bw --numberOfProcessors ${task.cpus} --normalizeUsing CPM --ignoreForNormalization chrX --binSize 50 --smoothLength 500 --extendReads 150 --blackListFileName ${params.removeBlackRegion}
   else
