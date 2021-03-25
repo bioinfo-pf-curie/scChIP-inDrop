@@ -766,7 +766,7 @@ process  removeDup {
   else
 	  rmDup.py -i ${noPcrRtBam} -o ${prefix}_rmDup.bam
   fi
-  
+    
   #Create count Table from flagged - PCR dups - RT dups and window-based rmDup (need to sort by b arcode)
   barcode_field=\$(samtools view ${prefix}_rmDup.bam  | sed -n \"1 s/XB.*//p\" | sed 's/[^\t]//g' | wc -c)
   
@@ -832,10 +832,12 @@ process bamToBigWig{
   else
       bamCoverage --bam ${rmDupBlackListBam} --outFileName ${prefix}.bw --numberOfProcessors ${task.cpus} --normalizeUsing CPM --ignoreForNormalization chrX --binSize 50 --smoothLength 500 --extendReads 150
   fi
+
   """
 }
 
-// 7bis-Generate scBed file
+
+//7bis-Generate scBed file
 process bamToScBed{
   tag "${prefix}"
   label 'samtools'
@@ -849,7 +851,7 @@ process bamToScBed{
   // pas le rm black region ?
 
   output:
-  set (prefix), file ("*.bed") into chScBed
+  file ("scBed_${params.minCounts}/*") into chScBed
   
   script:
   """
@@ -858,7 +860,7 @@ process bamToScBed{
   
   #Get barcode field & read length
   barcode_field=\$(samtools view ${rmDupBam}  | sed -n "1 s/XB.*//p" | sed 's/[^\t]//g' | wc -c)
-
+  
   #Create header
   samtools view -H ${rmDupBam} | sed '/^@HD/ d' > ${prefix}_tmp_header.sam
   
@@ -868,38 +870,43 @@ process bamToScBed{
   samtools view -@ ${task.cpus} -b ${prefix}_tmp_header.sam > ${prefix}_tmp.sorted.bam
   
   #Convert to bedgraph: Input must be sorted by barcode, chr, position R1
-  samtools view ${prefix}_tmp.sorted.bam | awk  -v bc_field=\$barcode_field -v OFS="\t" -v count=${params.minCounts} '
+  samtools view ${prefix}_tmp.sorted.bam | awk -v odir=tracks/scBed -v bc_field=\$barcode_field -v OFS="\t" -v count=${params.minCounts} '
   BEGIN{
     split(count,min_counts,",")
   }
   NR==1{
     lastBC=substr(\$bc_field,6,15);
     i=1
+    chr[i] = tracks
     start[i] = ${params.minCounts}
     end[i] = ${params.minCounts} +1
   }
   NR>1{
   if(lastBC==substr(\$bc_field,6,15)){
     i = i +1
+    chr[i] = tracks
     start[i] = ${params.minCounts}
     end[i] = ${params.minCounts} +1
-  }else{
+    }
+    else{
     for(m=1; m<=length(min_counts);m++){
       if(i > min_counts[m]){
         for (x=1; x<=i; x++){
-          out = "${prefix}_"min_counts[m]"/"lastBC".bed"
+          out = odir"_"min_counts[m]"/"lastBC".bed"
           print chr[x],start[x],end[x] >> out
         }
       }
     }
-  i=0
-  }
-  lastBC=substr(\$bc_field,6,15);
+    i=0
+    }
+     lastBC=substr(\$bc_field,6,15);
 }
 '
 
 #Gzip
-gzip -9 ${prefix}*.bed
+if [ -f scBed*/*.bed ];then
+  for i in scBed*/*.bed; do gzip -9 \$i; done
+fi
 
 rm -f ${prefix}_tmp_header.sam ${prefix}_tmp.sorted.bam
 """
@@ -938,17 +945,17 @@ process countMatrices {
         sc2counts.py -i ${rmDupBam} -o ${prefix}_counts_\$bsize.tsv \$opts -s \$barcodes -v
   done
 
-  for bed in $bed
-  do
-    opts="-B \$bed"
-    if [ ! -z ${params.minCounts} ]; then
-        opts="\$opts -f ${params.minCounts} "
-    fi
-    osuff=\$(basename \$bed | sed -e 's/.bed//')
-    sc2counts.py -i ${rmDupBam} -o ${prefix}_counts_\$osuff.tsv \$opts -s \$barcodes -v
-  done
-  
-    for i in ${prefix}*.tsv; do gzip -9 \$i; done
+    for bed in $bed
+    do
+      opts="-B \$bed"
+      if [ ! -z ${params.minCounts} ]; then
+          opts="\$opts -f ${params.minCounts} "
+      fi
+	    osuff=\$(basename \$bed | sed -e 's/.bed//')
+      sc2counts.py -i ${rmDupBam} -o ${prefix}_counts_\$osuff.tsv \$opts -s \$barcodes -v
+    done
+   
+     for i in ${prefix}*.tsv; do gzip -9 \$i; done
   """
 }
 
