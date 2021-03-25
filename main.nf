@@ -782,7 +782,7 @@ process  removeBlackReg {
   file blackListBed from chFilterBlackReg  
 
   output:
-  set (prefix), file("*_rmDup_rmBlackReg.bam") into chBlackRegBam
+  set (prefix), file("*_rmDup_rmBlackReg.bam"),  file("*_rmDup_rmBlackReg.bai") into chBlackRegBam
   
   script:
   """
