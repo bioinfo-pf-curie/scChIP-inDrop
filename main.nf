@@ -927,7 +927,7 @@ process countMatrices {
 
   output:
   set (prefix), file ("*.tsv.gz") into chCountMatricesLog
-  set (prefix), file ("*_counts.log") into chCountMatricesLog
+  set (prefix), file ("*_counts.log") into chCountMatrices
   
   script:
   """
