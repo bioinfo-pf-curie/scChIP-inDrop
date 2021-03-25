@@ -951,7 +951,7 @@ process countMatrices {
       if [ ! -z ${params.minCounts} ]; then
           opts="\$opts -f ${params.minCounts} "
       fi
-	    osuff=$(basename \$bed | sed -e 's/.bed//')
+	    osuff=\$(basename \$bed | sed -e 's/.bed//')
       sc2counts.py -i ${rmDupBam} -o ${prefix}_counts_\$osuff.tsv \$opts -s \$barcodes -v
     done
    
