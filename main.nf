@@ -58,10 +58,12 @@ def helpMessage() {
     -window [int]                 Select the window size. Default is 50.
     -minCounts [int]              Select the minimum count per barcodes after removing duplicates. Default is 1000.
     -removeBlackRegion [bool]     Remove black region. Default is true.
+    -mark [str]                   Histone mark targeted 'h3k27me3', 'h3k4me3' or 'unbound'. Default is 'h3k27me3'.
+    -binSize [int]                Bin size to use (in base pairs). Default is 50000. 
  
   =======================================================
-  Available Profiles
 
+  Available Profiles:
     -profile test                Set up the test dataset
     -profile conda               Build a single conda for with all tools used by the different processes before running the pipeline
     -profile multiconda          Build a new conda environment for each tools used by the different processes before running the pipeline
@@ -169,6 +171,16 @@ if (params.blackList) {
     .into { chFilterBlackReg; chFilterBlackReg_bamToBigWig } 
 }else {
   exit 1, "BED12 annotation file not not found: ${params.bed12}"
+}
+
+params.bed = genomeRef ? params.genomes[ genomeRef ].bed ?: false : false
+if (params.bed) {
+  Channel  
+    .fromPath(params.bed)
+    .ifEmpty { exit 1, "BED annotation file not found: ${params.bed}" }
+    .into { chBedCountMatrices } 
+}else {
+  exit 1, "BED annotation file not not found: ${params.bed}"
 }
 
 //------- Custom --------
@@ -573,8 +585,8 @@ process readsAlignment {
 process  addBarcodes {
   tag "${prefix}"
   label 'samtools'
-  label 'extraCpu'
-  label 'extraMem'
+  label 'highCpu'
+  label 'highMem'
 
   publishDir "${params.outDir}/addBarcodes", mode: 'copy'
 
@@ -625,8 +637,8 @@ process  addBarcodes {
 process  removePcrRtDup {
   tag "${prefix}"
   label 'samtools'
-  label 'extraCpu'
-  label 'extraMem'
+  label 'highCpu'
+  label 'highMem'
 
   publishDir "${params.outDir}/removePcrRtDup", mode: 'copy'
 
@@ -734,8 +746,8 @@ process  removePcrRtDup {
 process  removeDup {
   tag "${prefix}"
   label 'python'
-  label 'extraCpu'
-  label 'extraMem'
+  label 'medCpu'
+  label 'medMem'
 
   publishDir "${params.outDir}/removeDup", mode: 'copy'
 
@@ -743,7 +755,7 @@ process  removeDup {
   set (prefix), file(noPcrRtBam) from chRTremoved
 
   output:
-  set (prefix), file("*_rmDup.bam") into chNoDup, chNoDup_blackReg, chNoDup_bigWig
+  set (prefix), file("*_rmDup.bam"), ,  file("*_rmDup.bam.bai") into chNoDup, chNoDup_blackReg, chNoDup_bigWig, chNoDup_countMatrices
   set (prefix), file("*_rmDup.count") into chDupCounts
   
   script:
@@ -769,8 +781,8 @@ process  removeDup {
 process  removeBlackReg {
   tag "${prefix}"
   label 'bedtools'
-  label 'extraCpu'
-  label 'extraMem'
+  label 'medCpu'
+  label 'medMem'
 
   publishDir "${params.outDir}/removeBlackReg", mode: 'copy'
 
@@ -778,7 +790,7 @@ process  removeBlackReg {
   params.removeBlackRegion
 
   input:
-  set (prefix), file (rmDupBam) from chNoDup_blackReg
+  set (prefix), file (rmDupBam), file (rmDupBai) from chNoDup_blackReg
   file blackListBed from chFilterBlackReg  
 
   output:
@@ -804,7 +816,7 @@ process bamToBigWig{
 
   input:
   // si pas de remove black list
-  set (prefix), file (rmDupBam) from chNoDup_bigWig
+  set (prefix), file (rmDupBam), file (rmDupBai) from chNoDup_bigWig
   // si remove blacklist
   set (prefix), file(rmDupBlackListBam), file(rmDupBlackListBai) from chBlackRegBam
   file blackListBed from chFilterBlackReg_bamToBigWig
@@ -825,19 +837,21 @@ process bamToBigWig{
 }
 
 
-//7bis-Generate BedGraph file
+//7bis-Generate scBed file
 process bamToScBed{
   tag "${prefix}"
   label 'samtools'
-  label 'extraCpu'
-  label 'extraMem'
+  label 'highCpu'
+  label 'highMem'
 
   publishDir "${params.outDir}/bamToScBed", mode: 'copy'
 
   input:
-  set (prefix), file (rmDupBam) from chNoDup
+  set (prefix), file (rmDupBam), file (rmDupBai) from chNoDup
+  // pas le rm black region ?
 
   output:
+  file ("scBed_${params.minCounts}/*.bed") into chScBed
   
   script:
   """
@@ -898,6 +912,52 @@ process bamToScBed{
   """
 }
 
+
+process countMatrices {
+  tag "${prefix}"
+  label 'samtools'
+  label 'highCpu'
+  label 'highMem'
+
+  publishDir "${params.outDir}/countMatrices", mode: 'copy'
+
+  input:
+  set (prefix), file (rmDupBam), file (rmDupBai) from chNoDup_countMatrices
+  file bed from chBedCountMatrices
+
+  output:
+  set (prefix), file ("*.tsv.gz") into chCountMatricesLog
+  set (prefix), file ("*_counts.log") into chCountMatricesLog
+  
+  script:
+  """
+  #Counting unique BCs
+  bc_prefix=\$(basename ${rmDupBam} | sed -e 's/.bam\$//')
+  barcodes=\$(wc -l \$bc_prefix.count | awk '{print ${rmDupBam}}')
+
+  echo "Barcodes found = \$barcodes" > ${prefix}_counts.log
+  for bsize in ${params.binSize}
+  do
+    opts="-b \$bsize "
+    if [ ! -z ${params.minCounts} ]; then
+        opts="\$opts -f ${params.minCounts} "
+	  fi
+        sc2counts.py -i ${rmDupBam} -o ${prefix}_counts_\$bsize.tsv \$opts -s \$barcodes -v
+  done
+
+    for bed in $bed
+    do
+      opts="-B \$bed"
+      if [ ! -z ${params.minCounts} ]; then
+          opts="\$opts -f ${params.minCounts} "
+      fi
+	    osuff=$(basename \$bed | sed -e 's/.bed//')
+      sc2counts.py -i ${rmDupBam} -o ${prefix}_counts_\$osuff.tsv \$opts -s \$barcodes -v
+    done
+   
+     for i in ${prefix}*.tsv; do gzip -9 \$i; done
+  """
+}
 
 
 /***********
