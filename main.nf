@@ -766,7 +766,7 @@ process  removeDup {
   else
 	  rmDup.py -i ${noPcrRtBam} -o ${prefix}_rmDup.bam
   fi
-    
+  
   #Create count Table from flagged - PCR dups - RT dups and window-based rmDup (need to sort by b arcode)
   barcode_field=\$(samtools view ${prefix}_rmDup.bam  | sed -n \"1 s/XB.*//p\" | sed 's/[^\t]//g' | wc -c)
   
