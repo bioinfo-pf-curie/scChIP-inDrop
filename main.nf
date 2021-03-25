@@ -851,7 +851,7 @@ process bamToScBed{
   // pas le rm black region ?
 
   output:
-  set ("scBed_${params.minCounts}/"), file ("*.bed") into chScBed
+  file ("*.bed") into chScBed
   
   script:
   """
@@ -860,7 +860,7 @@ process bamToScBed{
   
   #Get barcode field & read length
   barcode_field=\$(samtools view ${rmDupBam}  | sed -n "1 s/XB.*//p" | sed 's/[^\t]//g' | wc -c)
-  
+
   #Create header
   samtools view -H ${rmDupBam} | sed '/^@HD/ d' > ${prefix}_tmp_header.sam
   
