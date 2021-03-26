@@ -175,8 +175,8 @@ def get_bin_idx (chrname, read, chrom_idx, binSize, useWholeRead=True):
             rpos = rpos - 1
 
         ### Sum of previous chromosome + current bin (0-based)
-        idx = sum(chrom_idx.values()[:chrpos]) + int(math.floor(float(lpos) / float(binSize)))
-        idx_end = sum(chrom_idx.values()[:chrpos]) + int(math.floor(float(rpos) / float(binSize)))
+        idx = sum(list(chrom_idx.values())[:chrpos]) + int(math.floor(float(lpos) / float(binSize)))
+        idx_end = sum(list(chrom_idx.values())[:chrpos]) + int(math.floor(float(rpos) / float(binSize)))
         
         if idx != idx_end:
             return range(idx, idx_end + 1)
