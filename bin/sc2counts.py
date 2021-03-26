@@ -162,7 +162,7 @@ def get_bin_idx (chrname, read, chrom_idx, binSize, useWholeRead=True):
     Return a zero-based index
     """
     try:
-        chrpos = list(chrom_idx).keys().index(chrname)
+        chrpos = list(chrom_idx.keys()).index(chrname)
 
     except ValueError:
         sys.exit(-1)
