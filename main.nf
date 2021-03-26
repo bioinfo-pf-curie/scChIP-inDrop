@@ -815,11 +815,14 @@ process bamToBigWig{
   publishDir "${params.outDir}/bamToBigWig", mode: 'copy'
 
   input:
-  // si pas de remove black list
-  set (prefix), file (rmDupBam), file (rmDupBai) from chNoDup_bigWig
-  // si remove blacklist
-  set (prefix), file(rmDupBlackListBam), file(rmDupBlackListBai) from chBlackRegBam
-  file blackListBed from chFilterBlackReg_bamToBigWig
+  if (params.removeBlackRegion){
+    // si remove blacklist
+    set (prefix), file(rmDupBlackListBam), file(rmDupBlackListBai) from chBlackRegBam
+    file blackListBed from chFilterBlackReg_bamToBigWig
+  }else{
+    // si pas de remove black list
+    set (prefix), file (rmDupBam), file (rmDupBai) from chNoDup_bigWig
+  }
   
   output:
   set (prefix), file("*.bw") into chBigWig
@@ -828,9 +831,9 @@ process bamToBigWig{
   """
   if [[${params.removeBlackRegion}==true]]
   then
-      bamCoverage --bam ${rmDupBlackListBam} --outFileName ${prefix}.bw --numberOfProcessors ${task.cpus} --normalizeUsing CPM --ignoreForNormalization chrX --binSize 50 --smoothLength 500 --extendReads 150 --blackListFileName ${params.removeBlackRegion}
+      bamCoverage --bam ${rmDupBlackListBam} --outFileName ${prefix}.bw --numberOfProcessors ${task.cpus} --normalizeUsing CPM --ignoreForNormalization chrX --binSize 50 --smoothLength 500 --extendReads 150 --blackListFileName $blackListBed
   else
-      bamCoverage --bam ${rmDupBlackListBam} --outFileName ${prefix}.bw --numberOfProcessors ${task.cpus} --normalizeUsing CPM --ignoreForNormalization chrX --binSize 50 --smoothLength 500 --extendReads 150
+      bamCoverage --bam ${rmDupBam} --outFileName ${prefix}.bw --numberOfProcessors ${task.cpus} --normalizeUsing CPM --ignoreForNormalization chrX --binSize 50 --smoothLength 500 --extendReads 150
   fi
 
   """
@@ -945,17 +948,17 @@ process countMatrices {
         sc2counts.py -i ${rmDupBam} -o ${prefix}_counts_\$bsize.tsv \$opts -s \$barcodes -v
   done
 
-    for bed in $bed
-    do
-      opts="-B \$bed"
-      if [ ! -z ${params.minCounts} ]; then
-          opts="\$opts -f ${params.minCounts} "
-      fi
-	    osuff=\$(basename \$bed | sed -e 's/.bed//')
-      sc2counts.py -i ${rmDupBam} -o ${prefix}_counts_\$osuff.tsv \$opts -s \$barcodes -v
-    done
-   
-    for i in ${prefix}*.tsv; do gzip -9 \$i; done
+  for bed in $bed
+  do
+    opts="-B \$bed"
+    if [ ! -z ${params.minCounts} ]; then
+        opts="\$opts -f ${params.minCounts} "
+    fi
+    osuff=\$(basename \$bed | sed -e 's/.bed//')
+    sc2counts.py -i ${rmDupBam} -o ${prefix}_counts_\$osuff.tsv \$opts -s \$barcodes -v
+  done
+  
+  for i in ${prefix}*.tsv; do gzip -9 \$i; done
   """
 }
 
