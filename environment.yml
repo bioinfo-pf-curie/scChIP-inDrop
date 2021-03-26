@@ -11,13 +11,9 @@ dependencies:
   - bioconda::seqtk
   - bioconda::samtools
   - conda-forge::more-itertools
-  - bioconda::pysam
   - bioconda::bedtools=2.30.0
   - bioconda::deeptools=3.5.1
 
-  #- bioconda::samtools=1.11=h6270b1f_0
-  #- bioconda::star=2.7.6a=0
-  #- bioconda::fastx_toolkit=0.0.14
-  #- bioconda::bwa=0.7.17
-  #- bioconda::bedtools=2.30.0
-  #- conda-forge::r-base=4.0.3=hd23ff56_6
+  ## python
+  - bioconda::pysam
+  - bioconda::bx-python
