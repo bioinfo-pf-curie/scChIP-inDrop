@@ -774,9 +774,10 @@ process  removeDup {
   samtools view ${prefix}_rmDup.bam | awk -v bc_field=\$barcode_field '{print substr(\$bc_field,6)}' | sort | uniq -c > ${prefix}_rmDup.count	
 
   # Removing encode black regions
-  if(${params.removeBlackList}){
+  if [[${params.removeBlackList}==true]]
+  then
     bedtools intersect -v -abam ${prefix}_rmDup.bam -b ${blackListBed} > ${prefix}_rmDup_rmBlackReg.bam && mv ${prefix}_rmDup_rmBlackReg.bam ${prefix}_rmDup.bam
-  }
+  fi
 
   ## Index BAM file
   samtools index ${prefix}_rmDup.bam
@@ -824,7 +825,7 @@ process bamToScBed{
 
   input:
   set (prefix), file (rmDupBam), file (rmDupBai) from chNoDup_ScBed
-  
+
 
   output:
   file ("scBed_${params.minCounts}/*") into chScBed
