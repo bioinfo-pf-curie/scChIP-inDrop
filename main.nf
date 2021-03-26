@@ -829,12 +829,12 @@ process bamToScBed{
   set (prefix), file (rmDupBam), file (rmDupBai) from chNoDup_ScBed
   
   output:
-  file ("tracks") into chScBed
+  file (prefix) into chScBed
   
   script:
   """
-  mkdir -p tracks
-  for i in \$(echo ${params.minCounts} | sed 's/,/ /g'); do mkdir -p tracks/scBed_\$i/ ; done
+  mkdir -p ${prefix}
+  for i in \$(echo ${params.minCounts} | sed 's/,/ /g'); do mkdir -p ${prefix}/scBed_\$i/ ; done
   
   #Get barcode field & read length
   barcode_field=\$(samtools view ${rmDupBam}  | sed -n "1 s/XB.*//p" | sed 's/[^\t]//g' | wc -c)
@@ -848,21 +848,21 @@ process bamToScBed{
   samtools view -@ ${task.cpus} -b ${prefix}_tmp_header.sam > ${prefix}_tmp.sorted.bam
   
   #Convert to bedgraph: Input must be sorted by barcode, chr, position R1
-  samtools view ${prefix}_tmp.sorted.bam | awk -v odir=tracks/scBed -v bc_field=\$barcode_field -v OFS="\t" -v count=${params.minCounts} '
+  samtools view ${prefix}_tmp.sorted.bam | awk -v odir=${prefix}/scBed -v bc_field=\$barcode_field -v OFS="\t" -v count=${params.minCounts} '
   BEGIN{
     split(count,min_counts,",")
   }
   NR==1{
     lastBC=substr(\$bc_field,6,15);
     i=1
-    chr[i] = tracks
+    chr[i] = ${prefix}
     start[i] = ${params.minCounts}
     end[i] = ${params.minCounts} +1
   }
   NR>1{
   if(lastBC==substr(\$bc_field,6,15)){
     i = i +1
-    chr[i] = tracks
+    chr[i] = ${prefix}
     start[i] = ${params.minCounts}
     end[i] = ${params.minCounts} +1
     }
