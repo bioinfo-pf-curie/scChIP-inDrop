@@ -955,7 +955,7 @@ process countMatrices {
       sc2counts.py -i ${rmDupBam} -o ${prefix}_counts_\$osuff.tsv \$opts -s \$barcodes -v
     done
    
-     for i in ${prefix}*.tsv; do gzip -9 \$i; done
+    for i in ${prefix}*.tsv; do gzip -9 \$i; done
   """
 }
 
