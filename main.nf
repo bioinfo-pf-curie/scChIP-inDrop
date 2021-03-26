@@ -829,7 +829,7 @@ process bamToScBed{
   set (prefix), file (rmDupBam), file (rmDupBai) from chNoDup_ScBed
   
   output:
-  file ("scBed_${params.minCounts}") into chScBed
+  file ("tracks") into chScBed
   
   script:
   """
