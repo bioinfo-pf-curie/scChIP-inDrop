@@ -807,13 +807,13 @@ process  removeBlackReg {
 
 //7-Generate BigWig file
 if(params.removeBlackRegion){
-  process bamToBigWig{
+  process bamToBigWigBlack{
     tag "${prefix}"
     label 'deeptools'
     label 'extraCpu'
     label 'extraMem'
 
-    publishDir "${params.outDir}/bamToBigWig", mode: 'copy'
+    publishDir "${params.outDir}/bamToBigWigBlack", mode: 'copy'
 
     input:
     set (prefix), file(rmDupBlackListBam), file(rmDupBlackListBai) from chBlackRegBam
