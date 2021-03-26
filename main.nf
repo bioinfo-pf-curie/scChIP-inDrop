@@ -912,7 +912,7 @@ process countMatrices {
   """
   #Counting unique BCs
   bc_prefix=\$(basename ${rmDupBam} | sed -e 's/.bam\$//')
-  barcodes=\$(wc -l ${countTable} | awk '{print ${rmDupBam}}')
+  barcodes=\$(wc -l ${countTable} | awk '{print \$1}')
 
   echo "Barcodes found = \$barcodes" > ${prefix}_counts.log
   for bsize in ${params.binSize}
