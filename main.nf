@@ -647,7 +647,9 @@ process  removePcrRtDup {
 
   output:
   set (prefix), file("*_flagged_rmPCR_RT.bam") into chRTremoved
-  file("removePcrRtDup_counts.txt") into chPcrRtCounts
+  set (prefix), file("*removePcrRtDup_counts.txt") into chPcrRtCounts
+  set (prefix), file("*_flagged_rmPCR_RT.count") into chPcrRtCountTable
+
 
   script:
   """
@@ -731,11 +733,11 @@ process  removePcrRtDup {
   
   n_unique_except_R1_unmapped_R2=\$((\$n_mapped_barcoded - \$n_pcr_duplicates - \$n_rt_duplicates))
   
-  echo "## Number of reads mapped and barcoded: \$n_mapped_barcoded" >> removePcrRtDup_counts.txt
-  echo "## Number of pcr duplicates: \$n_pcr_duplicates" >> removePcrRtDup_counts.txt
-  echo "## Number of rt duplicates: \$n_rt_duplicates" >> removePcrRtDup_counts.txt
-  echo "## Number of R1 mapped but R2 unmapped: \$n_R1_mapped_R2_unmapped" >> removePcrRtDup_counts.txt
-  echo "## Number of reads after PCR and RT removal (not R1 unmapped R2): \$n_unique_except_R1_unmapped_R2" >> removePcrRtDup_counts.txt
+  echo "## Number of reads mapped and barcoded: \$n_mapped_barcoded" >> ${prefix}_removePcrRtDup_counts.txt
+  echo "## Number of pcr duplicates: \$n_pcr_duplicates" >> ${prefix}_removePcrRtDup_counts.txt
+  echo "## Number of rt duplicates: \$n_rt_duplicates" >> ${prefix}_removePcrRtDup_counts.txt
+  echo "## Number of R1 mapped but R2 unmapped: \$n_R1_mapped_R2_unmapped" >> ${prefix}_removePcrRtDup_counts.txt
+  echo "## Number of reads after PCR and RT removal (not R1 unmapped R2): \$n_unique_except_R1_unmapped_R2" >> ${prefix}_removePcrRtDup_counts.txt
 
   ## Remove all non used files
   rm -f count* *.sam
@@ -825,8 +827,7 @@ process bamToScBed{
 
   input:
   set (prefix), file (rmDupBam), file (rmDupBai) from chNoDup_ScBed
-
-
+  
   output:
   file ("scBed_${params.minCounts}/*") into chScBed
   
@@ -901,6 +902,7 @@ process countMatrices {
   input:
   set (prefix), file (rmDupBam), file (rmDupBai) from chNoDup_countMatrices
   file bed from chBedCountMatrices
+  set (prefix), file(countTable) from chPcrRtCountTable
 
   output:
   set (prefix), file ("*.tsv.gz") into chCountMatricesLog
@@ -910,7 +912,7 @@ process countMatrices {
   """
   #Counting unique BCs
   bc_prefix=\$(basename ${rmDupBam} | sed -e 's/.bam\$//')
-  barcodes=\$(wc -l \$bc_prefix.count | awk '{print ${rmDupBam}}')
+  barcodes=\$(wc -l ${countTable} | awk '{print ${rmDupBam}}')
 
   echo "Barcodes found = \$barcodes" > ${prefix}_counts.log
   for bsize in ${params.binSize}
