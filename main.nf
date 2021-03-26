@@ -806,39 +806,48 @@ process  removeBlackReg {
 }
 
 //7-Generate BigWig file
-process bamToBigWig{
-  tag "${prefix}"
-  label 'deeptools'
-  label 'extraCpu'
-  label 'extraMem'
+if(params.removeBlackRegion){
+  process bamToBigWig{
+    tag "${prefix}"
+    label 'deeptools'
+    label 'extraCpu'
+    label 'extraMem'
 
-  publishDir "${params.outDir}/bamToBigWig", mode: 'copy'
+    publishDir "${params.outDir}/bamToBigWig", mode: 'copy'
 
-  input:
-  if (params.removeBlackRegion){
-    // si remove blacklist
-    //set (prefix), file(rmDupBlackListBam), file(rmDupBlackListBai) from chBlackRegBam
-    file blackListBed from chFilterBlackReg_bamToBigWig
-  }else{
-    // si pas de remove black list
-    set (prefix), file (rmDupBam), file (rmDupBai) from chNoDup_bigWig
+    input:
+    set (prefix), file(rmDupBlackListBam), file(rmDupBlackListBai) from chBlackRegBam
+    file blackListBed from chFilterBlackReg_bamToBigWig    
+    
+    output:
+    set (prefix), file("*.bw") into chBigWig
+    
+    script:
+    """
+    bamCoverage --bam ${rmDupBlackListBam} --outFileName ${prefix}.bw --numberOfProcessors ${task.cpus} --normalizeUsing CPM --ignoreForNormalization chrX --binSize 50 --smoothLength 500 --extendReads 150 --blackListFileName $blackListBed
+    """
   }
-  
-  output:
-  set (prefix), file("*.bw") into chBigWig
-  
-  script:
-  """
-  if [[${params.removeBlackRegion}==true]]
-  then
-      bamCoverage --bam ${rmDupBlackListBam} --outFileName ${prefix}.bw --numberOfProcessors ${task.cpus} --normalizeUsing CPM --ignoreForNormalization chrX --binSize 50 --smoothLength 500 --extendReads 150 --blackListFileName $blackListBed
-  else
-      bamCoverage --bam ${rmDupBam} --outFileName ${prefix}.bw --numberOfProcessors ${task.cpus} --normalizeUsing CPM --ignoreForNormalization chrX --binSize 50 --smoothLength 500 --extendReads 150
-  fi
+}else{
+  process bamToBigWig{
+    tag "${prefix}"
+    label 'deeptools'
+    label 'extraCpu'
+    label 'extraMem'
 
-  """
+    publishDir "${params.outDir}/bamToBigWig", mode: 'copy'
+
+    input:
+    set (prefix), file (rmDupBam), file (rmDupBai) from chNoDup_bigWig
+       
+    output:
+    set (prefix), file("*.bw") into chBigWig
+    
+    script:
+    """
+    bamCoverage --bam ${rmDupBam} --outFileName ${prefix}.bw --numberOfProcessors ${task.cpus} --normalizeUsing CPM --ignoreForNormalization chrX --binSize 50 --smoothLength 500 --extendReads 150
+    """
+  }
 }
-
 
 //7bis-Generate scBed file
 process bamToScBed{
