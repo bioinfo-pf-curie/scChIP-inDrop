@@ -34,7 +34,7 @@ def load_BED(in_file, featuresOverCoord=False, verbose=False):
     with open(in_file) as bed_handle:
         for line in bed_handle:
             if nline > 0 and nline % 5000==0 and verbose: 
-                print "## %d features loaded ..." % nline
+                print( "## %d features loaded ..." % nline)
             nline +=1
             bedtab = line.split("\t")
             chromosome, start, end = bedtab[:3]
@@ -146,7 +146,7 @@ def get_features_idx(intervals, chrom, read, useWholeRead=True, verbose=False):
         feat = intervals[chrom].find(lpos, rpos)
 
         if len(feat) == 0:
-            if verbose: print >> sys.stderr, "Warning - no feature found for read at", chrom, ":", read.pos, "- skipped"
+            if verbose: print( >> sys.stderr, "Warning - no feature found for read at", chrom, ":", read.pos, "- skipped")
             return None
         else:
             feat_idx = []
@@ -154,7 +154,7 @@ def get_features_idx(intervals, chrom, read, useWholeRead=True, verbose=False):
                 feat_idx.append(feat[i].value['pos'])
             return feat_idx
     else:
-        if verbose: print >> sys.stderr, "Warning - no feature found for read at", chrom, ":", read.pos, "- skipped"
+        if verbose: print( >> sys.stderr, "Warning - no feature found for read at", chrom, ":", read.pos, "- skipped")
         return None
 
 
@@ -167,7 +167,7 @@ def get_bin_idx (chrname, read, chrom_idx, binSize, useWholeRead=True):
         chrpos = chrom_idx.keys().index(chrname)
 
     except ValueError:
-        print >> sys.stderr, "Chromosome " + chrname + " not found !"
+        print( >> sys.stderr, "Chromosome " + chrname + " not found !"
         sys.exit(-1)
     
     if useWholeRead:
@@ -225,7 +225,7 @@ def select_mat(x, nreads=500, verbose=False):
     cols = np.array(cx.sum(axis=0))  # sum the columns
     idx = np.where(cols >= nreads)[1]
     if verbose:
-        print "## Select " + str(len(idx)) + " columns with at least " + str(nreads) + " counts"
+        print( "## Select " + str(len(idx)) + " columns with at least " + str(nreads) + " counts")
     return idx
 
 
@@ -235,7 +235,7 @@ def save2BinMatrix(x, colnames, ofile, chromsize, chrom_idx, bsize, filt, verbos
     Note that most of the args are used to convert bin coordinate into genomic coordinates
     """
     if verbose:
-        print "## Writting outpout file ..."
+        print( "## Writting outpout file ...")
 
     cx = x.tocsr()
     ofile = re.sub("\.tsv|\.txt","_filt_"+ str(filt) +".tsv",ofile)
@@ -255,7 +255,7 @@ def save2BinMatrix(x, colnames, ofile, chromsize, chrom_idx, bsize, filt, verbos
             np.savetxt(handle, val, '%s', delimiter="\t")
 
         if (i > 0 and i % 10000 == 0 and verbose):
-            print "## Write line " + str(i)
+            print( "## Write line " + str(i))
 
     handle.close()
 
@@ -265,7 +265,7 @@ def save2FeatMatrix(x, colnames, ofile, rownames, filt, verbose=False, rmzeros=F
     Write the count table into a txt file without taking too much RAM
     """
     if verbose:
-        print "## Writting outpout file ..."
+        print( "## Writting outpout file ...")
 
     cx = x.tocsr()
     ofile = re.sub("\.tsv|\.txt","_filt_"+ str(filt) +".tsv",ofile)
@@ -287,7 +287,7 @@ def save2FeatMatrix(x, colnames, ofile, rownames, filt, verbose=False, rmzeros=F
             np.savetxt(handle, val, '%s', delimiter="\t")
 
         if (i > 0 and i % 10000 == 0 and verbose):
-            print "## Write line " + str(i)
+            print( "## Write line " + str(i))
     
     handle.close()
 
@@ -322,51 +322,36 @@ if __name__ == "__main__":
  
     # check args
     if os.path.isfile(args.output):
-        print "Error: Output file '" + args.output + "' already exist. Stop."
+        print( "Error: Output file '" + args.output + "' already exist. Stop.")
         sys.exit(-1)
 
     if args.bed is None and args.bin is None:
-        print "Error: --bin or --bed must be defined"
+        print( "Error: --bin or --bed must be defined")
         sys.exit(-1)
         
-    # Verbose mode
-    if args.verbose:
-        print "## sc2counts.py"
-        print "## input =", args.input
-        print "## output =", args.output
-        print "## tag =", args.tag
-        print "## binSize =", args.bin
-        print "## bedFile =", args.bed
-        print "## barcodeNumber =", args.barcodes
-        print "## minCounts =", args.filt
-        print "## useWholeReads =", args.useWholeRead
-        print "## rmZeros =", args.rmZeros
-        print "## verbose =", args.verbose
-        print "## featuresOverCoord =", args.featuresOverCoord
+    
 
     # Read the SAM/BAM file
-    if args.verbose:
-        print "## Opening SAM/BAM file '", args.input,"'..."
 
     samfile = pysam.Samfile(args.input, "rb")
 
     # Get info from header
     chromsize = get_chromosome_size_from_header(samfile)
     if len(chromsize)==0:
-        print >> sys.stderr, "Error : chromosome lengths not available in BAM file. Exit"
+        print( >> sys.stderr, "Error : chromosome lengths not available in BAM file. Exit")
         sys.exit(-1)
 
     # Get counts dimension
     if args.barcodes is None:
         N_barcodes = get_barcode_number_from_header(samfile)
         if N_barcodes is None :
-            print >> sys.stderr, "Erreur : unable to find barcodes number. Exit"
+            print( >> sys.stderr, "Erreur : unable to find barcodes number. Exit")
             sys.exit(-1)
         elif args.verbose:
-            print "## Barcodes Number: " + str(N_barcodes)
+            print( "## Barcodes Number: " + str(N_barcodes) )
     elif args.barcodes is not None:
         N_barcodes = args.barcodes
-        print "## Barcodes Number: " + str(N_barcodes)	
+        print( "## Barcodes Number: " + str(N_barcodes)	)
     if args.bin is not None:
         chromsize_bins = get_chromosome_bins(chromsize, args.bin)
         N_bins = sum(chromsize_bins.values())
@@ -375,7 +360,7 @@ if __name__ == "__main__":
         N_bins = len(feat_bins[1]) 
  
     if args.verbose:
-        print "## Bins/Features Number: " + str(N_bins)
+        print( "## Bins/Features Number: " + str(N_bins) )
 
     ## Init count table
     ## Note that lil matrix is a sparse (ie. RAM eficient) matrix
@@ -411,12 +396,12 @@ if __name__ == "__main__":
                 non_overlapping_counter += 1
 
         if (reads_counter % 1000000 == 0 and args.verbose):
-            print "##", reads_counter
+            print( "##", reads_counter )
     
     samfile.close()
 
     if args.verbose and non_overlapping_counter > 0:
-        print "## Warning:", non_overlapping_counter, "reads do not overlap any features !"
+        print( "## Warning:", non_overlapping_counter, "reads do not overlap any features !")
 
     ## filter mat
     if args.filt is not None:
