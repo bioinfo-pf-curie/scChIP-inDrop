@@ -335,14 +335,12 @@ if __name__ == "__main__":
     # Get info from header
     chromsize = get_chromosome_size_from_header(samfile)
     if len(chromsize)==0:
-        print( >> sys.stderr, "Error : chromosome lengths not available in BAM file. Exit")
         sys.exit(-1)
 
     # Get counts dimension
     if args.barcodes is None:
         N_barcodes = get_barcode_number_from_header(samfile)
         if N_barcodes is None :
-            print( >> sys.stderr, "Erreur : unable to find barcodes number. Exit")
             sys.exit(-1)
         elif args.verbose:
             print( "## Barcodes Number: " + str(N_barcodes) )
