@@ -813,13 +813,14 @@ process bamToBigWig{
   label 'extraMem'
 
   publishDir "${params.outDir}/bamToBigWig", mode: 'copy'
-
-  input:
+  
   if (params.removeBlackRegion){
+    input:
     // si remove blacklist
     set (prefix), file(rmDupBlackListBam), file(rmDupBlackListBai) from chBlackRegBam
     file blackListBed from chFilterBlackReg_bamToBigWig
   }else{
+    input:
     // si pas de remove black list
     set (prefix), file (rmDupBam), file (rmDupBai) from chNoDup_bigWig
   }
