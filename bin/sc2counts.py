@@ -146,7 +146,6 @@ def get_features_idx(intervals, chrom, read, useWholeRead=True, verbose=False):
         feat = intervals[chrom].find(lpos, rpos)
 
         if len(feat) == 0:
-            if verbose: print( >> sys.stderr, "Warning - no feature found for read at", chrom, ":", read.pos, "- skipped")
             return None
         else:
             feat_idx = []
@@ -154,7 +153,6 @@ def get_features_idx(intervals, chrom, read, useWholeRead=True, verbose=False):
                 feat_idx.append(feat[i].value['pos'])
             return feat_idx
     else:
-        if verbose: print( >> sys.stderr, "Warning - no feature found for read at", chrom, ":", read.pos, "- skipped")
         return None
 
 
@@ -167,7 +165,6 @@ def get_bin_idx (chrname, read, chrom_idx, binSize, useWholeRead=True):
         chrpos = chrom_idx.keys().index(chrname)
 
     except ValueError:
-        print( >> sys.stderr, "Chromosome " + chrname + " not found !"
         sys.exit(-1)
     
     if useWholeRead:
