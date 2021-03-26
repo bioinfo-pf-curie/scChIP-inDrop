@@ -745,7 +745,7 @@ process  removePcrRtDup {
 // 6-Remove duplicates by window (if R2 is unmapped) - prime (STAR)
 process  removeDup {
   tag "${prefix}"
-  label 'python'
+  label 'bedtools'
   label 'medCpu'
   label 'medMem'
 
@@ -753,9 +753,10 @@ process  removeDup {
 
   input:
   set (prefix), file(noPcrRtBam) from chRTremoved
+  file blackListBed from chFilterBlackReg  
 
   output:
-  set (prefix), file("*_rmDup.bam"),  file("*_rmDup.bam.bai") into chNoDup, chNoDup_blackReg, chNoDup_bigWig, chNoDup_countMatrices
+  set (prefix), file("*_rmDup.bam"),  file("*_rmDup.bam.bai") into chNoDup_ScBed, chNoDup_bigWig, chNoDup_countMatrices
   set (prefix), file("*_rmDup.count") into chDupCounts
   
   script:
@@ -771,83 +772,46 @@ process  removeDup {
   barcode_field=\$(samtools view ${prefix}_rmDup.bam  | sed -n \"1 s/XB.*//p\" | sed 's/[^\t]//g' | wc -c)
   
   samtools view ${prefix}_rmDup.bam | awk -v bc_field=\$barcode_field '{print substr(\$bc_field,6)}' | sort | uniq -c > ${prefix}_rmDup.count	
-  
+
+  # Removing encode black regions
+  if(${params.removeBlackList}){
+    bedtools intersect -v -abam ${prefix}_rmDup.bam -b ${blackListBed} > ${prefix}_rmDup_rmBlackReg.bam && mv ${prefix}_rmDup_rmBlackReg.bam ${prefix}_rmDup.bam
+  }
+
   ## Index BAM file
   samtools index ${prefix}_rmDup.bam
   """
 }
 
-// 6-bis Removing encode black regions
-process  removeBlackReg {
+
+
+process bamToBigWig{
   tag "${prefix}"
-  label 'bedtools'
-  label 'medCpu'
-  label 'medMem'
+  label 'deeptools'
+  label 'extraCpu'
+  label 'extraMem'
 
-  publishDir "${params.outDir}/removeBlackReg", mode: 'copy'
-
-  when:
-  params.removeBlackRegion
+  publishDir "${params.outDir}/bamToBigWig", mode: 'copy'
 
   input:
-  set (prefix), file (rmDupBam), file (rmDupBai) from chNoDup_blackReg
-  file blackListBed from chFilterBlackReg  
-
+  set (prefix), file (rmDupBam), file (rmDupBai) from chNoDup_bigWig
+  file blackListBed from chFilterBlackReg_bamToBigWig    
+      
   output:
-  set (prefix), file("*_rmDup_rmBlackReg.bam"),  file("*_rmDup_rmBlackReg.bam.bai") into chBlackRegBam
+  set (prefix), file("*.bw") into chBigWig
   
   script:
   """
-  bedtools intersect -v -abam ${rmDupBam} -b ${blackListBed} > ${prefix}_rmDup_rmBlackReg.bam
+  if [[${params.removeBlackRegion}]]
+  then
+      bamCoverage --bam ${rmDupBlackListBam} --outFileName ${prefix}.bw --numberOfProcessors ${task.cpus} --normalizeUsing CPM --ignoreForNormalization chrX --binSize 50 --smoothLength 500 --extendReads 150 --blackListFileName $blackListBed
+  else
+      bamCoverage --bam ${rmDupBam} --outFileName ${prefix}.bw --numberOfProcessors ${task.cpus} --normalizeUsing CPM --ignoreForNormalization chrX --binSize 50 --smoothLength 500 --extendReads 150
+  fi
 
-  ## Index BAM file
-  samtools index ${prefix}_rmDup_rmBlackReg.bam
   """
 }
 
-//7-Generate BigWig file
-if(params.removeBlackRegion){
-  process bamToBigWigBlack{
-    tag "${prefix}"
-    label 'deeptools'
-    label 'extraCpu'
-    label 'extraMem'
-
-    publishDir "${params.outDir}/bamToBigWigBlack", mode: 'copy'
-
-    input:
-    set (prefix), file(rmDupBlackListBam), file(rmDupBlackListBai) from chBlackRegBam
-    file blackListBed from chFilterBlackReg_bamToBigWig    
-    
-    output:
-    set (prefix), file("*.bw") into chBigWig
-    
-    script:
-    """
-    bamCoverage --bam ${rmDupBlackListBam} --outFileName ${prefix}.bw --numberOfProcessors ${task.cpus} --normalizeUsing CPM --ignoreForNormalization chrX --binSize 50 --smoothLength 500 --extendReads 150 --blackListFileName $blackListBed
-    """
-  }
-}else{
-  process bamToBigWig{
-    tag "${prefix}"
-    label 'deeptools'
-    label 'extraCpu'
-    label 'extraMem'
-
-    publishDir "${params.outDir}/bamToBigWig", mode: 'copy'
-
-    input:
-    set (prefix), file (rmDupBam), file (rmDupBai) from chNoDup_bigWig
-       
-    output:
-    set (prefix), file("*.bw") into chBigWig
-    
-    script:
-    """
-    bamCoverage --bam ${rmDupBam} --outFileName ${prefix}.bw --numberOfProcessors ${task.cpus} --normalizeUsing CPM --ignoreForNormalization chrX --binSize 50 --smoothLength 500 --extendReads 150
-    """
-  }
-}
 
 //7bis-Generate scBed file
 process bamToScBed{
@@ -859,8 +823,8 @@ process bamToScBed{
   publishDir "${params.outDir}/bamToScBed", mode: 'copy'
 
   input:
-  set (prefix), file (rmDupBam), file (rmDupBai) from chNoDup
-  // pas le rm black region ?
+  set (prefix), file (rmDupBam), file (rmDupBai) from chNoDup_ScBed
+  
 
   output:
   file ("scBed_${params.minCounts}/*") into chScBed
