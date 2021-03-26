@@ -29,8 +29,6 @@ def load_BED(in_file, featuresOverCoord=False, verbose=False):
     verbose = verbose mode [logical]
     """
     x = {}
-    if verbose:
-        print "## Loading BED file '", in_file, "'..."
     featureNames=[]
     nline = 0
     with open(in_file) as bed_handle:
