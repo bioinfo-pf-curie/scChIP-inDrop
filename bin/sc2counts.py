@@ -186,7 +186,7 @@ def get_bin_idx (chrname, read, chrom_idx, binSize, useWholeRead=True):
         lpos = get_read_start(read)
         if read.is_reverse:
             lpos = lpos - 1
-        idx = sum(chrom_idx.values()[:chrpos]) + int(math.floor(float(lpos) / float(binSize)))
+        idx = sum(list(chrom_idx.values())[:chrpos]) + int(math.floor(float(lpos) / float(binSize)))
         
         return [idx]
     
