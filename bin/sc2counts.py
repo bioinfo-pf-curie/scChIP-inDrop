@@ -1,8 +1,10 @@
+#!/usr/bin/env python
+# coding: utf-8
+
 """
 Transform a BAM file to a count table based on barcode information and genomic bins
 """
 
-import time
 import argparse
 import sys
 import os
@@ -13,16 +15,6 @@ import pysam
 import numpy as np
 from scipy import sparse
 from bx.intervals.intersection import Intersecter, Interval
-    
-def timing(function, *args):
-    """                              
-    Run a fonction and return the run time and the result of the function
-    If the function requires arguments, those can be passed in
-    """
-    startTime = time.time()
-    result = function(*args)
-    print '%s function took %0.3f ms' % (function.func_name, (time.time() - startTime) * 1000)
-    return result
 
 
 def load_BED(in_file, featuresOverCoord=False, verbose=False):
@@ -353,7 +345,6 @@ if __name__ == "__main__":
         print "## rmZeros =", args.rmZeros
         print "## verbose =", args.verbose
         print "## featuresOverCoord =", args.featuresOverCoord
-        print
 
     # Read the SAM/BAM file
     if args.verbose:
