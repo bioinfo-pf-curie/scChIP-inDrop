@@ -1023,7 +1023,7 @@ process multiqc {
   file ('workflow_summary/*') from workflowSummaryYaml.collect()
   //Modules
   file ('star/*') from chAlignmentLogs.collect().ifEmpty([])
-  file ('trimming/*') from chtrimmedReadsLog.collect().ifEmpty([])
+  file ('trimming/*') from chTrimmedReadsLog.collect().ifEmpty([])
 
 
   output: 
