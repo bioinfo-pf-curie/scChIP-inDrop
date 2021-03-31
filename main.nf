@@ -345,6 +345,7 @@ process bcMapping {
  
   output:
   set val(prefix), file("*_read_barcodes.txt") into chReadBcNames
+  file ("v_bowtie2.txt") into chBowtie2Version
 
   script:
   """
@@ -364,7 +365,7 @@ process bcMapping {
   
 
   #Map INDEXES 2 against Index2 library
-  bowtie2 -x /data/users/lhadjabe/Gitlab/ChIP-seq_single-cell_LBC/Barcodes/LBC/bowtie_2_index_short/ref_index_2 -f read_indexes_2.fasta -N 1 -L 8 --rdg 0,7 --rfg 0,7 --mp 7,7 --ignore-quals --score-min L,0,-1 -t --no-unal --no-hd -p ${task.cpus} > index_2_bowtie2.sam
+  bowtie2 -x /data/users/lhadjabe/Gitlab/ChIP-seq_single-cell_LBC/Barcodes/LBC/bowtie_2_index_short/ref_index_2 -f read_indexes_2.fasta -N 1 -L 8 --rdg 0,7 --rfg 0,7 --mp 7,7 --ignore-quals --score-min L,0,-1 -t --no-unal --no-hd -p ${task.cpus} > index_2_bowtie2.sam 
   
   #Keep only reads that were matched by a unique index 2 + counting matched index2
   awk '/XS/{next} \$2!=4{print \$1,\$3;count++} ;END{print count > \"count_index_2\"}' index_2_bowtie2.sam > reads_matching_index_2.txt
@@ -420,6 +421,8 @@ process bcMapping {
   n_index_1_2=\$(cat count_index_1_2)
   
   n_index_1_2_3=\$(cat count_index_1_2_3)
+
+  bowtie2 --version > v_bowtie2.txt
   """
 }
 
@@ -560,6 +563,7 @@ process readsAlignment {
   set val(prefix), file("*_aligned.bam") into chAlignedBam
   file "*.out" into chAlignmentLogs
   file("v_star.txt") into chStarVersion
+  file("v_samtools.txt") into chSamtoolsVersion
 
   script:
   """
@@ -578,6 +582,7 @@ process readsAlignment {
   samtools view -@ ${task.cpus} -bS ${prefix}Aligned.out.sam > ${prefix}_aligned.bam
   samtools sort -n -@ ${task.cpus} ${prefix}_aligned.bam -o ${prefix}_nsorted.bam && mv ${prefix}_nsorted.bam ${prefix}_aligned.bam
   rm ${prefix}Aligned.out.sam
+  samtools --version > v_samtools.txt
   """
 }
 
@@ -760,6 +765,7 @@ process  removeDup {
   output:
   set (prefix), file("*_rmDup.bam"),  file("*_rmDup.bam.bai") into chNoDup_ScBed, chNoDup_bigWig, chNoDup_countMatrices
   set (prefix), file("*_rmDup.count") into chDupCounts
+  file("v_bedtools.txt") into chBedtoolsVersion
   
   script:
   """
@@ -781,12 +787,12 @@ process  removeDup {
     bedtools intersect -v -abam ${prefix}_rmDup.bam -b ${blackListBed} > ${prefix}_rmDup_rmBlackReg.bam && mv ${prefix}_rmDup_rmBlackReg.bam ${prefix}_rmDup.bam
   fi
 
+  bedtools --version &> v_bedtools.txt
+
   ## Index BAM file
   samtools index ${prefix}_rmDup.bam
   """
 }
-
-
 
 process bamToBigWig{
   tag "${prefix}"
@@ -802,6 +808,7 @@ process bamToBigWig{
       
   output:
   set (prefix), file("*.bw") into chBigWig
+  file("v_deeptools.txt") into chBamCoverageVersion
   
   script:
   """
@@ -812,6 +819,7 @@ process bamToBigWig{
       bamCoverage --bam ${rmDupBam} --outFileName ${prefix}.bw --numberOfProcessors ${task.cpus} --normalizeUsing CPM --ignoreForNormalization chrX --binSize 50 --smoothLength 500 --extendReads 150
   fi
 
+  deeptools --version &> v_deeptools.txt
   """
 }
 
@@ -907,6 +915,7 @@ process countMatrices {
   output:
   set (prefix), file ("*.tsv.gz") into chCountMatricesLog
   set (prefix), file ("*_counts.log") into chCountMatrices
+  file("v_python.txt") into chPythonVersion
   
   script:
   """
@@ -935,6 +944,8 @@ process countMatrices {
   done
   
   for i in ${prefix}*.tsv; do gzip -9 \$i; done
+  
+  python --version &> v_python.txt
   """
 }
 
@@ -943,7 +954,7 @@ process countMatrices {
  * MultiQC *
  ***********/
 
-/*process getSoftwareVersions{
+process getSoftwareVersions{
   label 'python'
   label 'lowCpu'
   label 'lowMem'
@@ -953,6 +964,13 @@ process countMatrices {
   !params.skipSoftVersions
 
   input:
+  file ("v_bowtie2.txt") from chBowtie2Version.first().ifEmpty([])
+  file("v_cutadapt.txt") from chCutadaptVersion.first().ifEmpty([])
+  file("v_star.txt") from chStarVersion.first().ifEmpty([])
+  file("v_samtools.txt") from chSamtoolsVersion.first().ifEmpty([])
+  file("v_deeptools.txt") from chBamCoverageVersion.first().ifEmpty([])
+  file("v_bedtools.txt") from chBedtoolsVersion.first().ifEmpty([])
+  file("v_python.txt") from chPythonVersion.first().ifEmpty([])
 
   output:
   file 'software_versions_mqc.yaml' into softwareVersionsYaml
@@ -1001,8 +1019,12 @@ process multiqc {
   file splan from chSplan.collect()
   file multiqcConfig from chMultiqcConfig
   file metadata from chMetadata.ifEmpty([])
-  //file ('software_versions/*') from softwareVersionsYaml.collect().ifEmpty([])
+  file ('software_versions/*') from softwareVersionsYaml.collect().ifEmpty([])
   file ('workflow_summary/*') from workflowSummaryYaml.collect()
+  //Modules
+  file ('star/*') from chAlignmentLogs.collect().ifEmpty([])
+  file ('trimming/*') from chtrimmedReadsLog.collect().ifEmpty([])
+
 
   output: 
   file splan
@@ -1015,9 +1037,9 @@ process multiqc {
   metadataOpts = params.metadata ? "--metadata ${metadata}" : ""
   //isPE = params.singleEnd ? "" : "-p"
   designOpts= params.design ? "-d ${params.design}" : ""
-  modules_list = "-m custom_content"
+  modules_list = "-m custom_content -m cutadapt -m samtools -m star -m deeptools"
   """
-  mqc_header.py --splan ${splan} --name "PIPELINE" --version ${workflow.manifest.version} ${metadataOpts} > multiqc-config-header.yaml
+  mqc_header.py --splan ${splan} --name "scChIP-seq" --version ${workflow.manifest.version} ${metadataOpts} > multiqc-config-header.yaml
   multiqc . -f $rtitle $rfilename -c multiqc-config-header.yaml -c $multiqcConfig $modules_list
   """
 }
@@ -1026,7 +1048,6 @@ process multiqc {
  * Sub-routines *
  ****************/
 
-/*
 process outputDocumentation {
   label 'python'
   label 'lowCpu'
@@ -1111,4 +1132,3 @@ workflow.onComplete {
     log.info "FAILED: $workflow.runName"
   }
 }
-*/
