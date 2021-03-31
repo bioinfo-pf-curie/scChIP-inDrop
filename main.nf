@@ -1029,7 +1029,7 @@ process multiqc {
 
   output: 
   file splan
-  file "*_report.html" into multiqc_report
+  file "*report.html" into multiqc_report
   file "*_data"
 
   script:
