@@ -427,7 +427,7 @@ process bcMapping {
 }
 
 
-/*
+
 //1- Align R2 reads on barcode indexes
 process bcMapping {
   tag "${prefix} - ${index}"
@@ -477,6 +477,7 @@ process bcMapping {
   """
 }
 
+/*
 //1bis- Align R2 reads on barcode indexes
 process bcSubset {
   tag "${prefix}"
