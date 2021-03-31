@@ -1047,7 +1047,6 @@ process multiqc {
 /****************
  * Sub-routines *
  ****************/
-
 process outputDocumentation {
   label 'python'
   label 'lowCpu'

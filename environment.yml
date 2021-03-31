@@ -4,14 +4,15 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - python=3.7.10
+  - python
+  - bioconda::multiqc
   - bioconda::bowtie2
   - bioconda::fastx_toolkit
   - bioconda::star
   - bioconda::seqtk
   - bioconda::samtools
   - conda-forge::more-itertools
-  - bioconda::bedtools=2.30.0
+  - bioconda::bedtools
   - bioconda::deeptools=3.5.1
 
   ## python
