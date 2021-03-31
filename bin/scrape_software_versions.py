@@ -25,8 +25,7 @@ results['STAR'] = '<span style="color:#999999;\">N/A</span>'
 results['samtools'] = '<span style="color:#999999;\">N/A</span>'
 results['bedtools'] = '<span style="color:#999999;\">N/A</span>'
 results['deeptools'] = '<span style="color:#999999;\">N/A</span>'
-
-
+results['Python'] = '<span style="color:#999999;\">N/A</span>'
 
 # Search each file using its regex
 for k, v in regexes.items():
