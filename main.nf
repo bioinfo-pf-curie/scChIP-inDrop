@@ -407,18 +407,11 @@ process bcMapping {
   
   
   ##Write logs
-  #n_index_1=\$(cat \$count_index_1)
-  #n_index_2=\$(cat \$count_index_2)
-  #n_index_3=\$(cat \$count_index_3)
-  #n_index_1_2=\$(cat \$count_index_1_2)
-  #n_index_1_2_3=\$(cat \$count_index_1_2_3)
-
-  ## logs
   echo "## Number of matched indexes 1: \$count_index_1" > ${prefix}_bowtie2.log
-  echo "## Number of matched indexes 2: \$count_index_2" >> ${log}
-  echo "## Number of matched indexes 1 and 2: \$count_index_3" >> ${log}
-  echo "## Number of matched indexes 3: \$count_index_1_2" >> ${log}
-  echo "## Number of matched barcodes: \$count_index_1_2_3" >> ${log}
+  echo "## Number of matched indexes 2: \$count_index_2" >> ${prefix}_bowtie2.log
+  echo "## Number of matched indexes 1 and 2: \$count_index_3" >> ${prefix}_bowtie2.log
+  echo "## Number of matched indexes 3: \$count_index_1_2" >> ${prefix}_bowtie2.log
+  echo "## Number of matched barcodes: \$count_index_1_2_3" >> ${prefix}_bowtie2.log
 
   ## version
   bowtie2 --version > v_bowtie2.txt
@@ -727,9 +720,9 @@ process  removePcrRtDup {
   
   ## Logs
   n_mapped_barcoded=\$(samtools view -c  ${prefix}_flagged.bam)
-  n_pcr_duplicates=\$(cat count_PCR_duplicates)
-  n_rt_duplicates=\$(cat count_RT_duplicates)
-  n_R1_mapped_R2_unmapped=\$(cat countR1unmappedR2)
+  n_pcr_duplicates=\$(cat \$count_PCR_duplicates)
+  n_rt_duplicates=\$(cat \$count_RT_duplicates)
+  n_R1_mapped_R2_unmapped=\$(cat \$countR1unmappedR2)
   
   n_unique_except_R1_unmapped_R2=\$((\$n_mapped_barcoded - \$n_pcr_duplicates - \$n_rt_duplicates))
 
