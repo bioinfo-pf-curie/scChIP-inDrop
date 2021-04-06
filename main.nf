@@ -346,6 +346,7 @@ process bcMapping {
   output:
   set val(prefix), file("*_read_barcodes.txt") into chReadBcNames
   file ("v_bowtie2.txt") into chBowtie2Version
+  set val(prefix) , file("*_bowtie2.log") into chBowtie2Log
 
   script:
   """
@@ -413,15 +414,19 @@ process bcMapping {
   
   ##Write logs
   n_index_1=\$(cat count_index_1)
-  
   n_index_2=\$(cat count_index_2)
-  
   n_index_3=\$(cat count_index_3)
-  
   n_index_1_2=\$(cat count_index_1_2)
-  
   n_index_1_2_3=\$(cat count_index_1_2_3)
 
+  ## logs
+  echo "## Number of matched indexes 1: $n_index_1" > ${prefix}_bowtie2.log
+  echo "## Number of matched indexes 2: $n_index_2" >> ${log}
+  echo "## Number of matched indexes 1 and 2: $n_index_1_2" >> ${log}
+  echo "## Number of matched indexes 3: $n_index_3" >> ${log}
+  echo "## Number of matched barcodes: $n_index_1_2_3" >> ${log}
+
+  ## version
   bowtie2 --version > v_bowtie2.txt
   """
 }
@@ -653,9 +658,8 @@ process  removePcrRtDup {
 
   output:
   set (prefix), file("*_flagged_rmPCR_RT.bam") into chRTremoved
-  set (prefix), file("*removePcrRtDup_counts.txt") into chPcrRtCounts
-  set (prefix), file("*_flagged_rmPCR_RT.count") into chPcrRtCountTable
-
+  set (prefix), file("*_removePcrRtDup.log") into chPcrRtCountsLog
+  //set (prefix), file("*_flagged_rmPCR_RT.count") into chPcrRtCountTable
 
   script:
   """
@@ -724,26 +728,22 @@ process  removePcrRtDup {
   ## Index flagged_rmPCR_RT file
   samtools index ${prefix}_flagged_rmPCR_RT.bam
   
-  #Write logs
-  n_mapped_barcoded=\$(samtools view -c  ${prefix}_flagged.bam)
-  
-  n_pcr_duplicates=\$(cat count_PCR_duplicates)
-  
-  n_rt_duplicates=\$(cat count_RT_duplicates)
-  
-  n_R1_mapped_R2_unmapped=\$(cat countR1unmappedR2)
-  
-  
   ## Rename flagged.sorted -> flagged
   mv ${prefix}_flagged.sorted.bam ${prefix}_flagged.bam
   
-  n_unique_except_R1_unmapped_R2=\$((\$n_mapped_barcoded - \$n_pcr_duplicates - \$n_rt_duplicates))
+  ## Logs
+  n_mapped_barcoded=\$(samtools view -c  ${prefix}_flagged.bam)
+  n_pcr_duplicates=\$(cat count_PCR_duplicates)
+  n_rt_duplicates=\$(cat count_RT_duplicates)
+  n_R1_mapped_R2_unmapped=\$(cat countR1unmappedR2)
   
-  echo "## Number of reads mapped and barcoded: \$n_mapped_barcoded" >> ${prefix}_removePcrRtDup_counts.txt
-  echo "## Number of pcr duplicates: \$n_pcr_duplicates" >> ${prefix}_removePcrRtDup_counts.txt
-  echo "## Number of rt duplicates: \$n_rt_duplicates" >> ${prefix}_removePcrRtDup_counts.txt
-  echo "## Number of R1 mapped but R2 unmapped: \$n_R1_mapped_R2_unmapped" >> ${prefix}_removePcrRtDup_counts.txt
-  echo "## Number of reads after PCR and RT removal (not R1 unmapped R2): \$n_unique_except_R1_unmapped_R2" >> ${prefix}_removePcrRtDup_counts.txt
+  n_unique_except_R1_unmapped_R2=\$((\$n_mapped_barcoded - \$n_pcr_duplicates - \$n_rt_duplicates))
+
+  echo "## Number of reads mapped and barcoded: \$n_mapped_barcoded" >> ${prefix}_removePcrRtDup.log
+  echo "## Number of pcr duplicates: \$n_pcr_duplicates" >> ${prefix}_removePcrRtDup.log
+  echo "## Number of rt duplicates: \$n_rt_duplicates" >> ${prefix}_removePcrRtDup.log
+  echo "## Number of R1 mapped but R2 unmapped: \$n_R1_mapped_R2_unmapped" >> ${prefix}_removePcrRtDup.log
+  echo "## Number of reads after PCR and RT removal (not R1 unmapped R2): \$n_unique_except_R1_unmapped_R2" >> ${prefix}_removePcrRtDup.log
 
   ## Remove all non used files
   rm -f count* *.sam
@@ -765,16 +765,17 @@ process  removeDup {
 
   output:
   set (prefix), file("*_rmDup.bam"),  file("*_rmDup.bam.bai") into chNoDup_ScBed, chNoDup_bigWig, chNoDup_countMatrices
-  set (prefix), file("*_rmDup.count") into chDupCounts
+  set (prefix), file("*_rmDup.count") into chDupCounts, chRemoveDupBarcodeLog
+  set (prefix), file("*_rmDup.log") into chRemoveDupLog
   file("v_bedtools.txt") into chBedtoolsVersion
   
   script:
   """
   # window param
   if [ ! -z ${params.window} ]; then
-	  rmDup.py -i ${noPcrRtBam} -o ${prefix}_rmDup.bam -d ${params.window} 
+	  rmDup.py -v -i ${noPcrRtBam} -o ${prefix}_rmDup.bam -d ${params.window} > ${prefix}_rmDup.log
   else
-	  rmDup.py -i ${noPcrRtBam} -o ${prefix}_rmDup.bam
+	  rmDup.py -v -i ${noPcrRtBam} -o ${prefix}_rmDup.bam > ${prefix}_rmDup.log
   fi
     
   #Create count Table from flagged - PCR dups - RT dups and window-based rmDup (need to sort by b arcode)
@@ -911,7 +912,7 @@ process countMatrices {
   input:
   set (prefix), file (rmDupBam), file (rmDupBai) from chNoDup_countMatrices
   file bed from chBedCountMatrices
-  set (prefix), file(countTable) from chPcrRtCountTable
+  set (prefix), file(countTable) from chDupCounts
 
   output:
   set (prefix), file ("*.tsv.gz") into chCountMatricesLog
@@ -1025,7 +1026,11 @@ process multiqc {
   //Modules
   file ('star/*') from chAlignmentLogs.collect().ifEmpty([])
   file ('trimming/*') from chTrimmedReadsLog.collect().ifEmpty([])
-
+  //Logs
+  file("bowtie2/*") from chBowtie2Log.collect().ifEmpty([])
+  file("removeRtPcr/*") from chPcrRtCountsLog.collect().ifEmpty([])
+  file("cellThresholds/*") from chRemoveDupBarcodeLog.collect().ifEmpty([])
+  file("rmDup/*") from chRemoveDupLog.collect().ifEmpty([])
 
   output: 
   file splan
@@ -1040,6 +1045,7 @@ process multiqc {
   designOpts= params.design ? "-d ${params.design}" : ""
   modules_list = "-m custom_content -m cutadapt -m samtools -m star -m deeptools"
   """
+  stat2mqc.sh ${splan} 
   mqc_header.py --splan ${splan} --name "scChIP-seq" --version ${workflow.manifest.version} ${metadataOpts} > multiqc-config-header.yaml
   multiqc . -f $rtitle $rfilename -c multiqc-config-header.yaml -c $multiqcConfig $modules_list
   """

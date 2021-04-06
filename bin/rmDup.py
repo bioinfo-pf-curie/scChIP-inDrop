@@ -19,6 +19,17 @@ import re
 import pysam
 import itertools 
 
+def usage():
+    """Usage function"""
+    print "Usage : python addBarcodeFlag.py"
+    print "-i/--input < mapped file [BAM]>"
+    print "[-d/--dist] <distance to consider reads as duplicates [INT]>"
+    print "[-o/--ofile] <output file [BAM]>"
+    print "[-t/--tag] <tag>"
+    print "[-v/--verbose] <Verbose>"
+    print "[-h/--help] <Help>"
+    return
+
 
 def get_args():
     """Get arguments"""
@@ -30,11 +41,12 @@ def get_args():
              "dist=",
              "output=",
              "tag=", 
-             "help"])
+             "verbose", "help"])
     except getopt.GetoptError:
         usage()
         sys.exit(-1)
     return opts
+
 
 def get_read_tag(read, tag):
     """
@@ -45,7 +57,6 @@ def get_read_tag(read, tag):
             return t[1]
     return None
 
-
 def get_read_start(read):
     """                                                                                                                                                                                        
     Return the 5' end of the read                                                                                                                                                              
@@ -55,7 +66,6 @@ def get_read_start(read):
     else:
         pos = read.pos
     return pos
-
 
 if __name__ == "__main__":
 
@@ -86,8 +96,11 @@ if __name__ == "__main__":
             tag = arg
         elif opt in ("-d", "--dist"):
             dist = int(arg)
+        elif opt in ("-v", "--verbose"):
+            verbose = True
         else:
             assert False, "unhandled option"
+
 
     ## Read bam file
     samfile = pysam.Samfile(inputFile, "rb")
@@ -123,20 +136,14 @@ if __name__ == "__main__":
                     ## update reference
                 ref_perbarcode[barcode] = r1
                 outfile.write(r1)
-##        else:
-##            if barcode not in ref_perbarcode_rev:
-##                ref_perbarcode_rev[barcode] = r1
-##                outfile.write(r1)
-##            else:
-##                ref = ref_perbarcode_rev[barcode]
-##                ref_start = get_read_start(ref)
-##                r1_start = get_read_start(r1)
-
-##                if ref.tid == r1.tid and r1_start < (ref_start + dist) and r1_start > (ref_start - dist)  :
-##                    dup_counter += 1
-##                else:
-##                    ref_perbarcode_rev[barcode] = r1
-# #                   outfile.write(r1)
-        
+    
+        if (reads_counter % 1000000 == 0 and verbose):
+            print "##", reads_counter
 
 samfile.close()
+
+## Log
+if verbose:
+    print "## Number of reads: " + str(reads_counter)
+    print "## Number of duplicates: " + str(dup_counter)
+    print "## Number of reads after duplicates removal: " + str(reads_counter - dup_counter)
