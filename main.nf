@@ -381,24 +381,18 @@ process bcMapping {
   ##Sort indexes by read name: 
   sort -T /scratch/ --parallel=${task.cpus} -k1,1 reads_matching_index_1.txt > reads_matching_index_1_sorted.txt
   
-  #rm reads_matching_index_1.txt
-  
+  rm reads_matching_index_1.txt
   
   sort -T /scratch/ --parallel=${task.cpus} -k1,1 reads_matching_index_2.txt > reads_matching_index_2_sorted.txt
-  
-  
-  #rm reads_matching_index_2.txt
-  
+
+  rm reads_matching_index_2.txt
   
   sort -T /scratch/ --parallel=${task.cpus} -k1,1 reads_matching_index_3.txt > reads_matching_index_3_sorted.txt
   
-  
-  #rm reads_matching_index_3.txt
-  
+  rm reads_matching_index_3.txt
   
   #Join indexes 1 & 2 together (inner join)
   join -t\$' ' -1 1 -2 1 reads_matching_index_1_sorted.txt reads_matching_index_2_sorted.txt > tmp
-  
   
   #Count matched index 1 & 2
   echo \$(wc -l tmp) | cut -d' ' -f1 > count_index_1_2
@@ -413,18 +407,18 @@ process bcMapping {
   
   
   ##Write logs
-  n_index_1=\$(cat count_index_1)
-  n_index_2=\$(cat count_index_2)
-  n_index_3=\$(cat count_index_3)
-  n_index_1_2=\$(cat count_index_1_2)
-  n_index_1_2_3=\$(cat count_index_1_2_3)
+  #n_index_1=\$(cat \$count_index_1)
+  #n_index_2=\$(cat \$count_index_2)
+  #n_index_3=\$(cat \$count_index_3)
+  #n_index_1_2=\$(cat \$count_index_1_2)
+  #n_index_1_2_3=\$(cat \$count_index_1_2_3)
 
   ## logs
-  echo "## Number of matched indexes 1: $n_index_1" > ${prefix}_bowtie2.log
-  echo "## Number of matched indexes 2: $n_index_2" >> ${log}
-  echo "## Number of matched indexes 1 and 2: $n_index_1_2" >> ${log}
-  echo "## Number of matched indexes 3: $n_index_3" >> ${log}
-  echo "## Number of matched barcodes: $n_index_1_2_3" >> ${log}
+  echo "## Number of matched indexes 1: \$count_index_1" > ${prefix}_bowtie2.log
+  echo "## Number of matched indexes 2: \$count_index_2" >> ${log}
+  echo "## Number of matched indexes 1 and 2: \$count_index_3" >> ${log}
+  echo "## Number of matched indexes 3: \$count_index_1_2" >> ${log}
+  echo "## Number of matched barcodes: \$count_index_1_2_3" >> ${log}
 
   ## version
   bowtie2 --version > v_bowtie2.txt
