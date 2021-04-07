@@ -43,20 +43,20 @@ do
 
 
     ## Data for the barcode matching graph
-    reads_after_pcr_rt_rm=$( calc $reads_after_pcr_rt_rm - $R1_mapped_R2_unmapped)
-    index_1_2_not_3=$( calc $match_index_1_2 - $match_barcode)
-    index_1_not_2_not_3=$( calc $match_index_1 - $index_1_2_not_3 - $match_barcode)
-    index_2_not_1_3=$( calc $match_index_2 - $match_index_1_2)
-    index_3_not_1_2=$( calc $match_index_3 - $match_barcode)
-    no_index_found=$( calc $total_reads - $match_barcode - $index_1_2_not_3 - $index_1_not_2_not_3 - $index_2_not_1_3 - $index_3_not_1_2)
-    uniquely_mapped_and_barcoded_percent=$( calc 100*$uniquely_mapped_and_barcoded / $total_reads)
-    unique_reads_percent=$( calc 100*$unique_reads/ $total_reads)
+    reads_after_pcr_rt_rm=$( echo "scale=2; ($reads_after_pcr_rt_rm - $R1_mapped_R2_unmapped)" | bc -l ) 
+    index_1_2_not_3=$( echo "scale=2; ($match_index_1_2 - $match_barcode)" | bc -l ) 
+    index_1_not_2_not_3=$( echo "scale=2; ( $match_index_1 - $index_1_2_not_3 - $match_barcode)" | bc -l ) 
+    index_2_not_1_3=$( echo "scale=2; ( $match_index_2 - $match_index_1_2)" | bc -l ) 
+    index_3_not_1_2=$( echo "scale=2; ( $match_index_3 - $match_barcode)" | bc -l ) 
+    no_index_found=$( echo "scale=2; ( $total_reads - $match_barcode - $index_1_2_not_3 - $index_1_not_2_not_3 - $index_2_not_1_3 - $index_3_not_1_2)" | bc -l ) 
+    uniquely_mapped_and_barcoded_percent=$( echo "scale=2; ( 100*$uniquely_mapped_and_barcoded / $total_reads)" | bc -l ) 
+    unique_reads_percent=$( echo "scale=2; ( 100*$unique_reads/ $total_reads)" | bc -l ) 
     # Table
     echo "${sample},$sname,$match_barcode,$index_1_2_not_3,$index_1_not_2_not_3,$index_2_not_1_3,$index_3_not_1_2,$no_index_found" >> scChIPseq_barcode.csv
 
     ## Data for mapping 
-    uniquely_mapped_unbarcoded=$( calc $uniquely_mapped - $uniquely_mapped_and_barcoded)
-    multimapped=$( calc $multimapped + $multimapped_toomany)
+    uniquely_mapped_unbarcoded=$( echo "scale=2; ( $uniquely_mapped - $uniquely_mapped_and_barcoded)" | bc -l ) 
+    multimapped=$( echo "scale=2; ( $multimapped + $multimapped_toomany)" | bc -l ) 
     unmapped=$unmapped_count
     # Table
     echo "${sample},$sname,$unique_reads,$R2_unmapped_duplicates,$rt_duplicates,$pcr_duplicates,$uniquely_mapped_unbarcoded,$multimapped,$unmapped" >> scChIPseq_alignments.csv
