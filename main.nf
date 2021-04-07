@@ -416,8 +416,8 @@ process bcMapping {
   ## logs
   echo "## Number of matched indexes 1: \$n_index_1" > ${prefix}_bowtie2.log
   echo "## Number of matched indexes 2: \$n_index_2" >> ${prefix}_bowtie2.log
-  echo "## Number of matched indexes 1 and 2: \$n_index_3" >> ${prefix}_bowtie2.log
-  echo "## Number of matched indexes 3: \$n_index_1_2" >> ${prefix}_bowtie2.log
+  echo "## Number of matched indexes 1 and 2: \$n_index_1_2" >> ${prefix}_bowtie2.log
+  echo "## Number of matched indexes 3: \$n_index_3" >> ${prefix}_bowtie2.log
   echo "## Number of matched barcodes: \$n_index_1_2_3" >> ${prefix}_bowtie2.log
 
   ## version
