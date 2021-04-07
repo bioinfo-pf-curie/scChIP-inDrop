@@ -727,9 +727,9 @@ process  removePcrRtDup {
   
   ## Logs
   n_mapped_barcoded=\$(samtools view -c  ${prefix}_flagged.bam)
-  n_pcr_duplicates=\$(cat \$count_PCR_duplicates)
-  n_rt_duplicates=\$(cat \$count_RT_duplicates)
-  n_R1_mapped_R2_unmapped=\$(cat \$countR1unmappedR2)
+  n_pcr_duplicates=\$(cat count_PCR_duplicates)
+  n_rt_duplicates=\$(cat count_RT_duplicates)
+  n_R1_mapped_R2_unmapped=\$(cat countR1unmappedR2)
   
   n_unique_except_R1_unmapped_R2=\$((\$n_mapped_barcoded - \$n_pcr_duplicates - \$n_rt_duplicates))
 
