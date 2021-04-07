@@ -407,11 +407,11 @@ process bcMapping {
   
   
   ##Write logs
-  n_index_1=\$(cat \$count_index_1)
-  n_index_2=\$(cat \$count_index_2)
-  n_index_3=\$(cat \$count_index_3)
-  n_index_1_2=\$(cat \$count_index_1_2)
-  n_index_1_2_3=\$(cat \$count_index_1_2_3)
+  n_index_1=\$(cat count_index_1)
+  n_index_2=\$(cat count_index_2)
+  n_index_3=\$(cat count_index_3)
+  n_index_1_2=\$(cat count_index_1_2)
+  n_index_1_2_3=\$(cat count_index_1_2_3)
 
   ## logs
   echo "## Number of matched indexes 1: \$n_index_1" > ${prefix}_bowtie2.log
