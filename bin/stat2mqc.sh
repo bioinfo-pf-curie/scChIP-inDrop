@@ -67,7 +67,7 @@ do
     n1000=$( sed 's/^\s*//g' cellThresholds/${sample}_rmDup.count | awk -v limit=1000 '$1>=limit && NR>1{c++} END{print c+0}')
     n1500=$( sed 's/^\s*//g' cellThresholds/${sample}_rmDup.count | awk -v limit=1500 '$1>=limit && NR>1{c++} END{print c+0}')
     desc="Number of barcodes with more than 100 unique reads = $n100 <br>Number of barcodes with more than 500 unique reads = $n500 <br>Number of barcodes with more than 1000 unique reads = $n1000 <br>Number of barcodes with more than 1500 unique reads = $n1500" 
-    sed -i "s|{desc}|$desc|g" $baseDir/assets/multiqcConfig.yaml
+    sed -i "s|{desc}|$desc|g" ../../../assets/multiqcConfig.yaml
 
     ## Summary table
     echo "${sample},$sname,$uniquely_mapped_percent,$uniquely_mapped_and_barcoded_percent,$unique_reads_percent" >> scChIPseq_table.csv
