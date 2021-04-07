@@ -21,13 +21,13 @@ import itertools
 
 def usage():
     """Usage function"""
-    print "Usage : python addBarcodeFlag.py"
-    print "-i/--input < mapped file [BAM]>"
-    print "[-d/--dist] <distance to consider reads as duplicates [INT]>"
-    print "[-o/--ofile] <output file [BAM]>"
-    print "[-t/--tag] <tag>"
-    print "[-v/--verbose] <Verbose>"
-    print "[-h/--help] <Help>"
+    print ("Usage : python addBarcodeFlag.py")
+    print ("-i/--input < mapped file [BAM]>")
+    print ("[-d/--dist] <distance to consider reads as duplicates [INT]>")
+    print ("[-o/--ofile] <output file [BAM]>")
+    print ("[-t/--tag] <tag>")
+    print ("[-v/--verbose] <Verbose>")
+    print ("[-h/--help] <Help>")
     return
 
 
@@ -138,12 +138,12 @@ if __name__ == "__main__":
                 outfile.write(r1)
     
         if (reads_counter % 1000000 == 0 and verbose):
-            print "##", reads_counter
+            print ("##", reads_counter)
 
 samfile.close()
 
 ## Log
 if verbose:
-    print "## Number of reads: " + str(reads_counter)
-    print "## Number of duplicates: " + str(dup_counter)
-    print "## Number of reads after duplicates removal: " + str(reads_counter - dup_counter)
+    print ("## Number of reads: " + str(reads_counter))
+    print ("## Number of duplicates: " + str(dup_counter))
+    print ("## Number of reads after duplicates removal: " + str(reads_counter - dup_counter))
