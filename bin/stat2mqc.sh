@@ -19,11 +19,11 @@ do
     sname=$(awk -F, -v sname=$sample '$1==sname{print $2}' $splan)
 
     # BOWTIE2
-    match_index_1=$(grep -e "## Number of matched indexes 1:" $scChIPseq_logfile | sed 's/.*://g' | grep -o -e '[0-9]*\.*[0-9]*')
-    match_index_2=$(grep -e "## Number of matched indexes 2:" $scChIPseq_logfile | sed 's/.*://g' | grep -o -e '[0-9]*\.*[0-9]*')
-    match_index_1_2=$(grep -e "## Number of matched indexes 1 and 2:" $scChIPseq_logfile | sed 's/.*://g' | grep -o -e '[0-9]*\.*[0-9]*')
-    match_index_3=$(grep -e "## Number of matched indexes 3:" $scChIPseq_logfile | sed 's/.*://g' | grep -o -e '[0-9]*\.*[0-9]*')
-    match_barcode=$(grep -e "## Number of matched barcodes:" $scChIPseq_logfile | sed 's/.*://g' | grep -o -e '[0-9]*\.*[0-9]*')
+    match_index_1=$(grep -e "## Number of matched indexes 1:" bowtie2/${sample}_bowtie2.log | sed 's/.*://g' | grep -o -e '[0-9]*\.*[0-9]*')
+    match_index_2=$(grep -e "## Number of matched indexes 2:" bowtie2/${sample}_bowtie2.log | sed 's/.*://g' | grep -o -e '[0-9]*\.*[0-9]*')
+    match_index_1_2=$(grep -e "## Number of matched indexes 1 and 2:" bowtie2/${sample}_bowtie2.log | sed 's/.*://g' | grep -o -e '[0-9]*\.*[0-9]*')
+    match_index_3=$(grep -e "## Number of matched indexes 3:" bowtie2/${sample}_bowtie2.log | sed 's/.*://g' | grep -o -e '[0-9]*\.*[0-9]*')
+    match_barcode=$(grep -e "## Number of matched barcodes:" bowtie2/${sample}_bowtie2.log | sed 's/.*://g' | grep -o -e '[0-9]*\.*[0-9]*')
 
     # Remove RT & PCR duplicats
     uniquely_mapped_and_barcoded=$(grep -e "## Number of reads mapped and barcoded:" removeRtPcr/${sample}_removePcrRtDup.log | sed 's/.*://g' | grep -o -e '[0-9]*\.*[0-9]*')
@@ -40,7 +40,8 @@ do
     total_reads=`grep -e "Number of input reads " star/${sample}Log.final.out | sed 's/.*|//g' | grep -o -e '[0-9]*\.*[0-9]*' `
     uniquely_mapped=`grep "Uniquely mapped reads number" star/${sample}Log.final.out | awk '{print $NF}'`
     uniquely_mapped_percent=`grep "Uniquely mapped reads %" star/${sample}Log.final.out | awk '{print $NF}' | sed -e 's/%//'`
-
+    multimapped=$(grep -e "Number of reads mapped to multiple loci " star/${sample}Log.final.out | sed 's/.*|//g' | grep -o -e '[0-9]*\.*[0-9]*')
+    multimapped_toomany=$(grep -e "Number of reads mapped to too many loci " star/${sample}Log.final.out | sed 's/.*|//g' | grep -o -e '[0-9]*\.*[0-9]*')    
 
     ## Data for the barcode matching graph
     reads_after_pcr_rt_rm=$( echo "scale=2; ($reads_after_pcr_rt_rm - $R1_mapped_R2_unmapped)" | bc -l ) 
@@ -54,7 +55,10 @@ do
     # Table
     echo "${sample},$sname,$match_barcode,$index_1_2_not_3,$index_1_not_2_not_3,$index_2_not_1_3,$index_3_not_1_2,$no_index_found" >> scChIPseq_barcode.csv
 
-    ## Data for mapping 
+    ## Data for mapping - STAR
+    total_mapped=$( echo "scale=2; ($uniquely_mapped + $multimapped + $multimapped_toomany)" | bc -l ) 
+    unmapped_count=$( echo "scale=2; ($total_reads - $total_mapped)" | bc -l ) 
+    total_unmapped_percent=$( echo "scale=2; ($unmapped_mismatches_percent + $unmapped_tooshort_percent + $unmapped_other_percent)" | bc -l ) 
     uniquely_mapped_unbarcoded=$( echo "scale=2; ( $uniquely_mapped - $uniquely_mapped_and_barcoded)" | bc -l ) 
     multimapped=$( echo "scale=2; ( $multimapped + $multimapped_toomany)" | bc -l ) 
     unmapped=$unmapped_count

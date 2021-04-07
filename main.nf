@@ -805,14 +805,15 @@ process bamToBigWig{
   output:
   set (prefix), file("*.bw") into chBigWig
   file("v_deeptools.txt") into chBamCoverageVersion
+  set (prefix), file("*_bamToBigWig.log") into chBamToBigLog
   
   script:
   """
   if [[${params.removeBlackRegion}]]
   then
-      bamCoverage --bam ${rmDupBam} --outFileName ${prefix}.bw --numberOfProcessors ${task.cpus} --normalizeUsing CPM --ignoreForNormalization chrX --binSize 50 --smoothLength 500 --extendReads 150 --blackListFileName $blackListBed
+      bamCoverage --bam ${rmDupBam} --outFileName ${prefix}.bw --numberOfProcessors ${task.cpus} --normalizeUsing CPM --ignoreForNormalization chrX --binSize 50 --smoothLength 500 --extendReads 150 --blackListFileName $blackListBed &> ${prefix}_bamToBigWig.log
   else
-      bamCoverage --bam ${rmDupBam} --outFileName ${prefix}.bw --numberOfProcessors ${task.cpus} --normalizeUsing CPM --ignoreForNormalization chrX --binSize 50 --smoothLength 500 --extendReads 150
+      bamCoverage --bam ${rmDupBam} --outFileName ${prefix}.bw --numberOfProcessors ${task.cpus} --normalizeUsing CPM --ignoreForNormalization chrX --binSize 50 --smoothLength 500 --extendReads 150 &> ${prefix}_bamToBigWig.log
   fi
 
   deeptools --version &> v_deeptools.txt
@@ -1019,7 +1020,8 @@ process multiqc {
   file ('workflow_summary/*') from workflowSummaryYaml.collect()
   //Modules
   file ('star/*') from chAlignmentLogs.collect().ifEmpty([])
-  file ('trimming/*') from chTrimmedReadsLog.collect().ifEmpty([])
+  //file ('trimming/*') from chTrimmedReadsLog.collect().ifEmpty([])
+  file("bamToBigWig/*") from chBamToBigLog.collect().ifEmpty([])
   //Logs
   file("bowtie2/*") from chBowtie2Log.collect().ifEmpty([])
   file("removeRtPcr/*") from chPcrRtCountsLog.collect().ifEmpty([])
@@ -1037,7 +1039,7 @@ process multiqc {
   metadataOpts = params.metadata ? "--metadata ${metadata}" : ""
   //isPE = params.singleEnd ? "" : "-p"
   designOpts= params.design ? "-d ${params.design}" : ""
-  modules_list = "-m custom_content -m cutadapt -m samtools -m star -m deeptools"
+  modules_list = "-m custom_content -m bowtie2 -m star -m deeptools"
   """
   stat2mqc.sh ${splan} 
   mqc_header.py --splan ${splan} --name "scChIP-seq" --version ${workflow.manifest.version} ${metadataOpts} > multiqc-config-header.yaml

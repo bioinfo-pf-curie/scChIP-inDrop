@@ -80,39 +80,18 @@ sp:
 ## Modules 
 
 module_order:
-  - fastqc
-  - bowtie1:
-      name: 'rRNA Mapping'
-      info: 'This section reports the fraction of reads aligned on ribosomal RNAs.'
-      target: ''
-      path_filters:
-        - '*.log'
   - star
-  - hisat2
-  - tophat
-  - rseqc
-  - featureCounts
-  - HTSeq
-  - preseq:
-     name: 'Sequencing Complexity'
-     info: 'estimates the complexity of a library, showing how many additional unique reads are sequenced for increasing total read count. A shallow curve indicates complexity saturation. The dashed line shows a perfectly complex library where total reads = unique reads. The presented graph shows extrapolated curves up to 200M sequencing reads.'
-
+  
 #############################
 ## Display
 
 report_section_order:
-  stats:
+  scChIPseq_general_table:
     order: 1
-  gene_saturation:
+  scChIPseq_barcode:
     order: -400
-  gene_type:
+  scChIPseq_alignments:
     order: -500
-  DupRadar:
-    order: -600 
-  sample-pca:
-    order: -800
-  sample-correlation:
-    order: -900
   software_versions:
     order: -1000
   summary:
