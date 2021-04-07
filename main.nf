@@ -178,7 +178,7 @@ if (params.bed) {
   Channel  
     .fromPath(params.bed)
     .ifEmpty { exit 1, "BED annotation file not found: ${params.bed}" }
-    .into { chBedCountMatrices } 
+    .set { chBedCountMatrices } 
 }else {
   exit 1, "BED annotation file not not found: ${params.bed}"
 }
@@ -407,18 +407,18 @@ process bcMapping {
   
   
   ##Write logs
-  #n_index_1=\$(cat \$count_index_1)
-  #n_index_2=\$(cat \$count_index_2)
-  #n_index_3=\$(cat \$count_index_3)
-  #n_index_1_2=\$(cat \$count_index_1_2)
-  #n_index_1_2_3=\$(cat \$count_index_1_2_3)
+  n_index_1=\$(cat \$count_index_1)
+  n_index_2=\$(cat \$count_index_2)
+  n_index_3=\$(cat \$count_index_3)
+  n_index_1_2=\$(cat \$count_index_1_2)
+  n_index_1_2_3=\$(cat \$count_index_1_2_3)
 
   ## logs
-  echo "## Number of matched indexes 1: \$count_index_1" > ${prefix}_bowtie2.log
-  echo "## Number of matched indexes 2: \$count_index_2" >> ${prefix}_bowtie2.log
-  echo "## Number of matched indexes 1 and 2: \$count_index_3" >> ${prefix}_bowtie2.log
-  echo "## Number of matched indexes 3: \$count_index_1_2" >> ${prefix}_bowtie2.log
-  echo "## Number of matched barcodes: \$count_index_1_2_3" >> ${prefix}_bowtie2.log
+  echo "## Number of matched indexes 1: \$n_index_1" > ${prefix}_bowtie2.log
+  echo "## Number of matched indexes 2: \$n_index_2" >> ${prefix}_bowtie2.log
+  echo "## Number of matched indexes 1 and 2: \$n_index_3" >> ${prefix}_bowtie2.log
+  echo "## Number of matched indexes 3: \$n_index_1_2" >> ${prefix}_bowtie2.log
+  echo "## Number of matched barcodes: \$n_index_1_2_3" >> ${prefix}_bowtie2.log
 
   ## version
   bowtie2 --version > v_bowtie2.txt
