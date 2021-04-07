@@ -362,21 +362,21 @@ process bcMapping {
           -N 1 -L 8 --rdg 0,7 --rfg 0,7 --mp 7,7 --ignore-quals --score-min L,0,-1 -t --no-unal --no-hd -p ${task.cpus} > index_1_bowtie2.sam
   
   #Keep only reads that were matched by a unique index 1 + counting matched index1
-  awk '/XS/{next} \$2!=4{print \$1,\$3;count++} ;END{print count > count_index_1}' index_1_bowtie2.sam > reads_matching_index_1.txt
+  awk '/XS/{next} \$2!=4{print \$1,\$3;count++} ;END{print count > \"count_index_1\"}' index_1_bowtie2.sam > reads_matching_index_1.txt
   
 
   #Map INDEXES 2 against Index2 library
   bowtie2 -x /data/users/lhadjabe/Gitlab/ChIP-seq_single-cell_LBC/Barcodes/LBC/bowtie_2_index_short/ref_index_2 -f read_indexes_2.fasta -N 1 -L 8 --rdg 0,7 --rfg 0,7 --mp 7,7 --ignore-quals --score-min L,0,-1 -t --no-unal --no-hd -p ${task.cpus} > index_2_bowtie2.sam 
   
   #Keep only reads that were matched by a unique index 2 + counting matched index2
-  awk '/XS/{next} \$2!=4{print \$1,\$3;count++} ;END{print count > count_index_2}' index_2_bowtie2.sam > reads_matching_index_2.txt
+  awk '/XS/{next} \$2!=4{print \$1,\$3;count++} ;END{print count > \"count_index_2\"}' index_2_bowtie2.sam > reads_matching_index_2.txt
   
   
   #Map INDEXES 3 against Index3 library
   bowtie2 -x /data/users/lhadjabe/Gitlab/ChIP-seq_single-cell_LBC/Barcodes/LBC/bowtie_2_index_short/ref_index_3 -f read_indexes_3.fasta -N 1 -L 8 --rdg 0,7 --rfg 0,7 --mp 7,7 --ignore-quals --score-min L,0,-1 -t --no-unal --no-hd -p ${task.cpus} > index_3_bowtie2.sam
   
   #Keep only reads that were matched by a unique index 3 + counting matched index3
-  awk '/XS/{next} \$2!=4{print \$1,\$3;count++} ;END{print count > count_index_3}' index_3_bowtie2.sam > reads_matching_index_3.txt
+  awk '/XS/{next} \$2!=4{print \$1,\$3;count++} ;END{print count > \"count_index_3\"}' index_3_bowtie2.sam > reads_matching_index_3.txt
   
   ##Sort indexes by read name: 
   sort -T /scratch/ --parallel=${task.cpus} -k1,1 reads_matching_index_1.txt > reads_matching_index_1_sorted.txt
@@ -407,6 +407,13 @@ process bcMapping {
   
   
   ##Write logs
+  #n_index_1=\$(cat \$count_index_1)
+  #n_index_2=\$(cat \$count_index_2)
+  #n_index_3=\$(cat \$count_index_3)
+  #n_index_1_2=\$(cat \$count_index_1_2)
+  #n_index_1_2_3=\$(cat \$count_index_1_2_3)
+
+  ## logs
   echo "## Number of matched indexes 1: \$count_index_1" > ${prefix}_bowtie2.log
   echo "## Number of matched indexes 2: \$count_index_2" >> ${prefix}_bowtie2.log
   echo "## Number of matched indexes 1 and 2: \$count_index_3" >> ${prefix}_bowtie2.log
