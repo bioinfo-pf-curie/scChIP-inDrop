@@ -346,7 +346,12 @@ process bcMapping {
   output:
   set val(prefix), file("*_read_barcodes.txt") into chReadBcNames
   file ("v_bowtie2.txt") into chBowtie2Version
+  // summary of counts
   set val(prefix) , file("*_bowtie2.log") into chBowtie2Log
+  // for bowtie2 module in mqc
+  set val(prefix) , file("*_index_1_bowtie2.log") into chIndex1Bowtie2Log
+  set val(prefix) , file("*_index_2_bowtie2.log") into chIndex2Bowtie2Log
+  set val(prefix) , file("*_index_3_bowtie2.log") into chIndex3Bowtie2Log
 
   script:
   """
@@ -359,21 +364,21 @@ process bcMapping {
   
   #Map INDEXES 1 against Index1 library
   bowtie2 -x /data/users/lhadjabe/Gitlab/ChIP-seq_single-cell_LBC/Barcodes/LBC/bowtie_2_index_short/ref_index_1 -f read_indexes_1.fasta \
-          -N 1 -L 8 --rdg 0,7 --rfg 0,7 --mp 7,7 --ignore-quals --score-min L,0,-1 -t --no-unal --no-hd -p ${task.cpus} > index_1_bowtie2.sam
+          -N 1 -L 8 --rdg 0,7 --rfg 0,7 --mp 7,7 --ignore-quals --score-min L,0,-1 -t --no-unal --no-hd -p ${task.cpus} > index_1_bowtie2.sam 2> ${prefix}_index_1_bowtie2.log
   
   #Keep only reads that were matched by a unique index 1 + counting matched index1
   awk '/XS/{next} \$2!=4{print \$1,\$3;count++} ;END{print count > \"count_index_1\"}' index_1_bowtie2.sam > reads_matching_index_1.txt
   
 
   #Map INDEXES 2 against Index2 library
-  bowtie2 -x /data/users/lhadjabe/Gitlab/ChIP-seq_single-cell_LBC/Barcodes/LBC/bowtie_2_index_short/ref_index_2 -f read_indexes_2.fasta -N 1 -L 8 --rdg 0,7 --rfg 0,7 --mp 7,7 --ignore-quals --score-min L,0,-1 -t --no-unal --no-hd -p ${task.cpus} > index_2_bowtie2.sam 
+  bowtie2 -x /data/users/lhadjabe/Gitlab/ChIP-seq_single-cell_LBC/Barcodes/LBC/bowtie_2_index_short/ref_index_2 -f read_indexes_2.fasta -N 1 -L 8 --rdg 0,7 --rfg 0,7 --mp 7,7 --ignore-quals --score-min L,0,-1 -t --no-unal --no-hd -p ${task.cpus} > index_2_bowtie2.sam 2> ${prefix}_index_2_bowtie2.log
   
   #Keep only reads that were matched by a unique index 2 + counting matched index2
   awk '/XS/{next} \$2!=4{print \$1,\$3;count++} ;END{print count > \"count_index_2\"}' index_2_bowtie2.sam > reads_matching_index_2.txt
   
   
   #Map INDEXES 3 against Index3 library
-  bowtie2 -x /data/users/lhadjabe/Gitlab/ChIP-seq_single-cell_LBC/Barcodes/LBC/bowtie_2_index_short/ref_index_3 -f read_indexes_3.fasta -N 1 -L 8 --rdg 0,7 --rfg 0,7 --mp 7,7 --ignore-quals --score-min L,0,-1 -t --no-unal --no-hd -p ${task.cpus} > index_3_bowtie2.sam
+  bowtie2 -x /data/users/lhadjabe/Gitlab/ChIP-seq_single-cell_LBC/Barcodes/LBC/bowtie_2_index_short/ref_index_3 -f read_indexes_3.fasta -N 1 -L 8 --rdg 0,7 --rfg 0,7 --mp 7,7 --ignore-quals --score-min L,0,-1 -t --no-unal --no-hd -p ${task.cpus} > index_3_bowtie2.sam 2> ${prefix}_index_3_bowtie2.log
   
   #Keep only reads that were matched by a unique index 3 + counting matched index3
   awk '/XS/{next} \$2!=4{print \$1,\$3;count++} ;END{print count > \"count_index_3\"}' index_3_bowtie2.sam > reads_matching_index_3.txt
@@ -405,7 +410,6 @@ process bcMapping {
   #Reformat & count matched index (1 & 2 & 3) <=> barcode
   awk '{print substr(\$1,1)\"\tBC\"substr(\$2,2)substr(\$3,2)substr(\$4,2);count++} ;END{print count > \"count_index_1_2_3\"}' final > ${prefix}_read_barcodes.txt
   
-  
   ##Write logs
   n_index_1=\$(cat count_index_1)
   n_index_2=\$(cat count_index_2)
@@ -424,6 +428,7 @@ process bcMapping {
   bowtie2 --version > v_bowtie2.txt
   """
 }
+
 
 
 /*
@@ -1021,7 +1026,10 @@ process multiqc {
   //Modules
   file ('star/*') from chAlignmentLogs.collect().ifEmpty([])
   //file ('trimming/*') from chTrimmedReadsLog.collect().ifEmpty([])
-  file("bamToBigWig/*") from chBamToBigLog.collect().ifEmpty([])
+  //file("bamToBigWig/*") from chBamToBigLog.collect().ifEmpty([])file
+  file ('index1/*') from chIndex1Bowtie2Log.collect().ifEmpty([])
+  file ('index2/*') from chIndex2Bowtie2Log.collect().ifEmpty([])
+  file ('index3/*') from chIndex3Bowtie2Log.collect().ifEmpty([])
   //Logs
   file("bowtie2/*") from chBowtie2Log.collect().ifEmpty([])
   file("removeRtPcr/*") from chPcrRtCountsLog.collect().ifEmpty([])
@@ -1039,7 +1047,7 @@ process multiqc {
   metadataOpts = params.metadata ? "--metadata ${metadata}" : ""
   //isPE = params.singleEnd ? "" : "-p"
   designOpts= params.design ? "-d ${params.design}" : ""
-  modules_list = "-m custom_content -m bowtie2 -m star -m deeptools"
+  modules_list = "-m custom_content -m bowtie2 -m star"
   """
   stat2mqc.sh ${splan} 
   mqc_header.py --splan ${splan} --name "scChIP-seq" --version ${workflow.manifest.version} ${metadataOpts} > multiqc-config-header.yaml

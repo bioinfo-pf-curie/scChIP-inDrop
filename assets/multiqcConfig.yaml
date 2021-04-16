@@ -80,7 +80,9 @@ sp:
 ## Modules 
 
 module_order:
-  - star
+  - bowtie2:
+     name: 'Bowtie2'
+     info: 'Alignment results of the three barcode indexes. Index1 should be arround 75%, index2 arround 50% and index3 arround 40%.'
   
 #############################
 ## Display
@@ -88,11 +90,15 @@ module_order:
 report_section_order:
   scChIPseq_general_table:
     order: 1
+  bowtie2:
+    order: -300
   scChIPseq_barcode:
     order: -400
-  scChIPseq_alignments:
+  star:
     order: -500
-  software_versions:
+  scChIPseq_alignments:
+    order: -600
+  scChip-seq_pipeline_software_versions:
     order: -1000
   summary:
     order: -1100

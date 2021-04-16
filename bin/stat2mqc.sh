@@ -11,7 +11,7 @@ echo "Sample_id,Sample_name,Barcoded,Index 1 and 2 found not 3,Index 1 found not
 ## Mapping
 echo "Sample_id,Sample_name,Deduplicated reads, Window duplicates,RT duplicates,PCR duplicates,Uniquely mapped not barcoded,Mapped to multiple loci,Unmapped" > scChIPseq_alignments.csv
 ## Summary table
-echo "Sample_id,Sample_name,%Aligned,%Aligned_Barcoded,%Unique_Reads" > scChIPseq_table.csv
+echo "Sample_id,Sample_name,#Cells,#Cell>1000reads,Median (>1000reads), %Aligned,%Aligned_Barcoded,%Unique_Reads" > scChIPseq_table.csv
 
 for sample in $all_samples
 do
@@ -66,15 +66,29 @@ do
     echo "${sample},$sname,$unique_reads,$R2_unmapped_duplicates,$rt_duplicates,$pcr_duplicates,$uniquely_mapped_unbarcoded,$multimapped,$unmapped" >> scChIPseq_alignments.csv
 
     ## Data for cell thresholds
-    n100=$( sed 's/^\s*//g' cellThresholds/${sample}_rmDup.count | awk -v limit=100 '$1>=limit && NR>1{c++} END{print c+0}')
-    n500=$( sed 's/^\s*//g' cellThresholds/${sample}_rmDup.count | awk -v limit=500 '$1>=limit && NR>1{c++} END{print c+0}' )
+    nbCell=$(wc -l < cellThresholds/${sample}_rmDup.count)
     n1000=$( sed 's/^\s*//g' cellThresholds/${sample}_rmDup.count | awk -v limit=1000 '$1>=limit && NR>1{c++} END{print c+0}')
-    n1500=$( sed 's/^\s*//g' cellThresholds/${sample}_rmDup.count | awk -v limit=1500 '$1>=limit && NR>1{c++} END{print c+0}')
-    desc="Number of barcodes with more than 100 unique reads = $n100 <br>Number of barcodes with more than 500 unique reads = $n500 <br>Number of barcodes with more than 1000 unique reads = $n1000 <br>Number of barcodes with more than 1500 unique reads = $n1500" 
-    sed -i "s|{desc}|$desc|g" ../../../assets/multiqcConfig.yaml
 
+    if (( $n1000>1 ))
+    then 
+        awk -v limit=1000 '$1>=limit && NR>1 {print $1}' cellThresholds/${sample}_rmDup.count | sort -n | uniq > list
+        nb_lines=$(wc -l < list)
+        mod=$(($nb_lines%2))
+        if (( $mod == 0 ))
+        then
+            line_first=$(( $nb_lines/2 ))
+            line_sec=$(( $line_first+1 ))
+            first_num=$(sed "${line_first}q;d" list)
+            sec_num=$(sed "${line_sec}q;d" list)
+            median=$( echo "scale=0; (($first_num+$sec_num)/2)" | bc -l )
+        else
+            median=$( echo "scale=0; (($nbcell+1)/2)" | bc -l )
+        fi
+    else
+        median=$n1000
+    fi
+    
     ## Summary table
-    echo "${sample},$sname,$uniquely_mapped_percent,$uniquely_mapped_and_barcoded_percent,$unique_reads_percent" >> scChIPseq_table.csv
-
+    echo "${sample},$sname,$nbCell,$n1000,$median,$uniquely_mapped_percent,$uniquely_mapped_and_barcoded_percent,$unique_reads_percent" >> scChIPseq_table.csv
 done
 
