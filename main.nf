@@ -49,6 +49,7 @@ def helpMessage() {
   Skip options: All are false by default
     --skipSoftVersion [bool]      Do not report software version
     --skipMultiQC [bool]          Skips MultiQC
+    --skipBigWig [bool]           Skips generation of bigwig files
 
   Other options:
     --outDir [file]               The output directory where the results will be saved
@@ -802,6 +803,9 @@ process bamToBigWig{
   label 'extraMem'
 
   publishDir "${params.outDir}/bamToBigWig", mode: 'copy'
+
+  when:
+  !params.skipBigWig
 
   input:
   set (prefix), file (rmDupBam), file (rmDupBai) from chNoDup_bigWig
