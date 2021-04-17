@@ -795,7 +795,7 @@ process  removeDup {
   """
 }
 
-process bamToBigWig{
+/*process bamToBigWig{
   tag "${prefix}"
   label 'deeptools'
   label 'extraCpu'
@@ -823,8 +823,7 @@ process bamToBigWig{
 
   deeptools --version &> v_deeptools.txt
   """
-}
-
+}*/
 
 //7bis-Generate scBed file
 process bamToScBed{

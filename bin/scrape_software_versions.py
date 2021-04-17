@@ -12,7 +12,7 @@ regexes = {
 	'STAR': ['v_star.txt', r"STAR(\S+)"],
 	'samtools': ['v_samtools.txt', r"samtools (\S+)"],
 	'bedtools': ['v_bedtools.txt', r"bedtools v(\S+)"],
-	'deeptools': ['v_deeptools.txt', r"deeptools (\S+)"],
+	#'deeptools': ['v_deeptools.txt', r"deeptools (\S+)"],
 	'Python': ['v_python.txt', r"Python (\S+)"]
 }
 
@@ -24,7 +24,7 @@ results['Bowtie2'] = '<span style="color:#999999;\">N/A</span>'
 results['STAR'] = '<span style="color:#999999;\">N/A</span>'
 results['samtools'] = '<span style="color:#999999;\">N/A</span>'
 results['bedtools'] = '<span style="color:#999999;\">N/A</span>'
-results['deeptools'] = '<span style="color:#999999;\">N/A</span>'
+#results['deeptools'] = '<span style="color:#999999;\">N/A</span>'
 results['Python'] = '<span style="color:#999999;\">N/A</span>'
 
 # Search each file using its regex
