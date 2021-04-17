@@ -90,12 +90,12 @@ custom_data:
             cpswitch_counts_label': 'Number of Reads'
 
 sp:
-    scChIPseq_general_table:
-        fn: 'scChIPseq_table.csv'
-    scChIPseq_barcode:
-        fn: 'scChIPseq_barcode.csv'
-    scChIPseq_alignments:
-        fn: 'scChIPseq_alignments.csv'
+  scChIPseq_general_table:
+      fn: 'scChIPseq_table.csv'
+  scChIPseq_barcode:
+      fn: 'scChIPseq_barcode.csv'
+  scChIPseq_alignments:
+      fn: 'scChIPseq_alignments.csv'
 
 
 ###############################
