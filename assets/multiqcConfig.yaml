@@ -25,12 +25,14 @@ custom_data:
             Sample_name:
               title: 'Sample Name'
               scale: false
+              placement: 200
             Cells:
               description: 'Cells'
               format: '{:,.0f}'
               max: 100
               min: 0
               scale: 'YlGn'
+              placement: 500
             Cells>1000reads:
               description: 'Cells>1000reads'
               format: '{:,.0f}'
@@ -38,6 +40,7 @@ custom_data:
               min: 0
               suffix: '%'
               scale: 'YlGn'
+              placement: 1000
             Median:
               description: 'Median #reads (>1000reads)'
               format: '{:,.0f}'
@@ -45,6 +48,7 @@ custom_data:
               min: 0
               suffix: '%'
               scale: 'YlGn'
+              placement: 2000
             Aligned:
               description: 'Aligned (%)'
               format: '{:,.0f}'
@@ -52,6 +56,7 @@ custom_data:
               min: 0
               suffix: '%'
               scale: 'YlGn'
+              placement: 3000
             Aligned_Barcoded:
               description: 'Aligned and Barcoded (%)'
               format: '{:,.0f}'
@@ -59,6 +64,7 @@ custom_data:
               min: 0
               suffix: '%'
               scale: 'YlGn'
+              placement: 4000
             Unique_Reads:
               description: 'Unique Reads (%)'
               format: '{:,.0f}'
@@ -66,6 +72,7 @@ custom_data:
               min: 0
               suffix: '%'
               scale: 'YlGn'
+              placement: 5000
             
     scChIPseq_barcode:
         id: 'scChIPseq_barcode'
