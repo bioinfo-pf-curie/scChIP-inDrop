@@ -23,49 +23,49 @@ custom_data:
             col1_header: 'Sample ID'
         headers:
             Sample_name:
-                title: 'Sample Name'
-                scale: false
+              title: 'Sample Name'
+              scale: false
             Cells:
-                description: 'Cells'
-                format: '{:,.0f}'
-                max: 100
-                min: 0
-                scale: 'YlGn'
+              description: 'Cells'
+              format: '{:,.0f}'
+              max: 100
+              min: 0
+              scale: 'YlGn'
             Cells>1000reads:
-                description: 'Cells>1000reads'
-                format: '{:,.0f}'
-                max: 100
-                min: 0
-                suffix: '%'
-                scale: 'YlGn'
+              description: 'Cells>1000reads'
+              format: '{:,.0f}'
+              max: 100
+              min: 0
+              suffix: '%'
+              scale: 'YlGn'
             Median:
-                description: 'Median #reads (>1000reads)'
-                format: '{:,.0f}'
-                max: 100
-                min: 0
-                suffix: '%'
-                scale: 'YlGn'
+              description: 'Median #reads (>1000reads)'
+              format: '{:,.0f}'
+              max: 100
+              min: 0
+              suffix: '%'
+              scale: 'YlGn'
             Aligned:
-                description: 'Aligned (%)'
-                format: '{:,.0f}'
-                max: 100
-                min: 0
-                suffix: '%'
-                scale: 'YlGn'
+              description: 'Aligned (%)'
+              format: '{:,.0f}'
+              max: 100
+              min: 0
+              suffix: '%'
+              scale: 'YlGn'
             Aligned_Barcoded:
-                description: 'Aligned and Barcoded (%)'
-                format: '{:,.0f}'
-                max: 100
-                min: 0
-                suffix: '%'
-                scale: 'YlGn'
+              description: 'Aligned and Barcoded (%)'
+              format: '{:,.0f}'
+              max: 100
+              min: 0
+              suffix: '%'
+              scale: 'YlGn'
             Unique_Reads:
-                description: 'Unique Reads (%)'
-                format: '{:,.0f}'
-                max: 100
-                min: 0
-                suffix: '%'
-                scale: 'YlGn'
+              description: 'Unique Reads (%)'
+              format: '{:,.0f}'
+              max: 100
+              min: 0
+              suffix: '%'
+              scale: 'YlGn'
             
     scChIPseq_barcode:
         id: 'scChIPseq_barcode'
