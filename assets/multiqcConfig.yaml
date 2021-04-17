@@ -22,6 +22,27 @@ custom_data:
             title: 'Barcode Mapping'
             cpswitch_counts_label': 'Number of Reads'
         headers:
+            '#Cells':
+                description: '#Cells'
+                format: '{:,.0f}'
+                max: 100
+                min: 0
+                suffix: '%'
+                scale: 'YlGn'
+            '#Cells>1000reads':
+                description: '#Cells>1000reads'
+                format: '{:,.0f}'
+                max: 100
+                min: 0
+                suffix: '%'
+                scale: 'YlGn'
+            'Median #reads (Cells>1000reads)':
+                description: 'Median #reads (>1000reads)'
+                format: '{:,.0f}'
+                max: 100
+                min: 0
+                suffix: '%'
+                scale: 'YlGn'
             '%Aligned':
                 description: '% Aligned'
                 format: '{:,.0f}'

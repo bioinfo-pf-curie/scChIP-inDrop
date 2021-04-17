@@ -49,7 +49,6 @@ def helpMessage() {
   Skip options: All are false by default
     --skipSoftVersion [bool]      Do not report software version
     --skipMultiQC [bool]          Skips MultiQC
-    --skipBigWig [bool]           Skips generation of bigwig files
 
   Other options:
     --outDir [file]               The output directory where the results will be saved
@@ -350,9 +349,9 @@ process bcMapping {
   // summary of counts
   set val(prefix) , file("*_bowtie2.log") into chBowtie2Log
   // for bowtie2 module in mqc
-  set val(prefix) , file("*_index_1_bowtie2.log") into chIndex1Bowtie2Log
-  set val(prefix) , file("*_index_2_bowtie2.log") into chIndex2Bowtie2Log
-  set val(prefix) , file("*_index_3_bowtie2.log") into chIndex3Bowtie2Log
+  set val(prefix) , file("*_index_1_bw2.log") into chIndex1Bowtie2Log
+  set val(prefix) , file("*_index_2_bw2.log") into chIndex2Bowtie2Log
+  set val(prefix) , file("*_index_3_bw2.log") into chIndex3Bowtie2Log
 
   script:
   """
@@ -365,21 +364,21 @@ process bcMapping {
   
   #Map INDEXES 1 against Index1 library
   bowtie2 -x /data/users/lhadjabe/Gitlab/ChIP-seq_single-cell_LBC/Barcodes/LBC/bowtie_2_index_short/ref_index_1 -f read_indexes_1.fasta \
-          -N 1 -L 8 --rdg 0,7 --rfg 0,7 --mp 7,7 --ignore-quals --score-min L,0,-1 -t --no-unal --no-hd -p ${task.cpus} > index_1_bowtie2.sam 2> ${prefix}_index_1_bowtie2.log
+          -N 1 -L 8 --rdg 0,7 --rfg 0,7 --mp 7,7 --ignore-quals --score-min L,0,-1 -t --no-unal --no-hd -p ${task.cpus} > index_1_bowtie2.sam 2> ${prefix}_index_1_bw2.log
   
   #Keep only reads that were matched by a unique index 1 + counting matched index1
   awk '/XS/{next} \$2!=4{print \$1,\$3;count++} ;END{print count > \"count_index_1\"}' index_1_bowtie2.sam > reads_matching_index_1.txt
   
 
   #Map INDEXES 2 against Index2 library
-  bowtie2 -x /data/users/lhadjabe/Gitlab/ChIP-seq_single-cell_LBC/Barcodes/LBC/bowtie_2_index_short/ref_index_2 -f read_indexes_2.fasta -N 1 -L 8 --rdg 0,7 --rfg 0,7 --mp 7,7 --ignore-quals --score-min L,0,-1 -t --no-unal --no-hd -p ${task.cpus} > index_2_bowtie2.sam 2> ${prefix}_index_2_bowtie2.log
+  bowtie2 -x /data/users/lhadjabe/Gitlab/ChIP-seq_single-cell_LBC/Barcodes/LBC/bowtie_2_index_short/ref_index_2 -f read_indexes_2.fasta -N 1 -L 8 --rdg 0,7 --rfg 0,7 --mp 7,7 --ignore-quals --score-min L,0,-1 -t --no-unal --no-hd -p ${task.cpus} > index_2_bowtie2.sam 2> ${prefix}_index_2_bw2.log
   
   #Keep only reads that were matched by a unique index 2 + counting matched index2
   awk '/XS/{next} \$2!=4{print \$1,\$3;count++} ;END{print count > \"count_index_2\"}' index_2_bowtie2.sam > reads_matching_index_2.txt
   
   
   #Map INDEXES 3 against Index3 library
-  bowtie2 -x /data/users/lhadjabe/Gitlab/ChIP-seq_single-cell_LBC/Barcodes/LBC/bowtie_2_index_short/ref_index_3 -f read_indexes_3.fasta -N 1 -L 8 --rdg 0,7 --rfg 0,7 --mp 7,7 --ignore-quals --score-min L,0,-1 -t --no-unal --no-hd -p ${task.cpus} > index_3_bowtie2.sam 2> ${prefix}_index_3_bowtie2.log
+  bowtie2 -x /data/users/lhadjabe/Gitlab/ChIP-seq_single-cell_LBC/Barcodes/LBC/bowtie_2_index_short/ref_index_3 -f read_indexes_3.fasta -N 1 -L 8 --rdg 0,7 --rfg 0,7 --mp 7,7 --ignore-quals --score-min L,0,-1 -t --no-unal --no-hd -p ${task.cpus} > index_3_bowtie2.sam 2> ${prefix}_index_3_bw2.log
   
   #Keep only reads that were matched by a unique index 3 + counting matched index3
   awk '/XS/{next} \$2!=4{print \$1,\$3;count++} ;END{print count > \"count_index_3\"}' index_3_bowtie2.sam > reads_matching_index_3.txt
@@ -803,9 +802,6 @@ process bamToBigWig{
   label 'extraMem'
 
   publishDir "${params.outDir}/bamToBigWig", mode: 'copy'
-
-  when:
-  !params.skipBigWig
 
   input:
   set (prefix), file (rmDupBam), file (rmDupBai) from chNoDup_bigWig
