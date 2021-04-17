@@ -11,7 +11,7 @@ echo "Sample_id,Sample_name,Barcoded,Index 1 and 2 found not 3,Index 1 found not
 ## Mapping
 echo "Sample_id,Sample_name,Deduplicated reads, Window duplicates,RT duplicates,PCR duplicates,Uniquely mapped not barcoded,Mapped to multiple loci,Unmapped" > scChIPseq_alignments.csv
 ## Summary table
-echo -e "Sample_id,Sample_name,Cells, Cells 1000reads, Median 1000reads, %Aligned, %Aligned_Barcoded, %Unique_Reads" > scChIPseq_table.csv
+echo -e "Sample_id,Sample_name,Cells,Cells>1000reads,Median(cell>1000reads), %Aligned, %Aligned_Barcoded, %Unique_Reads" > scChIPseq_table.csv
 
 for sample in $all_samples
 do
