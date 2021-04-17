@@ -1,4 +1,4 @@
-name: python
+name: bedtools
 channels:
   - conda-forge
   - bioconda
@@ -8,4 +8,5 @@ dependencies:
   - conda-forge::pymdown-extensions=8.1.1=pyh44b312d_0
   - bioconda::pysam=0.16.0.1=py39h051187c_3
   - bioconda::bx-python=0.8.11=py39h5d76eff_1
+  - bioconda::bedtools=2.30.0=h7d7f7ad_1
   - bioconda::samtools=1.12=h9aed4be_1

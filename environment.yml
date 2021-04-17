@@ -1,21 +1,20 @@
-name: scChIPseq-1.0
+name: scChIPseq-1.2
 channels:
   - conda-forge
   - bioconda
   - defaults
 dependencies:
-  - python
-  - conda-forge::pymdown-extensions
-  - bioconda::multiqc
-  - bioconda::bowtie2
-  - bioconda::fastx_toolkit
-  - bioconda::star
-  - bioconda::seqtk
-  - bioconda::samtools
-  - conda-forge::more-itertools
-  - bioconda::bedtools
-  - bioconda::deeptools=3.5.1
-
+  - conda-forge::python=3.9.2=hffdb5ce_0_cpython
+  - conda-forge::pymdown-extensions=8.1.1=pyh44b312d_0
+  - bioconda::multiqc=1.10.1=py_0
+  - bioconda::bowtie2=2.4.2=py39hc9c6fcd_2
+  - bioconda::star=2.7.8a=h9ee0642_1
+  - bioconda::cutadapt=3.4=py39h38f01e4_1
+  - bioconda::seqtk=1.3=h5bf99c6_3
+  - bioconda::samtools=1.12=h9aed4be_1
+  - conda-forge::more-itertools=8.7.0=pyhd8ed1ab_0
+  - bioconda::bedtools=2.30.0=h7d7f7ad_1
+  - bioconda::deeptools=3.5.1=py_0
   ## python
-  - bioconda::pysam
-  - bioconda::bx-python
+  - bioconda::pysam=0.16.0.1=py39h051187c_3
+  - bioconda::bx-python=0.8.11=py39h5d76eff_1
