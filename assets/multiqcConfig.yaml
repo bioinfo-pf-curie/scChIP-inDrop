@@ -38,11 +38,10 @@ custom_data:
               format: '{:,.0f}'
               max: 100
               min: 0
-              suffix: '%'
               scale: 'YlGn'
               placement: 1000
             Median:
-              description: 'Median #reads (>1000reads)'
+              description: 'Median reads (>1000reads)'
               format: '{:,.0f}'
               max: 100
               min: 0
