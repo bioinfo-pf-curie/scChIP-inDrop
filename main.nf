@@ -969,7 +969,7 @@ process getSoftwareVersions{
   file("v_cutadapt.txt") from chCutadaptVersion.first().ifEmpty([])
   file("v_star.txt") from chStarVersion.first().ifEmpty([])
   file("v_samtools.txt") from chSamtoolsVersion.first().ifEmpty([])
-  //file("v_deeptools.txt") from chBamCoverageVersion.first().ifEmpty([])
+  file("v_deeptools.txt") from chBamCoverageVersion.first().ifEmpty([])
   file("v_bedtools.txt") from chBedtoolsVersion.first().ifEmpty([])
   file("v_python.txt") from chPythonVersion.first().ifEmpty([])
 
