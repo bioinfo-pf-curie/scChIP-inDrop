@@ -65,9 +65,9 @@ Summary of alignment scores accross the pipeline.
 - **Unmapped** : All unmaped reads (too many mismatches + too short + other on STAR results).
 
 1) Deduplicated reads   
-<span style="color:#FFFF00">More than 10% : Success</span>  
+<span style="color:green">More than 10% : Success</span>  
 <span style="color:yellow"> 5-10% : Warning </span>  
-<span style="color:red">Less than 5%: Danger</span>  
+<span style="color:Red">Less than 5%: Danger</span>  
   
 2) RT duplicates  
 <span style="color: green">Less than 40% : Success</span>  
