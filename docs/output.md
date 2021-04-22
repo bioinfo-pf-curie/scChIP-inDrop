@@ -4,24 +4,20 @@ This document describes the output produced by the pipeline. Most of the plots a
 
 ## Pipeline overview
 
-The pipeline is built using [Nextflow](https://www.nextflow.io/)
-and processes the data using the steps presented in the main README file.  
+The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes the data using the steps presented in the main README file.  
 Briefly, its goal is to process single-cell ChIP-seq data from inDrop protocol.
 
 The directories listed below will be created in the output directory after the pipeline has finished. 
 
 ### Barcode Matching
 
+![MultiQC](images/barcode.png)
+
 Barcodes are composed of three indexes originating from three different libraries. 
 
-
-=> % attendu ?
-
-+ de 40% barc= success
-[20-40%]=warn
-<20%=danger
-
 ![MultiQC](images/scChIPseq_barcode_plot-1.png)
+
+If 40% or more sequences are correctly barcoded ("Barcoded" in the legend), barcoding step went well. If it is between 20% and 40% be carrefull and if it less, barcoding step went wrong.
 
 ### Bowtie2
 
@@ -31,19 +27,8 @@ Barcodes are composed of three indexes originating from three different librarie
 - **SE multimapped** : sequence aligned on multiple indexes.  
 - **SE not aligned** : sequence corresponding to none index. 
 
-
-drop apres 1er index observed. caused : not ligated correctly. ligation séquentielle : first indx 1 is ligated, then 2 then 3 ligués..il ft que les premiers soient bien. perte d'index à chq round. 
-
-1:
-~75
-
-2:
-~50
-
-3:
-~40
-
-
+A drop in successfull alignement percentage is observed after the first index. It is due to the sequential ligation of indexes (first the index 1 is ligated, then the 2, then the 3) that leads to a loss at each round.
+It is attempted that arround 75% of the first index map correctly, arround 50% for the second and arround 40% for the third. 
 
 ![MultiQC](images/bowtie2_se_plot.png)
 
@@ -54,44 +39,50 @@ drop apres 1er index observed. caused : not ligated correctly. ligation séquent
 ![MultiQC - Star stats plot](images/star_alignment_plot.png)
 
 - **Uniquely mapped** : successfully aligned reads to one single locus.  
-- **Mapped to multiple loci** : 1-10
-- **Mapped too many loci** : +2 reads mapped to more than 1 locus. 
-- **Unmapped: too many mismatches** : 
+- **Mapped to multiple loci** : accepted reads aligned on 2 to 10 loci.
+- **Mapped too many loci** : reads aligned to more than 10 loci. 
+- **Unmapped: too many mismatches** : reads having an alignement of too poor quality
 - **Unmapped: too short** : less than 66% of reads length (R1+R2) are correctly aligned on the genome. 
 - **Unmapped other: other** : other reasons than "too short" or "too many" like for example due to a foreign genome contamination or if reads came from a
 from a higly repeated region. 
 
-+60 succ
--40 60 warn
--40 danger
+Alignement is made on correctly barcoded reads.  
+Reads passing alignment are uniquely mapped or mapped to multiple loci.   
+If this two made up to 60%, the alignemnt is a success. If they made betwwen 60 and 40%, be carrefull and if they made less than 40% the sample may have a problem.  
 
+### Alignment Scores'
 
-### Alignment Scores
+Summary of alignment scores accross the pipeline. 
 
 ![MultiQC](images/scChIPseq_alignments_plot.png)
 
-on bc + aligned reads
+- **Deduplicated** : Correct unique reads.
+- **Window duplicates** : Remove duplicates by window (if R2 is unmapped).
+- **RT duplicates** : Removed RT duplicates which are reads having similar barcode, R2 position but a different R1 position.
+- **PCR duplicates** : Removed PCR duplicates which correspond to reads having exactly the same barcode, R1 position and R2 position on the genome.
+- **Uniquely mapped not barcoded** : Correctly aligned reads but having an undetermined barcode.
+- **Mapped to multiple loci** : Reads aligned on 2 to 10 loci.
+- **Unmapped** : All unmaped reads (too many mismatches + too short + other on STAR results).
 
-dedup:
-+5 = sc
-1-5 = wn
--5 danger
-
-arround 70% 
-
-sur les 4 premiers:
-30 rt 
--40= sc
-40-50
-+50: 
-
-30 pcr
--40 = sc
-10 window
--10=sc
-10-15=
-+15=danger
-
+1) Deduplicated reads   
+style="color: green;">More than 10% : Success</span>  
+style="color: yellow;"> 5-10% : Warning </span>  
+style="color: red;">Less than 5%: Danger</span>  
+  
+2) RT duplicates  
+style="color: green;">Less than 40% : Success</span>  
+style="color: yellow;"> 40-50% : Warning</span>  
+style="color: red;">More than 50% : Danger</span>  
+  
+3) PCR duplicates  
+style="color: green;">Less than 40% : Success</span>  
+style="color: yellow;">40-50% : Warning</span>  
+style="color: red;">More than 50% : Danger</span>  
+  
+4) Window duplicates  
+style="color: green;">Less than 10% : Success</span>  
+style="color: yellow;"> 10-15% : Warning</span>  
+style="color: red;">More than 15% : Danger</span>  
 
 
 ## MultiQC

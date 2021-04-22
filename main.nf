@@ -41,10 +41,6 @@ def helpMessage() {
     --samplePlan [file]           Path to sample plan input file (cannot be used with --reads)
     --genome [str]                Name of genome reference
     -profile [str]                Configuration profile to use. test / conda / multiconda / path / multipath / singularity / docker / cluster (see below)
-  
-  Inputs:
-    --design [file]               Path to design file for extended analysis  
-    --singleEnd [bool]            Specifies that the input is single-end reads. Default is false.
 
   Skip options: All are false by default
     --skipSoftVersion [bool]      Do not report software version
@@ -582,6 +578,10 @@ process readsAlignment {
     --runMode alignReads \
     --outFileNamePrefix ${prefix} 
 
+    # Seeds = exactly mapped portions of a read 
+    # Anchors = genomic windows (loci) where a read mapping is attempted 
+    # --winAnchorMultimapNmax 1000 =  reads having up to 1000 anchor seeds
+
   STAR --version &> v_star.txt
 
   samtools view -@ ${task.cpus} -bS ${prefix}Aligned.out.sam > ${prefix}_aligned.bam
@@ -795,7 +795,7 @@ process  removeDup {
   """
 }
 
-/*process bamToBigWig{
+process bamToBigWig{
   tag "${prefix}"
   label 'deeptools'
   label 'extraCpu'
@@ -823,7 +823,7 @@ process  removeDup {
 
   deeptools --version &> v_deeptools.txt
   """
-}*/
+}
 
 //7bis-Generate scBed file
 process bamToScBed{
@@ -1025,7 +1025,7 @@ process multiqc {
   //Modules
   file ('star/*') from chAlignmentLogs.collect().ifEmpty([])
   //file ('trimming/*') from chTrimmedReadsLog.collect().ifEmpty([])
-  //file("bamToBigWig/*") from chBamToBigLog.collect().ifEmpty([])file
+  file("bamToBigWig/*") from chBamToBigLog.collect().ifEmpty([])file
   file ('index1/*') from chIndex1Bowtie2Log.collect().ifEmpty([])
   file ('index2/*') from chIndex2Bowtie2Log.collect().ifEmpty([])
   file ('index3/*') from chIndex3Bowtie2Log.collect().ifEmpty([])

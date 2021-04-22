@@ -1,5 +1,4 @@
-# Nextflow pipeline 
-<!-- TODO update with the name of the pipeline -->
+**Institut Curie - Nextflow scChIPseq-inDrop analysis pipeline**
 
 [![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A519.10.0-brightgreen.svg)](https://www.nextflow.io/)
 [![Install with](https://anaconda.org/anaconda/conda-build/badges/installer/conda.svg)](https://conda.anaconda.org/anaconda)
@@ -13,15 +12,20 @@ It supports [conda](https://docs.conda.io) package manager and  [singularity](ht
 
 ## Pipeline summary
 
-<!-- TODO 
+This data engineering pipeline is designed to treat single-cell chromatin Immuno-Precipitation sequencing from raw reads (fastq, paired end) to exploitable count matrix. The multiple steps involved in the pipeline are :
 
-Describe here the main steps of the pipeline.
+1. Align R2 reads on barcode indexes
+2. Trimming R2 reads
+3. Align paired-end reads on the genome
+4. Assignation of cell barcodes to aligned read
+5. Removal of Reverse Transcription (RT) & Polymerase Chain Reaction (PCR) duplicates
+6. Removal of reads based on window screening (if Read2 was unmapped)
+7. Counting (Generation of count matrix)
+8. Generation of coverage file (bigwig) (CPM normalization)
+9. Reporting
 
-1. Step 1 does...
-2. Step 2 does...
-3. etc
+![MultiQC](docs/images/Simplified_pipeline.png)
 
--->
 
 ### Quick help
 
@@ -39,19 +43,21 @@ Mandatory arguments:
 --genome [str]                   Name of the reference genome. See the `--genomeAnnotationPath` to defined the annotation path
 -profile [str]                   Configuration profile to use (multiple profiles can be specified with comma separated values)
 
-Inputs:
---design [file]                  Path to design file for extended analysis
---singleEnd [bool]               Specifies that the input is single-end reads
-
 Skip options: All are false by default
 --skipSoftVersion [bool]         Do not report software version
 --skipMultiQC [bool]             Skip MultiQC
 
 Other options:
---metadata [dir]                Add metadata file for multiQC report
 --outDir [dir]                  The output directory where the results will be saved
 -w/--work-dir [dir]             The temporary directory where intermediate data will be saved
--name [str]                      Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic
+-name [str]                     Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic
+-oldDesign [bool]               If dark cycles are used write this option as true. Default is false.
+-keepRTdup [bool]               Keep RT duplicats. Default is false.
+-window [int]                   Select the window size. Default is 50.
+-minCounts [int]                Select the minimum count per barcodes after removing duplicates. Default is 1000.
+-removeBlackRegion [bool]       Remove black region. Default is true.
+-mark [str]                     Histone mark targeted 'h3k27me3', 'h3k4me3' or 'unbound'. Default is 'h3k27me3'.
+-binSize [int]                  Bin size to use (in base pairs). Default is 50000. 
 
 =======================================================
 Available profiles
@@ -126,19 +132,6 @@ The sample plan is expected to contain the following fields (with no header):
 SAMPLE_ID,SAMPLE_NAME,path/to/R1/fastq/file,path/to/R2/fastq/file (for paired-end only)
 ```
 
-### Design control
-
-A design file is a csv file that provides additional details on the samples and how they should be processed.
-Here is a simple example:
-
-```
-SAMPLEID,CONTROLID,GROUP
-A949C08,A949C02,1
-...
-```
-
-<!-- TODO - update the design -->
-
 ### Genome annotations
 
 The pipeline does not provide any genomic annotations but expects them to be already available on your system. The path to the genomic annotations can be set with the `--genomeAnnotationPath` option as follows:
@@ -160,7 +153,7 @@ For more details see  [Reference genomes](docs/referenceGenomes.md).
 
 ## Credits
 
-This pipeline has been written by <!-- TODO -->
+This pipeline has been written by the DEPIC team, the single cell platform & the bioinformatics platform of the Institut Curie (Pacôme Prompsy, Louisa Hadj Abed, Celine Vallot, Nicolas Servant)
 
 ## Contacts
 
