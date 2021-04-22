@@ -65,24 +65,24 @@ Summary of alignment scores accross the pipeline.
 - **Unmapped** : All unmaped reads (too many mismatches + too short + other on STAR results).
 
 1) Deduplicated reads   
-style="color: green;">More than 10% : Success</span>  
-style="color: yellow;"> 5-10% : Warning </span>  
-style="color: red;">Less than 5%: Danger</span>  
+<span style="color: green;">More than 10% : Success</span>  
+<span style="color: yellow;"> 5-10% : Warning </span>  
+<span style="color: red;">Less than 5%: Danger</span>  
   
 2) RT duplicates  
-style="color: green;">Less than 40% : Success</span>  
-style="color: yellow;"> 40-50% : Warning</span>  
-style="color: red;">More than 50% : Danger</span>  
+<span style="color: green;">Less than 40% : Success</span>  
+<span style="color: yellow;"> 40-50% : Warning</span>  
+<span style="color: red;">More than 50% : Danger</span>  
   
 3) PCR duplicates  
-style="color: green;">Less than 40% : Success</span>  
-style="color: yellow;">40-50% : Warning</span>  
-style="color: red;">More than 50% : Danger</span>  
+<span style="color: green;">Less than 40% : Success</span>  
+<span style="color: yellow;">40-50% : Warning</span>  
+<span style="color: red;">More than 50% : Danger</span>  
   
 4) Window duplicates  
-style="color: green;">Less than 10% : Success</span>  
-style="color: yellow;"> 10-15% : Warning</span>  
-style="color: red;">More than 15% : Danger</span>  
+<span style="color: green;">Less than 10% : Success</span>  
+<span style="color: yellow;"> 10-15% : Warning</span>  
+<span style="color: red;">More than 15% : Danger</span>  
 
 
 ## MultiQC
