@@ -25,7 +25,6 @@ custom_data:
             Sample_name:
               title: 'Sample Name'
               scale: false
-              placement: 100
             Cells:
               description: 'Cells'
               format: '{:,.0f}'
