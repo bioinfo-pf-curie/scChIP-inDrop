@@ -15,7 +15,7 @@ custom_data:
     scChIPseq_general_table:
         file_format: 'csv'
         section_name: 'General Metrics'
-        description: ''
+        description: "For a correct sample, at least 500 cells should have more than 1000 reads and the median number of reads for these cells should be at least 1100.\n  At least 60% of aligned reads and 15% of aligned and barcoded reads are expected.\n Finaly, a minimum of 3 to 5% of unique reads is needed."
         plot_type: 'table'
         pconfig:
             id: 'scChIPseq_general_table'
@@ -73,7 +73,7 @@ custom_data:
     scChIPseq_barcode:
         id: 'scChIPseq_barcode'
         file_format: 'csv'
-        description: ''
+        description: 'If 40% or more sequences are correctly barcoded, the barcoding step went well. If it is between 20% and 40% be carrefull and if it less, barcoding step went wrong.'
         section_name: 'Barcode Matching'
         plot_type: 'bargraph'
         pconfig:
@@ -84,7 +84,7 @@ custom_data:
     scChIPseq_alignments:
         id: 'scChIPseq_alignments'
         file_format: 'csv'
-        description: ''
+        description: 'Arround 5-10% of deduplicated reads (at least 5%), arround 40-50% of RT & PCR duplicates (no more than 50%) and arround 10-15% of window duplicates (no more than 15%) are expected.'
         section_name: Alignment Scores'
         plot_type: 'bargraph'
         pconfig:
@@ -109,7 +109,9 @@ module_order:
   - bowtie2:
      name: 'Bowtie2'
      info: 'Alignment results of the three barcode indexes. Index1 should be arround 75%, index2 arround 50% and index3 arround 40%.'
-  
+  - star:
+     name: 'STAR'
+     info: "Alignement is made on correctly barcoded reads. \nReads passing alignment are uniquely mapped or mapped to multiple loci.\nIf this two made up to 60%, the alignemnt is a success. If they made betwwen 60 and 40%, be carrefull and if they made less than 40% the sample may have a problem."
 #############################
 ## Display
 
