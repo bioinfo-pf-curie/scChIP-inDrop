@@ -45,6 +45,7 @@ custom_data:
               min: 0
               suffix: '%'
               scale: 'YlGn'
+              placement: 400
             Aligned:
               description: 'Aligned (%)'
               format: '{:,.0f}'
