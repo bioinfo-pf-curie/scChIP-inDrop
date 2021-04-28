@@ -46,9 +46,9 @@ It is attempted that arround 75% of the first index map correctly, arround 50% f
 - **Unmapped other: other** : other reasons than "too short" or "too many" like for example due to a foreign genome contamination or if reads came from a
 from a higly repeated region. 
 
-Alignement is made on correctly barcoded reads.  
+Alignement is made on all the initial reads.  
 Reads passing alignment are uniquely mapped or mapped to multiple loci.   
-If this two made up to 60%, the alignemnt is a success. If they made betwwen 60 and 40%, be carrefull and if they made less than 40% the sample may have a problem.  
+If this two made up to 60%, the alignemnt is a success. If they made between 60 and 40%, be carrefull and if they made less than 40% the sample may have a problem.  
 
 ### Alignment Scores'
 

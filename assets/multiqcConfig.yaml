@@ -111,7 +111,7 @@ module_order:
      info: 'Alignment results of the three barcode indexes. Index1 should be arround 75%, index2 arround 50% and index3 arround 40%.'
   - star:
      name: 'STAR'
-     info: "Alignement is made on correctly barcoded reads. \nReads passing alignment are uniquely mapped or mapped to multiple loci.\nIf this two made up to 60%, the alignemnt is a success. If they made betwwen 60 and 40%, be carrefull and if they made less than 40% the sample may have a problem."
+     info: "Alignement is made on all the initial reads. \nReads passing alignment are uniquely mapped or mapped to multiple loci.\nIf this two made up to 60%, the alignemnt is a success. If they made between 60 and 40%, be carrefull and if they made less than 40% the sample may have a problem."
 #############################
 ## Display
 
