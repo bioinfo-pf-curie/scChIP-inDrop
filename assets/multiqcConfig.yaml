@@ -25,6 +25,7 @@ custom_data:
             Sample_name:
               title: 'Sample Name'
               scale: false
+              placement: 100
             Cells:
               description: 'Cells'
               format: '{:,.0f}'
@@ -34,14 +35,12 @@ custom_data:
               placement: 200
             Cells>1000reads:
               description: 'Cells>1000reads'
-              format: '{:,.0f}'
               max: 100
               min: 0
               scale: 'YlGn'
               placement: 300
             Median:
               description: 'Median(cells>1000reads)'
-              format: '{:,.0f}'
               max: 100
               min: 0
               suffix: '%'
@@ -55,7 +54,7 @@ custom_data:
               scale: 'YlGn'
               placement: 500
             Aligned_Barcoded:
-              description: 'Aligned and Barcoded (%)'
+              description: 'Aligned & Barcoded (%)'
               format: '{:,.0f}'
               max: 100
               min: 0
@@ -85,6 +84,7 @@ custom_data:
     scChIPseq_alignments:
         id: 'scChIPseq_alignments'
         file_format: 'csv'
+        description: ''
         section_name: Alignment Scores'
         plot_type: 'bargraph'
         pconfig:
