@@ -13,10 +13,10 @@ This script is based on the nf-core guidelines. See https://nf-co.re/ for more i
 
 /*
 ========================================================================================
-<!-- TODO - Pipeline Name -->
+scChIP-inDrop
 ========================================================================================
  #### Homepage / Documentation
-<!-- TODO - Pipeline code url -->
+  scChIP-inDrop
 ----------------------------------------------------------------------------------------
 */
 
