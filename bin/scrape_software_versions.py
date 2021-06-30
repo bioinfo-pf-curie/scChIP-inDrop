@@ -14,6 +14,7 @@ regexes = {
 	'bedtools': ['v_bedtools.txt', r"bedtools v(\S+)"],
 	'deeptools': ['v_deeptools.txt', r"deeptools (\S+)"],
 	'Python': ['v_python.txt', r"Python (\S+)"]
+    'R': ['v_R.txt', r"R version (\S+)"]
 }
 
 results = OrderedDict()
@@ -25,6 +26,7 @@ results['samtools'] = '<span style="color:#999999;\">N/A</span>'
 results['bedtools'] = '<span style="color:#999999;\">N/A</span>'
 results['deeptools'] = '<span style="color:#999999;\">N/A</span>'
 results['Python'] = '<span style="color:#999999;\">N/A</span>'
+results['R'] = '<span style="color:#999999;\">N/A</span>'
 
 # Search each file using its regex
 for k, v in regexes.items():

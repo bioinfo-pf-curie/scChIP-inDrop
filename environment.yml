@@ -18,3 +18,7 @@ dependencies:
   ## python
   - bioconda::pysam=0.16.0.1=py39h051187c_3
   - bioconda::bx-python=0.8.11=py39h5d76eff_1
+  ## R
+  - conda-forge::r-base=4.0.5=h9e01966_1
+  - conda-forge::r-reshape2=1.4.4=r40h03ef668_1
+  - conda-forge::r-plotrix=3.8_1=r40hc72bb7e_0

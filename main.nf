@@ -713,6 +713,9 @@ process bamToBigWig{
 
   publishDir "${params.outDir}/bamToBigWig", mode: 'copy'
 
+  when:
+  !params.skipBigWig
+
   input:
   set (prefix), file (rmDupBam), file (rmDupBai) from chNoDup_bigWig
   file blackListBed from chFilterBlackReg_bamToBigWig    
@@ -860,6 +863,28 @@ process countMatrices {
   """
 }
 
+process distribUMIs{
+  tag "${prefix}"
+  label 'R'
+  label 'medCpu'
+  label 'medMem'
+  publishDir "${params.outDir}/distribUMIs", mode: 'copy'
+
+  input:
+  set val(prefix), file(matrix) from chCountMatrices
+
+  output:
+  set val(prefix), file("*distDF.mqc") into mqcDistribUMI
+  set val(prefix), file("*distribution.pdf") into pdfDist
+  file ("v_R.txt") into chRversion
+
+  script:
+  """
+  umisDistribution.r ${matrix} ${prefix}
+  R --version &> v_R.txt
+  """ 
+}
+
 
 /***********
  * MultiQC *
@@ -882,6 +907,7 @@ process getSoftwareVersions{
   file("v_deeptools.txt") from chBamCoverageVersion.first().ifEmpty([])
   file("v_bedtools.txt") from chBedtoolsVersion.first().ifEmpty([])
   file("v_python.txt") from chPythonVersion.first().ifEmpty([])
+  file("v_R.txt") from chRversion.first().ifEmpty([])
 
   output:
   file 'software_versions_mqc.yaml' into softwareVersionsYaml
@@ -944,6 +970,9 @@ process multiqc {
   file("removeRtPcr/*") from chPcrRtCountsLog.collect().ifEmpty([])
   file("cellThresholds/*") from chRemoveDupBarcodeLog.collect().ifEmpty([])
   file("rmDup/*") from chRemoveDupLog.collect().ifEmpty([])
+  // Weighted histogram
+  file ('countUMI/*') from mqcDistribUMI.collect().ifEmpty([])
+
 
   output: 
   file splan
