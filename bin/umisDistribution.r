@@ -21,7 +21,7 @@ library(reshape2)
 #  Pour voir les 2 distributions de manière égale on donne plus de poids aux cellules avec bcp reads/umis. 
 
 # Arguments
-countMatrix<- as.character(commandArgs(TRUE)[1])
+countMatrix<- commandArgs(TRUE)[1]
 prefix = as.character(commandArgs(TRUE)[2])
 
 # Load data
