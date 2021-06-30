@@ -1,0 +1,9 @@
+name: star
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - conda-forge::r-base=4.0.5=h9e01966_1
+  - conda-forge::r-reshape2=1.4.4=r40h03ef668_1
+  - conda-forge::r-plotrix=3.8_1=r40hc72bb7e_0
