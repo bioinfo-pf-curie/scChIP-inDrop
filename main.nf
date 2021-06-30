@@ -880,8 +880,7 @@ process distribUMIs{
 
   script:
   """
-  gzip -cd ${matrix} > unzipMatx
-  umisDistribution.r unzipMatx ${prefix}
+  umisDistribution.r ${matrix} ${prefix}
   R --version &> v_R.txt
   """ 
 }

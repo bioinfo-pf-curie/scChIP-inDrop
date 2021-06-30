@@ -21,53 +21,57 @@ library(reshape2)
 #  Pour voir les 2 distributions de manière égale on donne plus de poids aux cellules avec bcp reads/umis. 
 
 # Arguments
-countMatrix<- commandArgs(TRUE)[1]
+countMatrix<- as.character(commandArgs(TRUE)[1])
 prefix = as.character(commandArgs(TRUE)[2])
 
 # Load data
 matrix<-read.table(countMatrix, header=TRUE, sep = "\t")
 
 # get a matrix with barcode names in the first column and the number of reads in the second
-if(ncol(matrix)==2){
-    # If only one cell (test data)
-    longMatrix<-data.frame(Barcodes=colnames(matrix)[-1], nbReads=sum(matrix[,-1]))
-}else{
+# Only if more than one cell
+if(ncol(matrix)>2){
     longMatrix<-data.frame(Barcodes=colnames(matrix)[-1], nbReads=colSums(matrix[,-1]))
+    # Histogram and pdf export
+    pdf(paste0(as.character(prefix), 'distribution.pdf'))
+    # y = sum des reads par bin, x= #readsTot/cell (on ne sait cb de cellules ont entre x1 et x2 reads)
+    p<-weighted.hist(log10(longMatrix$nbReads), w=longMatrix$nbReads, ylab ="sum #reads/bin", xlab="log10(#reads/cell)")
+    # somme des reads par bin <=> somme des reads de toutes les cellules qui ont entre x1 et x2 
+    # Pour les pics les plus à gauche: pic haut = bcp de cellules qui ont peu de reads
+    # ==> Le weighted hist permet de montrer la proportion de cellules ayant un faible nombre de reads
+    dev.off()
+    
+    # Export table to create the plot with multiqc
+    
+    # 1st - calculate the center (== mean) of each bin because only a curve can be drawn with mqc
+    # To do so, the center of each bin is calculated
+    # Get first list of mean bins
+    breaks<-list(p[["breaks"]])
+    splitNum<-length(breaks[[1]])/2
+    splitedBreaks1 <- lapply(breaks, function(x) split(unlist(x), cut(seq_along(unlist(x)), splitNum, labels = F)))
+    splitedBreaks1<-unlist(splitedBreaks1, recursive = F)
+    x1<-lapply(splitedBreaks1, mean)
+    # Do the same but begining=2nd value to have means of missing bins
+    breaks<-list(p[["breaks"]][-c(1,length(breaks[[1]]))])
+    spitNum<-length(breaks[[1]])/2
+    splitedBreaks2 <- lapply(breaks, function(x) split(unlist(x), cut(seq_along(unlist(x)), spitNum, labels = F)))
+    splitedBreaks2<-unlist(splitedBreaks2, recursive = F)
+    x2<-lapply(splitedBreaks2, mean)
+    # Merge both x and sort result to obtain all the point of the x abscisse
+    xUnsorted<-unlist(append(x1,x2))
+    x<-sort(xUnsorted)
+    
+    # Get y values == counts
+    y<-p["counts"]
+    
+    weightedHist_DF<-data.frame(y=y,x=x)
+    write.table(weightedHist_DF, paste0(as.character(prefix), "_distDF.mqc"),
+                sep=',', row.names=FALSE, col.names=FALSE)
+}else{ # If only one cell, create empty files
+    pdf(paste0(as.character("prefix"), 'distribution.pdf'))
+    dev.off()
+    weightedHist_DF<-data.frame()
+    write.table(weightedHist_DF, paste0(as.character(prefix), "_distDF.mqc"),
+                sep=',', row.names=FALSE, col.names=FALSE)
 }
 
-# Histogram and pdf export
-pdf(paste0(as.character(prefix), 'distribution.pdf'))
-# y = sum des reads par bin, x= #readsTot/cell (on ne sait cb de cellules ont entre x1 et x2 reads)
-p<-weighted.hist(log10(longMatrix$nbReads), w=longMatrix$nbReads, ylab ="sum #reads/bin", xlab="log10(#reads/cell)")
-# somme des reads par bin <=> somme des reads de toutes les cellules qui ont entre x1 et x2 
-# Pour les pics les plus à gauche: pic haut = bcp de cellules qui ont peu de reads
-# ==> Le weighted hist permet de montrer la proportion de cellules ayant un faible nombre de reads
-dev.off()
-
-# Export table to create the plot with multiqc
-
-# 1st - calculate the center (== mean) of each bin because only a curve can be drawn with mqc
-# To do so, the center of each bin is calculated
-# Get first list of mean bins
-breaks<-list(p[["breaks"]])
-splitNum<-length(breaks[[1]])/2
-splitedBreaks1 <- lapply(breaks, function(x) split(unlist(x), cut(seq_along(unlist(x)), splitNum, labels = F)))
-splitedBreaks1<-unlist(splitedBreaks1, recursive = F)
-x1<-lapply(splitedBreaks1, mean)
-# Do the same but begining=2nd value to have means of missing bins
-breaks<-list(p[["breaks"]][-c(1,length(breaks[[1]]))])
-spitNum<-length(breaks[[1]])/2
-splitedBreaks2 <- lapply(breaks, function(x) split(unlist(x), cut(seq_along(unlist(x)), spitNum, labels = F)))
-splitedBreaks2<-unlist(splitedBreaks2, recursive = F)
-x2<-lapply(splitedBreaks2, mean)
-# Merge both x and sort result to obtain all the point of the x abscisse
-xUnsorted<-unlist(append(x1,x2))
-x<-sort(xUnsorted)
-
-# Get y values == counts
-y<-p["counts"]
-
-weightedHist_DF<-data.frame(y=y,x=x)
-write.table(weightedHist_DF, paste0(as.character(prefix), "_distDF.mqc"),
-          sep=',', row.names=FALSE, col.names=FALSE)
 
