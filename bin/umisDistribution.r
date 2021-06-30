@@ -45,8 +45,8 @@ dev.off()
 # To do so, the center of each bin is calculated
 # Get first list of mean bins
 breaks<-list(p[["breaks"]])
-spitNum<-length(breaks[[1]])/2
-splitedBreaks1 <- lapply(breaks, function(x) split(unlist(x), cut(seq_along(unlist(x)), spitNum, labels = F)))
+splitNum<-length(breaks[[1]])/2
+splitedBreaks1 <- lapply(breaks, function(x) split(unlist(x), cut(seq_along(unlist(x)), splitNum, labels = F)))
 splitedBreaks1<-unlist(splitedBreaks1, recursive = F)
 x1<-lapply(splitedBreaks1, mean)
 # Do the same but begining=2nd value to have means of missing bins

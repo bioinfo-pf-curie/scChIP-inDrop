@@ -827,8 +827,8 @@ process countMatrices {
   set (prefix), file(countTable) from chDupCounts
 
   output:
-  set (prefix), file ("*.tsv.gz") into chCountMatricesLog
-  set (prefix), file ("*_counts.log") into chCountMatrices
+  set (prefix), file ("*.tsv.gz") into chCountMatrices
+  set (prefix), file ("*_counts.log") into chCountMatricesLog
   file("v_python.txt") into chPythonVersion
   
   script:
@@ -880,7 +880,8 @@ process distribUMIs{
 
   script:
   """
-  umisDistribution.r ${matrix} ${prefix}
+  gzip -cd ${matrix} > unzipMatx
+  umisDistribution.r unzipMatx ${prefix}
   R --version &> v_R.txt
   """ 
 }
