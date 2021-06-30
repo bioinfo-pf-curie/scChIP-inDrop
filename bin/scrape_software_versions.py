@@ -13,7 +13,7 @@ regexes = {
 	'samtools': ['v_samtools.txt', r"samtools (\S+)"],
 	'bedtools': ['v_bedtools.txt', r"bedtools v(\S+)"],
 	'deeptools': ['v_deeptools.txt', r"deeptools (\S+)"],
-	'Python': ['v_python.txt', r"Python (\S+)"]
+	'Python': ['v_python.txt', r"Python (\S+)"],
     'R': ['v_R.txt', r"R version (\S+)"]
 }
 
