@@ -28,7 +28,12 @@ prefix = as.character(commandArgs(TRUE)[2])
 matrix<-read.table(countMatrix, header=TRUE, sep = "\t")
 
 # get a matrix with barcode names in the first column and the number of reads in the second
-longMatrix<-data.frame(Barcodes=colnames(matrix[,-1]), nbReads=colSums(matrix[,-1]))
+if(ncol(matrix)==2){
+    # If only one cell (test data)
+    longMatrix<-data.frame(Barcodes=colnames(matrix)[-1], nbReads=sum(matrix[,-1]))
+}else{
+    longMatrix<-data.frame(Barcodes=colnames(matrix)[-1], nbReads=colSums(matrix[,-1]))
+}
 
 # Histogram and pdf export
 pdf(paste0(as.character(prefix), 'distribution.pdf'))
