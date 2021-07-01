@@ -440,7 +440,7 @@ process bcMapping {
   // counts of the number of reads matching each index
   set val(prefix), file("*_indexB_count_index.txt"), file("*_indexC_count_index.txt"), file("*_indexD_count_index.txt") into chIndexCount
   // for bowtie2 module in mqc
-  file "*Bowtie2.log" into chIndexBowtie2Log (set val(prefix) , file("*_index_1_bw2.log") into chIndex1Bowtie2Log)
+  file "*Bowtie2.log" into chIndexBowtie2Log 
   // version
   file ("v_bowtie2.txt") into chBowtie2Version 
 
