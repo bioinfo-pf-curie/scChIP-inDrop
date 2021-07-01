@@ -1066,9 +1066,7 @@ process multiqc {
   file ('star/*') from chAlignmentLogs.collect().ifEmpty([])
   //file ('trimming/*') from chTrimmedReadsLog.collect().ifEmpty([])
   file("bamToBigWig/*") from chBamToBigLog.collect().ifEmpty([])
-  file ('index1/*') from chIndex1Bowtie2Log.collect().ifEmpty([])
-  file ('index2/*') from chIndex2Bowtie2Log.collect().ifEmpty([])
-  file ('index3/*') from chIndex3Bowtie2Log.collect().ifEmpty([])
+  file ('index/*') from chIndexBowtie2Log.collect().ifEmpty([])
   //Logs
   file("bowtie2/*") from chBowtie2Log.collect().ifEmpty([])
   file("removeRtPcr/*") from chPcrRtCountsLog.collect().ifEmpty([])
