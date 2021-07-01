@@ -50,7 +50,6 @@ def helpMessage() {
   Other options:
     --outDir [file]               The output directory where the results will be saved
     -name [str]                   Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic
-    -oldDesign [bool]             If dark cycles are used write this option as true. Default is false.
     -keepRTdup [bool]             Keep RT duplicats. Default is false.
     -window [int]                 Select the window size. Default is 50.
     -minCounts [int]              Select the minimum count per barcodes after removing duplicates. Default is 1000.
@@ -180,8 +179,8 @@ if (params.bed) {
   exit 1, "BED annotation file not not found: ${params.bed}"
 }
 
-//------- Custom --------
-//-----------------------
+//------- Custom barcode indexes--------
+//--------------------------------------
 for ( idx in params.barcodes.keySet() ){
   if ( params.barcodes[ idx ].bwt2 ){
     lastPath = params.barcodes[ idx ].bwt2.lastIndexOf(File.separator)
@@ -328,7 +327,7 @@ summary['Config Profile'] = workflow.profile
 log.info summary.collect { k,v -> "${k.padRight(15)}: $v" }.join("\n")
 log.info "========================================="
 
-
+/*
 process bcMapping {
   tag "${prefix}"
   label 'bowtie2'
@@ -362,21 +361,18 @@ process bcMapping {
   #Map INDEXES 1 against Index1 library
   bowtie2 -x /data/users/lhadjabe/Gitlab/ChIP-seq_single-cell_LBC/Barcodes/LBC/bowtie_2_index_short/ref_index_1 -f read_indexes_1.fasta \
           -N 1 -L 8 --rdg 0,7 --rfg 0,7 --mp 7,7 --ignore-quals --score-min L,0,-1 -t --no-unal --no-hd -p ${task.cpus} > index_1_bowtie2.sam 2> ${prefix}_index_1_bw2.log
-  
   #Keep only reads that were matched by a unique index 1 + counting matched index1
   awk '/XS/{next} \$2!=4{print \$1,\$3;count++} ;END{print count > \"count_index_1\"}' index_1_bowtie2.sam > reads_matching_index_1.txt
   
 
   #Map INDEXES 2 against Index2 library
   bowtie2 -x /data/users/lhadjabe/Gitlab/ChIP-seq_single-cell_LBC/Barcodes/LBC/bowtie_2_index_short/ref_index_2 -f read_indexes_2.fasta -N 1 -L 8 --rdg 0,7 --rfg 0,7 --mp 7,7 --ignore-quals --score-min L,0,-1 -t --no-unal --no-hd -p ${task.cpus} > index_2_bowtie2.sam 2> ${prefix}_index_2_bw2.log
-  
   #Keep only reads that were matched by a unique index 2 + counting matched index2
   awk '/XS/{next} \$2!=4{print \$1,\$3;count++} ;END{print count > \"count_index_2\"}' index_2_bowtie2.sam > reads_matching_index_2.txt
   
   
   #Map INDEXES 3 against Index3 library
   bowtie2 -x /data/users/lhadjabe/Gitlab/ChIP-seq_single-cell_LBC/Barcodes/LBC/bowtie_2_index_short/ref_index_3 -f read_indexes_3.fasta -N 1 -L 8 --rdg 0,7 --rfg 0,7 --mp 7,7 --ignore-quals --score-min L,0,-1 -t --no-unal --no-hd -p ${task.cpus} > index_3_bowtie2.sam 2> ${prefix}_index_3_bw2.log
-  
   #Keep only reads that were matched by a unique index 3 + counting matched index3
   awk '/XS/{next} \$2!=4{print \$1,\$3;count++} ;END{print count > \"count_index_3\"}' index_3_bowtie2.sam > reads_matching_index_3.txt
   
@@ -425,6 +421,114 @@ process bcMapping {
   bowtie2 --version > v_bowtie2.txt
   """
 }
+*/
+
+process bcMapping {
+  tag "${prefix}"
+  label 'bowtie2'
+  label 'extraCpu'
+  label 'extraMem'
+
+  publishDir "${params.outDir}/bcMapping", mode: 'copy'
+
+  input:
+  set val(prefix), file(reads), val(index), file(bwt2Idx) from chRawReadsBowtie2.combine(chIndexBwt2)
+ 
+  output:
+  // read IDs matching each index
+  set val(prefix), file("*_indexB_ReadsMatchingSorted.txt"), file("*_indexC_ReadsMatchingSorted.txt"), file("*_indexD_ReadsMatchingSorted.txt") into chReadsMatchingIndex 
+  // counts of the number of reads matching each index
+  set val(prefix), file("*_indexB_count_index.txt"), file("*_indexC_count_index.txt"), file("*_indexD_count_index.txt") into chIndexCount
+  // for bowtie2 module in mqc
+  file "*Bowtie2.log" into chIndexBowtie2Log (set val(prefix) , file("*_index_1_bw2.log") into chIndex1Bowtie2Log)
+  // version
+  file ("v_bowtie2.txt") into chBowtie2Version 
+
+  script:
+  // !!! Old design pas ajouté en option => to do 
+  start = params.barcodes[ index ].start
+  size = params.barcodes[ index ].size
+  base = params.barcodes[ index ].base
+  oprefix = "${prefix}_${index}"
+  """
+  ##Extract three indexes from reads (old design): 1 - 16 = index 1 ; 21 - 36 = index 2; 41 - 56 = index 3
+  gzip -cd  ${reads[1]} | awk -v start_index_1=${start} -v size_index=${size}  'NR%4==1{print ">"substr(\$0,2)}; NR%4==2{print substr(\$0,start_index_1,size_index)}' > ${oprefix}Reads.fasta (read_indexes_1.fasta)
+
+  #Map indexes (-f) against Index libraries (-x)
+  bowtie2 \
+    -x ${bwt2Idx}/${base} \
+    -f ${oprefix}Reads.fasta \
+    -N 1 -L 8 --rdg 0,7 --rfg 0,7 --mp 7,7 \
+    --ignore-quals --score-min L,0,-1 -t \
+    --no-unal --no-hd \
+    -p ${task.cpus} > ${oprefix}Bowtie2.sam (index_1_bowtie2.sam) 2> ${oprefix}Bowtie2.log (${prefix}_index_1_bw2.log)
+
+  #Keep only reads that were matched by a unique index 1 + counting matched index1
+  awk '/XS/{next} \$2!=4{print \$1,\$3;count++} ;END{print count > \"${oprefix}_count_index.txt\"}' ${oprefix}Bowtie2.sam > ${oprefix}ReadsMatching.txt (reads_matching_index_1.txt)
+  
+  ##Sort indexes by read name: 
+  sort -T /scratch/ --parallel=${task.cpus} -k1,1 ${oprefix}ReadsMatching.txt > ${oprefix}_ReadsMatchingSorted.txt (reads_matching_index_1_sorted.txt)
+
+  // delete useless files
+  rm ${oprefix}ReadsMatching.txt ${oprefix}Bowtie2.sam ${oprefix}Reads.fasta
+  
+  ## version
+  bowtie2 --version > v_bowtie2.txt
+  """
+}
+
+process bcSubset {
+  tag "${prefix}"
+  label 'samtools' // VRAIMENT NECESSAIRE ALORS qu'il n'y a pas besoin d'envirnmt  ??? 
+  label 'extraCpu'
+  label 'extraMem'
+  publishDir "${params.outDir}/bcSubset", mode: 'copy'
+
+  input:
+  // read IDs matching each index
+  set val(prefix), file(indexB_ReadsMatchingSorted), file(indexC_ReadsMatchingSorted), file(indexD_ReadsMatchingSorted) from chReadsMatchingIndex 
+  // counts of the number of reads matching each index
+  set val(prefix), file(indexB_count_index), file(indexC_count_index), file(indexD_count_index) from chIndexCount
+  
+  output:
+  // correctly barcoded reads
+  set val(prefix), file("*_read_barcodes.txt") into chReadBcNames
+  // summary of counts
+  set val(prefix) , file("*_bowtie2.log") into chBowtie2Log
+
+  script:
+  """  
+  #Join indexes 1 & 2 together (inner join)
+  join -t\$' ' -1 1 -2 1 ${indexB_ReadsMatchingSorted} (reads_matching_index_1_sorted.txt) ${indexC_ReadsMatchingSorted} (reads_matching_index_2_sorted.txt) > tmp
+  
+  #Count matched index 1 & 2
+  echo \$(wc -l tmp) | cut -d' ' -f1 > count_index_1_2
+  
+  #Join indexes (1 & 2) & 3 together to recompose full barcode (inner join)
+  join -t\$' ' -1 1 -2 1 tmp ${indexD_ReadsMatchingSorted} (reads_matching_index_3_sorted.txt) > final
+  
+  #Reformat & count matched index (1 & 2 & 3) <=> barcode
+  awk '{print substr(\$1,1)\"\tBC\"substr(\$2,2)substr(\$3,2)substr(\$4,2);count++} ;END{print count > \"count_index_1_2_3\"}' final > ${prefix}_read_barcodes.txt
+  
+  ##Write logs
+  n_index_1=\$(cat ${indexB_count_index})
+  n_index_2=\$(cat ${indexC_count_index})
+  n_index_3=\$(cat ${indexD_count_index})
+  n_index_1_2=\$(cat count_index_1_2)
+  n_index_1_2_3=\$(cat count_index_1_2_3)
+
+  ## logs
+  echo "## Number of matched indexes 1: \$n_index_1" > ${prefix}_bowtie2.log
+  echo "## Number of matched indexes 2: \$n_index_2" >> ${prefix}_bowtie2.log
+  echo "## Number of matched indexes 1 and 2: \$n_index_1_2" >> ${prefix}_bowtie2.log
+  echo "## Number of matched indexes 3: \$n_index_3" >> ${prefix}_bowtie2.log
+  echo "## Number of matched barcodes: \$n_index_1_2_3" >> ${prefix}_bowtie2.log
+
+  rm count_index_1_2 count_index_1_2_3 tmp final
+  """
+}
+
+
 
 //2-  Trim R2 reads for genome aligning	
 process trimReads {

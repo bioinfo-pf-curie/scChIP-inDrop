@@ -63,7 +63,7 @@ if(ncol(matrix)>2){
     # Get y values == counts
     y<-p["counts"]
     
-    weightedHist_DF<-data.frame(y=y,x=x)
+    weightedHist_DF<-data.frame(x=x,y=y)
     write.table(weightedHist_DF, paste0(as.character(prefix), "_distDF.mqc"),
                 sep=',', row.names=FALSE, col.names=FALSE)
 }else{ # If only one cell, create empty files

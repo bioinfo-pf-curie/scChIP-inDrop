@@ -2,6 +2,7 @@
 from __future__ import print_function
 from collections import OrderedDict
 import re
+from os import path
 
 # TODO Add additional regexes for new tools in process get_software_versions
 regexes = {
@@ -30,11 +31,12 @@ results['R'] = '<span style="color:#999999;\">N/A</span>'
 
 # Search each file using its regex
 for k, v in regexes.items():
-    with open(v[0]) as x:
-        versions = x.read()
-        match = re.search(v[1], versions)
-        if match:
-            results[k] = "v{}".format(match.group(1))
+    if path.isfile(v[0]):
+        with open(v[0]) as x:
+            versions = x.read()
+            match = re.search(v[1], versions)
+            if match:
+                results[k] = "v{}".format(match.group(1))
 
 # Dump to YAML
 print ('''
