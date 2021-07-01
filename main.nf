@@ -463,7 +463,8 @@ process bcMapping {
     --no-unal --no-hd \
     -p ${task.cpus} > ${oprefix}Bowtie2.sam 2> ${oprefix}Bowtie2.log
   #Keep only reads that were matched by a unique index 1 + counting matched index1
-  awk -v filename=\"${oprefix}_count_index.txt\" '/XS/{next} \$2!=4{print \$1,\$3;count++} ;END{print count > filename }' ${oprefix}Bowtie2.sam > ${oprefix}ReadsMatching.txt 
+  test="${oprefix}_count_index.txt"
+  awk '/XS/{next} \$2!=4{print \$1,\$3;count++} ;END{print count > $test }' ${oprefix}Bowtie2.sam > ${oprefix}ReadsMatching.txt 
   
   ##Sort indexes by read name: 
   sort -T /scratch/ --parallel=${task.cpus} -k1,1 ${oprefix}ReadsMatching.txt > ${oprefix}_ReadsMatchingSorted.txt 
