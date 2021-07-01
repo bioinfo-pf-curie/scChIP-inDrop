@@ -452,7 +452,7 @@ process bcMapping {
   oprefix = "${prefix}_${index}"
   """
   ##Extract three indexes from reads (old design): 1 - 16 = index 1 ; 21 - 36 = index 2; 41 - 56 = index 3
-  gzip -cd  ${reads[1]} | awk -v start_index_1=${start} -v size_index=${size}  'NR%4==1{print ">"substr(\$0,2)}; NR%4==2{print substr(\$0,start_index_1,size_index)}' > ${oprefix}Reads.fasta (read_indexes_1.fasta)
+  gzip -cd  ${reads[1]} | awk -v start_index_1=${start} -v size_index=${size} 'NR%4==1{print ">"substr(\$0,2)}; NR%4==2{print substr(\$0,start_index_1,size_index)}' > ${oprefix}Reads.fasta
 
   #Map indexes (-f) against Index libraries (-x)
   bowtie2 \
@@ -461,13 +461,12 @@ process bcMapping {
     -N 1 -L 8 --rdg 0,7 --rfg 0,7 --mp 7,7 \
     --ignore-quals --score-min L,0,-1 -t \
     --no-unal --no-hd \
-    -p ${task.cpus} > ${oprefix}Bowtie2.sam (index_1_bowtie2.sam) 2> ${oprefix}Bowtie2.log (${prefix}_index_1_bw2.log)
-
+    -p ${task.cpus} > ${oprefix}Bowtie2.sam 2> ${oprefix}Bowtie2.log
   #Keep only reads that were matched by a unique index 1 + counting matched index1
-  awk '/XS/{next} \$2!=4{print \$1,\$3;count++} ;END{print count > \"${oprefix}_count_index.txt\"}' ${oprefix}Bowtie2.sam > ${oprefix}ReadsMatching.txt (reads_matching_index_1.txt)
+  awk '/XS/{next} \$2!=4{print \$1,\$3;count++} ;END{print count > \"${oprefix}_count_index.txt\"}' ${oprefix}Bowtie2.sam > ${oprefix}ReadsMatching.txt 
   
   ##Sort indexes by read name: 
-  sort -T /scratch/ --parallel=${task.cpus} -k1,1 ${oprefix}ReadsMatching.txt > ${oprefix}_ReadsMatchingSorted.txt (reads_matching_index_1_sorted.txt)
+  sort -T /scratch/ --parallel=${task.cpus} -k1,1 ${oprefix}ReadsMatching.txt > ${oprefix}_ReadsMatchingSorted.txt 
 
   // delete useless files
   rm ${oprefix}ReadsMatching.txt ${oprefix}Bowtie2.sam ${oprefix}Reads.fasta
@@ -499,13 +498,13 @@ process bcSubset {
   script:
   """  
   #Join indexes 1 & 2 together (inner join)
-  join -t\$' ' -1 1 -2 1 ${indexB_ReadsMatchingSorted} (reads_matching_index_1_sorted.txt) ${indexC_ReadsMatchingSorted} (reads_matching_index_2_sorted.txt) > tmp
+  join -t\$' ' -1 1 -2 1 ${indexB_ReadsMatchingSorted} ${indexC_ReadsMatchingSorted} > tmp
   
   #Count matched index 1 & 2
   echo \$(wc -l tmp) | cut -d' ' -f1 > count_index_1_2
   
   #Join indexes (1 & 2) & 3 together to recompose full barcode (inner join)
-  join -t\$' ' -1 1 -2 1 tmp ${indexD_ReadsMatchingSorted} (reads_matching_index_3_sorted.txt) > final
+  join -t\$' ' -1 1 -2 1 tmp ${indexD_ReadsMatchingSorted} > final
   
   #Reformat & count matched index (1 & 2 & 3) <=> barcode
   awk '{print substr(\$1,1)\"\tBC\"substr(\$2,2)substr(\$3,2)substr(\$4,2);count++} ;END{print count > \"count_index_1_2_3\"}' final > ${prefix}_read_barcodes.txt
