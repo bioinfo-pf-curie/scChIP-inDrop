@@ -182,17 +182,17 @@ if (params.bed) {
 //------- Custom barcode indexes--------
 //--------------------------------------
 for ( idx in params.designs.custom.barcodes.keySet() ){
-  if ( params.barcodes[ idx ].bwt2 ){
-    lastPath = params.barcodes[ idx ].bwt2.lastIndexOf(File.separator)
-    bt2Dir = params.barcodes[ idx ].bwt2.substring(0,lastPath+1)
-    bt2Base = params.barcodes[ idx ].bwt2.substring(lastPath+1)
-    params.barcodes[ idx ].base = bt2Base
-    params.barcodes[ idx ].dir = bt2Dir
+  if ( params.designs.custom.barcodes[ idx ].bwt2 ){
+    lastPath = params.designs.custom.barcodes[ idx ].bwt2.lastIndexOf(File.separator)
+    bt2Dir = params.designs.custom.barcodes[ idx ].bwt2.substring(0,lastPath+1)
+    bt2Base = params.designs.custom.barcodes[ idx ].bwt2.substring(lastPath+1)
+    params.designs.custom.barcodes[ idx ].base = bt2Base
+    params.designs.custom.barcodes[ idx ].dir = bt2Dir
   }
 }
 
 Channel
-   .from(params.barcodes)
+   .from(params.designs.custom.barcodes)
    .flatMap()
    .map { it -> [ it.key, file(it.value['dir']) ] }
    .ifEmpty { exit 1, "Bowtie2 index not found" }
@@ -446,9 +446,9 @@ process bcMapping {
 
   script:
   // !!! Old design pas ajouté en option => to do 
-  start = params.barcodes[ index ].start
-  size = params.barcodes[ index ].size
-  base = params.barcodes[ index ].base
+  start = params.designs.custom.barcodes[ index ].start
+  size = params.designs.custom.barcodes[ index ].size
+  base = params.designs.custom.barcodes[ index ].base
   oprefix = "${prefix}_${index}"
   """
   ##Extract three indexes from reads (old design): 1 - 16 = index 1 ; 21 - 36 = index 2; 41 - 56 = index 3
