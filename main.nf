@@ -1088,7 +1088,7 @@ process multiqc {
   rfilename = customRunName ? "--filename " + customRunName + "_report" : "--filename report"
   metadataOpts = params.metadata ? "--metadata ${metadata}" : ""
   //isPE = params.singleEnd ? "" : "-p"
-  designOpts= params.design ? "-d ${params.design}" : ""
+  //designOpts= params.design ? "-d ${params.design}" : ""
   modules_list = "-m custom_content -m bowtie2 -m star"
   """
   stat2mqc.sh ${splan} 
