@@ -181,7 +181,7 @@ if (params.bed) {
 
 //------- Custom barcode indexes--------
 //--------------------------------------
-for ( idx in params.barcodes.keySet() ){
+for ( idx in params.designs.custom.barcodes.keySet() ){
   if ( params.barcodes[ idx ].bwt2 ){
     lastPath = params.barcodes[ idx ].bwt2.lastIndexOf(File.separator)
     bt2Dir = params.barcodes[ idx ].bwt2.substring(0,lastPath+1)
