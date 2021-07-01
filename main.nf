@@ -465,7 +465,7 @@ process bcMapping {
   #Keep only reads that were matched by a unique index 1 + counting matched index1
 
   fileName="${oprefix}_count_index.txt"
-  awk -v filename=$fileName '/XS/{next} \$2!=4{print \$1,\$3;count++} ;END{print count > fileName }' ${oprefix}Bowtie2.sam > ${oprefix}ReadsMatching.txt 
+  awk -v filename=$fileName '/XS/{next} \$2!=4{print \$1,\$3;count++} ;END{print count > filename }' ${oprefix}Bowtie2.sam > ${oprefix}ReadsMatching.txt 
   
   ##Sort indexes by read name: 
   sort -T /scratch/ --parallel=${task.cpus} -k1,1 ${oprefix}ReadsMatching.txt > ${oprefix}_ReadsMatchingSorted.txt 
