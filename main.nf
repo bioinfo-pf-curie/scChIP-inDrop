@@ -470,7 +470,7 @@ process bcMapping {
   sort -T /scratch/ --parallel=${task.cpus} -k1,1 ${oprefix}ReadsMatching.txt > ${oprefix}_ReadsMatchingSorted.txt 
 
   // delete useless files
-  rm ${oprefix}ReadsMatching.txt ${oprefix}Bowtie2.sam ${oprefix}Reads.fasta
+  //rm ${oprefix}ReadsMatching.txt ${oprefix}Bowtie2.sam ${oprefix}Reads.fasta
   
   ## version
   bowtie2 --version > v_bowtie2.txt
