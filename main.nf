@@ -486,9 +486,9 @@ process bcSubset {
 
   input:
   // read IDs matching each index
-  set val(prefix), file(readsMatchingSorted) from chReadsMatchingIndex.join()
+  set val(prefix), file(readsMatchingSorted) from chReadsMatchingIndex.groupTuple()
   // counts of the number of reads matching each index
-  set val(prefix), file(count_index) from chIndexCount.join()
+  set val(prefix), file(count_index) from chIndexCount.groupTuple()
   
   output:
   // correctly barcoded reads
