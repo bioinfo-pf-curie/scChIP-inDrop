@@ -436,13 +436,13 @@ process bcMapping {
  
   output:
   // read IDs matching each index
-  set val(prefix), file(index"_ReadsMatchingSorted.txt"), file("*"index"_ReadsMatchingSorted.txt"), file("*"index"_ReadsMatchingSorted.txt") into chReadsMatchingIndex 
+  set val(prefix), file("*_indexB_ReadsMatchingSorted.txt"), file("*_indexC_ReadsMatchingSorted.txt"), file("*_indexD_ReadsMatchingSorted.txt") into chReadsMatchingIndex 
   // counts of the number of reads matching each index
   set val(prefix), file("*_indexB_count_index.txt"), file("*_indexC_count_index.txt"), file("*_indexD_count_index.txt") into chIndexCount
   // for bowtie2 module in mqc
   file "*Bowtie2.log" into chIndexBowtie2Log 
   // version
-  file ("v_bowtie2.txt") into chBowtie2Version 
+  file ("v_bowtie2.txt") into chBowtie2Version
 
   script:
   // !!! Old design pas ajouté en option => to do 
