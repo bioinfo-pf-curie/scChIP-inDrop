@@ -436,9 +436,9 @@ process bcMapping {
  
   output:
   // read IDs matching each index
-  set val("${prefix}_${index}"), file("*_ReadsMatchingSorted.txt") into chReadsMatchingIndex 
+  set val("${prefix}_${index}"), file("*_ReadsMatchingSorted.txt") into chReadsMatchingIndex.groupTuple()
   // counts of the number of reads matching each index
-  set val("${prefix}_${index}"), file("*_count_index.txt") into chIndexCount
+  set val("${prefix}_${index}"), file("*_count_index.txt") into chIndexCount.groupTuple()
   // for bowtie2 module in mqc
   file "*Bowtie2.log" into chIndexBowtie2Log 
   // version
@@ -486,9 +486,9 @@ process bcSubset {
 
   input:
   // read IDs matching each index
-  set val(prefix), file(readsMatchingSorted) from chReadsMatchingIndex.groupTuple()
+  set val(prefix), file(readsMatchingSorted) from chReadsMatchingIndex
   // counts of the number of reads matching each index
-  set val(prefix), file(count_index) from chIndexCount.collect()
+  set val(prefix), file(count_index) from chIndexCount
   
   output:
   // correctly barcoded reads
