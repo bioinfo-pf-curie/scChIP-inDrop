@@ -424,7 +424,7 @@ process bcMapping {
 */
 
 process bcMapping {
-  tag "${prefix} - ${index}"
+  tag "${prefix}"
   label 'bowtie2'
   label 'extraCpu'
   label 'extraMem'
