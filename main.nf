@@ -436,9 +436,9 @@ process bcMapping {
  
   output:
   // read IDs matching each index
-  set val("${prefix}_${index}"), file("*_ReadsMatchingSorted.txt") into chReadsMatchingIndex
+  set val(prefix), file("*${index}_ReadsMatchingSorted.txt") into chReadsMatchingIndex
   // counts of the number of reads matching each index
-  set val("${prefix}_${index}"), file("*_count_index.txt") into chIndexCount
+  set val(prefix), file("*${index}_count_index.txt") into chIndexCount
   // for bowtie2 module in mqc
   file "*Bowtie2.log" into chIndexBowtie2Log 
   // version
