@@ -486,9 +486,9 @@ process bcSubset {
 
   input:
   // read IDs matching each index
-  set val(prefix), file(indexB_ReadsMatchingSorted), file(indexC_ReadsMatchingSorted), file(indexD_ReadsMatchingSorted) from chReadsMatchingIndex 
+  set val(prefix), file(readsMatchingSorted) from chReadsMatchingIndex.collect()
   // counts of the number of reads matching each index
-  set val(prefix), file(indexB_count_index), file(indexC_count_index), file(indexD_count_index) from chIndexCount
+  set val(prefix), file(count_index) from chIndexCount.collect()
   
   output:
   // correctly barcoded reads
@@ -499,21 +499,21 @@ process bcSubset {
   script:
   """  
   #Join indexes 1 & 2 together (inner join)
-  join -t\$' ' -1 1 -2 1 ${indexB_ReadsMatchingSorted} ${indexC_ReadsMatchingSorted} > tmp
+  join -t\$' ' -1 1 -2 1 ${prefix}_indexB_ReadsMatchingSorted.txt ${prefix}_indexC_ReadsMatchingSorted.txt > tmp
   
   #Count matched index 1 & 2
   echo \$(wc -l tmp) | cut -d' ' -f1 > count_index_1_2
   
   #Join indexes (1 & 2) & 3 together to recompose full barcode (inner join)
-  join -t\$' ' -1 1 -2 1 tmp ${indexD_ReadsMatchingSorted} > final
+  join -t\$' ' -1 1 -2 1 tmp ${prefix}_indexD_ReadsMatchingSorted.txt > final
   
   #Reformat & count matched index (1 & 2 & 3) <=> barcode
   awk '{print substr(\$1,1)\"\tBC\"substr(\$2,2)substr(\$3,2)substr(\$4,2);count++} ;END{print count > \"count_index_1_2_3\"}' final > ${prefix}_read_barcodes.txt
   
   ##Write logs
-  n_index_1=\$(cat ${indexB_count_index})
-  n_index_2=\$(cat ${indexC_count_index})
-  n_index_3=\$(cat ${indexD_count_index})
+  n_index_1=\$(cat ${prefix}_indexB_count_index.txt)
+  n_index_2=\$(cat ${prefix}_indexC_count_index.txt)
+  n_index_3=\$(cat ${prefix}_indexD_count_index.txt)
   n_index_1_2=\$(cat count_index_1_2)
   n_index_1_2_3=\$(cat count_index_1_2_3)
 
