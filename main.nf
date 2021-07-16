@@ -440,7 +440,7 @@ process bcMapping {
   // counts of the number of reads matching each index
   set val(prefix), file("*${index}_count_index.txt") into chIndexCount
   // for bowtie2 module in mqc
-  file "*Bowtie2.log" into chIndexBowtie2Log 
+  file ("*Bowtie2.log") into chIndexBowtie2Log 
   // version
   file ("v_bowtie2.txt") into chBowtie2Version
 
@@ -470,7 +470,7 @@ process bcMapping {
   sort -T /scratch/ --parallel=${task.cpus} -k1,1 ${oprefix}ReadsMatching.txt > ${oprefix}_ReadsMatchingSorted.txt 
 
   #delete useless files
-  #rm ${oprefix}ReadsMatching.txt ${oprefix}Bowtie2.sam ${oprefix}Reads.fasta
+  rm ${oprefix}ReadsMatching.txt ${oprefix}Bowtie2.sam ${oprefix}Reads.fasta
   
   ## version
   bowtie2 --version > v_bowtie2.txt
@@ -527,7 +527,6 @@ process bcSubset {
   rm count_index_1_2 count_index_1_2_3 tmp final
   """
 }
-
 
 
 //2-  Trim R2 reads for genome aligning	

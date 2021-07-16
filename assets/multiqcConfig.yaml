@@ -96,7 +96,7 @@ custom_data:
     umiDistrib:
       file_format: 'csv'
       section_name: 'Read distributions across cells'
-      description: 'Overview of read distribution across cells. A bimodal distribution should be observed. First pics representing the proportion of cells having a low number of reads. Higher these pics are, higher the number cells having a low number of reads is. This information can be used to define a threshold to remove empty droplets whih are identified by a low number of reads.'
+      description: 'Overview of read distribution across cells.  If you observed a bimodal distribution, your data may contain empty droplets as first pics represent the proportion of cells having a low number of reads. Higher these pics are, higher the number of cells having a low number of reads is. This information can be used to define a threshold to remove empty droplets identified by a low number of reads.  If you do not see a bimodal distribution, your data have probably been filtred on a minimum reads per cell, usually 1000.'
       plot_type: 'linegraph'
       pconfig:
         id: 'umiDistrib'
