@@ -84,6 +84,11 @@ Summary of alignment scores accross the pipeline.
 <span style="color: yellow;"> 10-15% : Warning</span>  
 <span style="color: red;">More than 15% : Danger</span>  
 
+### Read distributions across cells
+
+Overview of read distribution across cells.  If you observed a bimodal distribution, your data may contain empty droplets as first pics represent the proportion of cells having a low number of reads. Higher these pics are, higher the number of cells having a low number of reads is. This information can be used to define a threshold to remove empty droplets identified by a low number of reads.  If you do not see a bimodal distribution, your data have probably been filtred on a minimum reads per cell, usually 1000.
+
+![MultiQC](images/umiDistrib-1.png)
 
 ## MultiQC
 [MultiQC](http://multiqc.info) is a visualisation tool that generates a single HTML report summarising all samples in your project. Most of the pipeline QC results are visualised in the report and further statistics are available within the report data directory.
