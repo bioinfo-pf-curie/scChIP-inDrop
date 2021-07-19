@@ -24,7 +24,7 @@ This data engineering pipeline is designed to treat single-cell chromatin Immuno
 8. Generation of coverage file (bigwig) (CPM normalization)
 9. Reporting
 
-![MultiQC](docs/images/Simplified_pipeline.png)
+![MultiQC](docs/images/Simplified_pipeline.png =x150)
 
 
 ### Quick help
