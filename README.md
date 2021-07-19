@@ -26,7 +26,7 @@ This data engineering pipeline is designed to treat single-cell chromatin Immuno
 
 <!--![MultiQC](docs/images/Simplified_pipeline.png)-->
 
-<img src="docs/images/Simplified_pipeline.png" width="300" height="600" />
+<img src="docs/images/Simplified_pipeline.png" width="400" height="600" />
 
 
 ### Quick help
