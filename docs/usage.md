@@ -12,7 +12,7 @@
     * [`--genomeAnnotationPath`](#--genomeAnnotationPath)
 * [Nextflow profiles](#nextflow-profiles)
 * [Job resources](#job-resources)
-* [Other command line parameters](#other-command-line-parameters)
+* [Options](#other-command-line-parameters)
     * [`--skip*`](#--skip*)
     * [`--metadata`](#--metadta)
     * [`--outDir`](#--outdir)
@@ -119,6 +119,7 @@ Note that these paths can be updated on command line using the following paramet
 - `--starIndex` - Path to STAR index
 - `--gtf` - Path to GTF file
 - `--bed12` - Path to bed12 file
+- `--blackList` - Path to a blacklist bed file
 
 ### `--genomeAnnotationPath`
 
@@ -131,18 +132,25 @@ Different Nextflow profiles can be used. See [Profiles](profiles.md) for details
 
 ## Job resources
 
-Each step in the pipeline has a default set of requirements for number of CPUs, memory and time (see the [`conf/process.conf`](../conf/process.config) file). 
-For most of the steps in the pipeline, if the job exits with an error code of `143` (exceeded requested resources) it will automatically resubmit with higher requests (2 x original, then 3 x original). If 
-it still fails after three times then the pipeline is stopped.
+Each step in the pipeline has a default set of requirements for number of CPUs, memory and time (see the `conf/base.conf` file). 
+For most of the steps in the pipeline, if the job exits with an error code of `143` (exceeded requested resources) it will automatically resubmit with higher requests (2 x original, then 3 x original). If it still fails after three times then the pipeline is stopped.
 
-## Other command line parameters
+
+## Options
+
+- `--keepRTdup` - Keep RT duplicats. Default is false.
+- `--window` - Select the window size. Default is 50.
+- `--minCounts` - Select the minimum count per barcodes after removing duplicates. Default is 1000.
+- `--keepBlacklistRegion` - Keep black region. Default is false.
+- `--binSize` - Bin size to use (in base pairs). Default is 50000. 
 
 ### `--skip*`
 
 The pipeline is made with a few *skip* options that allow to skip optional steps in the workflow.
 The following options can be used:
-- `--skipMultiqc` - Skip MultiQC
-- - `--skipSoftVersion` - Skip showing software version in MultiQC
+- `--skipMultiqc` - Skip MultiQC. Default is false.
+- `--skipSoftVersion` - Skip showing software version in MultiQC. Default is false.
+- `--skipBigWig` - Skips BigWig generation. Default is false.
 
 ### `--metadata`
 
@@ -198,8 +206,3 @@ Should be a string in the format integer-unit. eg. `--maxCpus 1`
 ### `--multiqcConfig`
 
 Specify a path to a custom MultiQC configuration file.
-
-## Job resources
-
-Each step in the pipeline has a default set of requirements for number of CPUs, memory and time (see the `conf/base.conf` file). 
-For most of the steps in the pipeline, if the job exits with an error code of `143` (exceeded requested resources) it will automatically resubmit with higher requests (2 x original, then 3 x original). If it still fails after three times then the pipeline is stopped.

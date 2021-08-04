@@ -43,19 +43,18 @@ def helpMessage() {
     -profile [str]                Configuration profile to use. test / conda / multiconda / path / multipath / singularity / docker / cluster (see below)
 
   Skip options: All are false by default
-    --skipSoftVersion [bool]      Do not report software version
-    --skipMultiQC [bool]          Skips MultiQC
-    --skipBigWig [bool]           Skips BigWig generation
+    --skipSoftVersion [bool]      Do not report software version. Default is false.
+    --skipMultiQC [bool]          Skips MultiQC. Default is false.
+    --skipBigWig [bool]           Skips BigWig generation. Default is false.
 
   Other options:
     --outDir [file]               The output directory where the results will be saved
     -name [str]                   Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic
-    -keepRTdup [bool]             Keep RT duplicats. Default is false.
-    -window [int]                 Select the window size. Default is 50.
-    -minCounts [int]              Select the minimum count per barcodes after removing duplicates. Default is 1000.
-    -removeBlackRegion [bool]     Remove black region. Default is true.
-    -mark [str]                   Histone mark targeted 'h3k27me3', 'h3k4me3' or 'unbound'. Default is 'h3k27me3'.
-    -binSize [int]                Bin size to use (in base pairs). Default is 50000. 
+    --keepRTdup [bool]             Keep RT duplicats. Default is false.
+    --window [int]                 Select the window size. Default is 50.
+    --minCounts [int]              Select the minimum count per barcodes after removing duplicates. Default is 1000.
+    --keepBlacklistRegion [bool]     Keep black region. Default is false.
+    --binSize [int]                Bin size to use (in base pairs). Default is 50000. 
  
   =======================================================
 
@@ -277,28 +276,6 @@ if (params.samplePlan){
    }
 }
 
-/***************
- * Design file *
- ***************/
-
-// TODO - UPDATE BASED ON YOUR DESIGN
-
-if (params.design){
-  Channel
-    .fromPath(params.design)
-    .ifEmpty { exit 1, "Design file not found: ${params.design}" }
-    .into { chDesignCheck }
-
-  chDesignControl
-    .splitCsv(header:true)
-    .map { row ->
-      if(row.CONTROLID==""){row.CONTROLID='NO_INPUT'}
-      return [ row.SAMPLEID, row.CONTROLID, row.SAMPLENAME, row.GROUP, row.PEAKTYPE ]
-     }
-    .set { chDesignControl }
-}else{
-  chDesignCheck = Channel.empty()
-}
 
 /*******************
  * Header log info *
@@ -479,7 +456,7 @@ process bcMapping {
 
 process bcSubset {
   tag "${prefix}"
-  label 'samtools' // VRAIMENT NECESSAIRE ALORS qu'il n'y a pas besoin d'envirnmt  ??? 
+  label 'unix'
   label 'extraCpu'
   label 'extraMem'
   publishDir "${params.outDir}/bcSubset", mode: 'copy'
@@ -762,7 +739,7 @@ process  removePcrRtDup {
   """
 }
 
-// 6-Remove duplicates by window (if R2 is unmapped) - prime (STAR)
+// 6-Remove duplicates by window (if R2 is unmapped)
 process  removeDup {
   tag "${prefix}"
   label 'bedtools'
@@ -796,7 +773,7 @@ process  removeDup {
   samtools view ${prefix}_rmDup.bam | awk -v bc_field=\$barcode_field '{print substr(\$bc_field,6)}' | sort | uniq -c > ${prefix}_rmDup.count	
 
   # Removing encode black regions
-  if [[${params.removeBlackRegion}]]
+  if [[${params.keepBlacklistRegion} == "false"]]
   then
     bedtools intersect -v -abam ${prefix}_rmDup.bam -b ${blackListBed} > ${prefix}_rmDup_rmBlackReg.bam && mv ${prefix}_rmDup_rmBlackReg.bam ${prefix}_rmDup.bam
   fi
@@ -808,7 +785,7 @@ process  removeDup {
   """
 }
 
-// Create pseudo bulk
+// 7-Generate bigWig fileq - Create pseudo bulk
 process bamToBigWig{
   tag "${prefix}"
   label 'deeptools'
@@ -831,7 +808,7 @@ process bamToBigWig{
   
   script:
   """
-  if [[${params.removeBlackRegion}]]
+  if [[${params.keepBlacklistRegion} == "false"]]
   then
       bamCoverage --bam ${rmDupBam} --outFileName ${prefix}.bw --numberOfProcessors ${task.cpus} --normalizeUsing CPM --ignoreForNormalization chrX --binSize 50 --smoothLength 500 --extendReads 150 --blackListFileName $blackListBed &> ${prefix}_bamToBigWig.log
   else
@@ -916,7 +893,7 @@ rm -f ${prefix}_tmp_header.sam ${prefix}_tmp.sorted.bam
 """
 }
 
-
+// 8 - Generate count matrix
 process countMatrices {
   tag "${prefix}"
   label 'samtools'
@@ -967,6 +944,7 @@ process countMatrices {
   """
 }
 
+// Plot read distributions accross cells (used to filtre out low read cells)
 process distribUMIs{
   tag "${prefix}"
   label 'R'
@@ -1026,6 +1004,10 @@ process getSoftwareVersions{
 
 
 process workflowSummaryMqc {
+  label 'unix'
+  label 'minCpu'
+  label 'minMem'
+
   when:
   !params.skipMultiQC
 
