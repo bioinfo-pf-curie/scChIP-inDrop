@@ -798,11 +798,11 @@ process bamToBigWig{
   !params.skipBigWig
 
   input:
-  set (prefix), file (rmDupBam), file (rmDupBai) from chNoDup_bigWig
+  set val(prefix), file (rmDupBam), file (rmDupBai) from chNoDup_bigWig
   file blackListBed from chFilterBlackReg_bamToBigWig    
       
   output:
-  set (prefix), file("*.bw") into chBigWig
+  set val(prefix), file("*.bw") into chBigWig
   file("v_deeptools.txt") into chBamCoverageVersion
   set (prefix), file("*_bamToBigWig.log") into chBamToBigLog
   
@@ -908,8 +908,8 @@ process countMatrices {
   set (prefix), file(countTable) from chDupCounts
 
   output:
-  set (prefix), file ("*.tsv.gz") into chCountMatrices
-  set (prefix), file ("*_counts.log") into chCountMatricesLog
+  set val(prefix), file ("*.tsv.gz") into chCountMatrices
+  set val(prefix), file ("*_counts.log") into chCountMatricesLog
   file("v_python.txt") into chPythonVersion
   
   script:

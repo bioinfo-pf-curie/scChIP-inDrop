@@ -43,20 +43,35 @@ if(ncol(matrix)>2){
     # Export table to create the plot with multiqc
     
     # 1st - calculate the center (== mean) of each bin because only a curve can be drawn with mqc
-    # To do so, the center of each bin is calculated
-    # Get first list of mean bins
-    breaks<-list(p[["breaks"]])
-    splitNum<-length(breaks[[1]])/2
-    splitedBreaks1 <- lapply(breaks, function(x) split(unlist(x), cut(seq_along(unlist(x)), splitNum, labels = F)))
+    # Get first list of mean bins = group valules two by two to calculate means of first set of bins
+    if(length(p[["breaks"]])%%2 == 1){ # if nb breaks is odd
+        # x1 = - last
+        breaks1<-list(p[["breaks"]][-length(p[["breaks"]])])
+        splitNum<-length(breaks1[[1]])/2
+        ## split the list into "splitNum" of sublists of 2 values==bin borders
+        splitedBreaks1 <- lapply(breaks1, function(x) split(unlist(x), cut(seq_along(unlist(x)), splitNum, labels = F)))
+        # x2 = - first
+        breaks2<-list(p[["breaks"]][-1])
+        spitNum<-length(breaks2[[1]])/2
+        splitedBreaks2 <- lapply(breaks2, function(x) split(unlist(x), cut(seq_along(unlist(x)), spitNum, labels = F)))
+    }else{ # if even
+        # x1
+        breaks1<-list(p[["breaks"]])
+        splitNum<-length(breaks1[[1]])/2
+        ## split the list into "splitNum" of sublists of 2 values==bin borders
+        splitedBreaks1 <- lapply(breaks1, function(x) split(unlist(x), cut(seq_along(unlist(x)), splitNum, labels = F)))
+        # x2 = - first and last
+        breaks2<-list(p[["breaks"]][-c(1,length(p[["breaks"]]))])
+        spitNum<-length(breaks2[[1]])/2
+        splitedBreaks2 <- lapply(breaks2, function(x) split(unlist(x), cut(seq_along(unlist(x)), spitNum, labels = F)))
+    }
+    
+    # calculate means
     splitedBreaks1<-unlist(splitedBreaks1, recursive = F)
     x1<-lapply(splitedBreaks1, mean)
-    # Do the same but begining=2nd value to have means of missing bins
-    breaks<-list(p[["breaks"]][-c(1,length(breaks[[1]]))])
-    spitNum<-length(breaks[[1]])/2
-    splitedBreaks2 <- lapply(breaks, function(x) split(unlist(x), cut(seq_along(unlist(x)), spitNum, labels = F)))
     splitedBreaks2<-unlist(splitedBreaks2, recursive = F)
     x2<-lapply(splitedBreaks2, mean)
-    # Merge both x and sort result to obtain all the point of the x abscisse
+    # Merge both x and sort to have all bin means == curve x axis
     xUnsorted<-unlist(append(x1,x2))
     x<-sort(xUnsorted)
     
