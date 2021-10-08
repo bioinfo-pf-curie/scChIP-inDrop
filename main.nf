@@ -1005,8 +1005,8 @@ process getSoftwareVersions{
 
 process workflowSummaryMqc {
   label 'unix'
-  label 'minCpu'
-  label 'minMem'
+  label 'lowCpu'
+  label 'lowMem'
 
   when:
   !params.skipMultiQC
