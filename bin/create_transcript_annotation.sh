@@ -28,12 +28,12 @@ awk -v FS="\t" -v OFS="\t" '{
 awk -v FS="\t" -v OFS="\t" '$4=="lncRNA"||$4=="protein_coding"{print $1,$2,$3,$5,$6,$7}' tmp2 > gencode.v34.annotation.bed
 
 # add +- $window around geneTSS
-awk -v FS="\t" -v OFS="\t" '{
+awk -v FS="\t" -v OFS="\t" -v wdw=$window'{
   if($6=="+"){
-    print $1,$2-$window,$2+$window,$4,$5,$6
+    print $1,$2-wdw,$2+wdw,$4,$5,$6
     
   } else{
-    print $1,$3-$window,$3+$window,$4,$5,$6
+    print $1,$3-wdw,$3+wdw,$4,$5,$6
   }
 }' gencode.v34.annotation.bed > tmp3.bed
 
@@ -69,5 +69,5 @@ BEGIN{
   last_strand=$6
 }' tmp3.bed > tmp4
 
-awk -v OFS="\t" '{if($2<0){$2=0}; print $0}' tmp4 > $name_TSS.bed
+awk -v OFS="\t" '{if($2<0){$2=0}; print $0}' tmp4 > $name"_TSS_"$window".bed"
 rm tmp*
