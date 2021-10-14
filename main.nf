@@ -906,7 +906,7 @@ process gtfToTSSBed {
   file gtf from chGtftoTSSBed
   
   output:
-  file("*_TSS.bed") into tssBedFile
+  file("*_TSS*.bed") into tssBedFile
 
   script:
   """
