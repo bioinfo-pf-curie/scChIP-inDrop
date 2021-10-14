@@ -67,5 +67,5 @@ BEGIN{
   last_strand=$6
 }' tmp3.bed > tmp4
 
-awk -v OFS="\t" '{if($2<0){$2=0}; print $0}' tmp4 $name.bed
+awk -v OFS="\t" '{if($2<0){$2=0}; print $0}' tmp4 > $name.bed
 rm tmp*
