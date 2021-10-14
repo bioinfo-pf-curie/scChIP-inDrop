@@ -4,6 +4,8 @@
 # Take all transcripts for protein coding & long non coding RNA
 
 annotation_gtf=$1
+# 5000 or 10000
+window=$2
 
 name=$(basename $annotation_gtf .gtf)
 
@@ -25,13 +27,13 @@ awk -v FS="\t" -v OFS="\t" '{
 #Keep only protein coding, lncRNA  & remove column
 awk -v FS="\t" -v OFS="\t" '$4=="lncRNA"||$4=="protein_coding"{print $1,$2,$3,$5,$6,$7}' tmp2 > gencode.v34.annotation.bed
 
-# add +- 5000 around geneTSS
+# add +- $window around geneTSS
 awk -v FS="\t" -v OFS="\t" '{
   if($6=="+"){
-    print $1,$2-5000,$2+5000,$4,$5,$6
+    print $1,$2-$window,$2+$window,$4,$5,$6
     
   } else{
-    print $1,$3-5000,$3+5000,$4,$5,$6
+    print $1,$3-$window,$3+$window,$4,$5,$6
   }
 }' gencode.v34.annotation.bed > tmp3.bed
 
@@ -67,5 +69,5 @@ BEGIN{
   last_strand=$6
 }' tmp3.bed > tmp4
 
-awk -v OFS="\t" '{if($2<0){$2=0}; print $0}' tmp4 > $name.bed
+awk -v OFS="\t" '{if($2<0){$2=0}; print $0}' tmp4 > $name_TSS.bed
 rm tmp*
