@@ -25,17 +25,17 @@ awk -v FS="\t" -v OFS="\t" '{
  
 
 #Keep only protein coding, lncRNA  & remove column
-awk -v FS="\t" -v OFS="\t" '$4=="lncRNA"||$4=="protein_coding"{print $1,$2,$3,$5,$6,$7}' tmp2 > gencode.v34.annotation.bed
+awk -v FS="\t" -v OFS="\t" '$4=="lncRNA"||$4=="protein_coding"{print $1,$2,$3,$5,$6,$7}' tmp2 > tmp2bis
 
 # add +- $window around geneTSS
-awk -v FS="\t" -v OFS="\t" -v wdw=$window'{
+awk -v FS="\t" -v OFS="\t" -v wdw=$window '{
   if($6=="+"){
     print $1,$2-wdw,$2+wdw,$4,$5,$6
     
   } else{
     print $1,$3-wdw,$3+wdw,$4,$5,$6
   }
-}' gencode.v34.annotation.bed > tmp3.bed
+}' tmp2bis > tmp3.bed
 
 awk -v FS="\t" -v OFS="\t" '
 BEGIN{

@@ -906,11 +906,11 @@ process gtfToTSSBed {
   file gtf from chGtftoTSSBed
   
   output:
-  
-  
+  file("*_TSS.bed") into tssBedFile
+
   script:
   """
-  
+  create_transcript_annotation.sh $gtf $window
   """
 }
 
@@ -925,8 +925,9 @@ process countMatrices {
   publishDir "${params.outDir}/countMatrices", mode: 'copy'
 
   input:
+  file tssBed from tssBedFile
   set (prefix), file (rmDupBam), file (rmDupBai) from chNoDup_countMatrices
-  file bed from chBedCountMatrices
+  //file bed from chBedCountMatrices
   set (prefix), file(countTable) from chDupCounts
 
   output:
@@ -950,7 +951,7 @@ process countMatrices {
         sc2counts.py -i ${rmDupBam} -o ${prefix}_counts_\$bsize.tsv \$opts -s \$barcodes -v
   done
 
-  for bed in $bed
+  for bed in $tssBed
   do
     opts="-B \$bed"
     if [ ! -z ${params.minCounts} ]; then
