@@ -761,13 +761,13 @@ process  removeDup {
   script:
   """
   # window param
-  if [ ! -z ${params.window} ]; then
-	  rmDup.py -v -i ${noPcrRtBam} -o ${prefix}_rmDup.bam -d ${params.window} > ${prefix}_rmDup.log
+  if [ ! -z ${params.distDup} ]; then
+	  rmDup.py -v -i ${noPcrRtBam} -o ${prefix}_rmDup.bam -d ${params.distDup} > ${prefix}_rmDup.log
   else
 	  rmDup.py -v -i ${noPcrRtBam} -o ${prefix}_rmDup.bam > ${prefix}_rmDup.log
   fi
     
-  #Create count Table from flagged - PCR dups - RT dups and window-based rmDup (need to sort by b arcode)
+  #Create count Table from flagged - PCR dups - RT dups and window-based rmDup (need to sort by barcode)
   barcode_field=\$(samtools view ${prefix}_rmDup.bam  | sed -n \"1 s/XB.*//p\" | sed 's/[^\t]//g' | wc -c)
   
   samtools view ${prefix}_rmDup.bam | awk -v bc_field=\$barcode_field '{print substr(\$bc_field,6)}' | sort | uniq -c > ${prefix}_rmDup.count	
@@ -910,7 +910,7 @@ process gtfToTSSBed {
 
   script:
   """
-  create_transcript_annotation.sh $gtf $window
+  create_transcript_annotation.sh $gtf ${params.TSSwindow}
   """
 }
 
