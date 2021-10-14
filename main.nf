@@ -51,7 +51,7 @@ def helpMessage() {
     --outDir [file]               The output directory where the results will be saved
     -name [str]                   Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic
     --keepRTdup [bool]             Keep RT duplicats. Default is false.
-    --window [int]                 Select the window size. Default is 50.
+    --distDup [int]                Select the number of bases after gene start sites to detect duplicates. Default is 50.
     --minCounts [int]              Select the minimum count per barcodes after removing duplicates. Default is 1000.
     --keepBlacklistRegion [bool]     Keep black region. Default is false.
     --binSize [int]                Bin size to use (in base pairs). Default is 50000. 
@@ -910,7 +910,7 @@ process gtfToTSSBed {
 
   script:
   """
-  create_transcript_annotation.sh $gtf ${params.TSSwindow}
+  create_transcript_annotation.sh $gtf ${params.binSize}
   """
 }
 
