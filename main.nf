@@ -168,16 +168,6 @@ if (params.blackList) {
   exit 1, "BED12 annotation file not not found: ${params.bed12}"
 }
 
-params.bed = genomeRef ? params.genomes[ genomeRef ].bed ?: false : false
-if (params.bed) {
-  Channel  
-    .fromPath(params.bed)
-    .ifEmpty { exit 1, "BED annotation file not found: ${params.bed}" }
-    .set { chBedCountMatrices } 
-}else {
-  exit 1, "BED annotation file not not found: ${params.bed}"
-}
-
 //------- Custom barcode indexes--------
 //--------------------------------------
 for ( idx in params.barcodes.keySet() ){
