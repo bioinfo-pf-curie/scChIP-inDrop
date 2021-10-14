@@ -143,7 +143,7 @@ params.gtf = genomeRef ? params.genomes[ genomeRef ].gtf ?: false : false
 if (params.gtf) {
   Channel
     .fromPath(params.gtf, checkIfExists: true)
-    .into { chGtfSTAR; chGtfFC }
+    .set { chGtftoTSSBed }
 }else {
   exit 1, "GTF annotation file not not found: ${params.gtf}"
 }
@@ -892,6 +892,28 @@ fi
 rm -f ${prefix}_tmp_header.sam ${prefix}_tmp.sorted.bam
 """
 }
+
+// 8 - Generate TSS bed file
+process gtfToTSSBed {
+  tag "${prefix}"
+  label 'unix'
+  label 'medCpu'
+  label 'medMem'
+
+  publishDir "${params.outDir}/gtfToTSSBed", mode: 'copy'
+
+  input:
+  file gtf from chGtftoTSSBed
+  
+  output:
+  
+  
+  script:
+  """
+  
+  """
+}
+
 
 // 8 - Generate count matrix
 process countMatrices {
