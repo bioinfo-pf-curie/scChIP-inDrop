@@ -35,7 +35,7 @@ if(nrow(matrix)>1){
     # Histogram and pdf export
     pdf(paste0(as.character(prefix), 'distribution.pdf'))
     # y = sum des reads par bin, x= #readsTot/cell (on ne sait cb de cellules ont entre x1 et x2 reads)
-    p<-weighted.hist(log10(longMatrix$nbReads), w=longMatrix$nbReads, ylab ="sum #reads/bin", xlab="log10(#reads/cell)")
+    p<-weighted.hist(log10(matrix$nbReads), w=matrix$nbReads, ylab ="sum #reads/bin", xlab="log10(#reads/cell)")
     # somme des reads par bin <=> somme des reads de toutes les cellules qui ont entre x1 et x2 
     # Pour les pics les plus à gauche: pic haut = bcp de cellules qui ont peu de reads
     # ==> Le weighted hist permet de montrer la proportion de cellules ayant un faible nombre de reads

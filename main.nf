@@ -776,6 +776,30 @@ process  removeDup {
   """
 }
 
+// Plot read distributions accross cells (used to filtre out low read cells)
+process distribUMIs{
+  tag "${prefix}"
+  label 'R'
+  label 'medCpu'
+  label 'medMem'
+  publishDir "${params.outDir}/distribUMIs", mode: 'copy'
+
+  input:
+  
+  set val(prefix), file(countedReadsPerCell_matrix) from chDistribUMIs
+
+  output:
+  set val(prefix), file("*distDF.mqc") into mqcDistribUMI
+  set val(prefix), file("*distribution.pdf") into pdfDist
+  file ("v_R.txt") into chRversion
+
+  script:
+  """
+  umisDistribution.r ${countedReadsPerCell_matrix} ${prefix}
+  R --version &> v_R.txt
+  """ 
+}
+
 // 7-Generate bigWig fileq - Create pseudo bulk
 process bamToBigWig{
   tag "${prefix}"
@@ -961,29 +985,7 @@ process countMatrices {
   """
 }
 
-// Plot read distributions accross cells (used to filtre out low read cells)
-process distribUMIs{
-  tag "${prefix}"
-  label 'R'
-  label 'medCpu'
-  label 'medMem'
-  publishDir "${params.outDir}/distribUMIs", mode: 'copy'
 
-  input:
-  
-  set val(prefix), file(countedReadsPerCell_matrix) from chDistribUMIs
-
-  output:
-  set val(prefix), file("*distDF.mqc") into mqcDistribUMI
-  set val(prefix), file("*distribution.pdf") into pdfDist
-  file ("v_R.txt") into chRversion
-
-  script:
-  """
-  umisDistribution.r ${countedReadsPerCell_matrix} ${prefix}
-  R --version &> v_R.txt
-  """ 
-}
 
 
 /***********
