@@ -31,7 +31,8 @@ matrix<-read.table(countMatrix, header=FALSE, sep = "")
 # Only if more than one cell
 if(nrow(matrix)>1){
     #longMatrix<-data.frame(Barcodes=colnames(matrix)[-1], nbReads=colSums(matrix[,-1]))
-    colnames(matrix)<-c("Barcodes", "nbReads")
+    colnames(matrix)<-c("nbReads", "Barcodes")
+    
     # Histogram and pdf export
     pdf(paste0(as.character(prefix), 'distribution.pdf'))
     # y = sum des reads par bin, x= #readsTot/cell (on ne sait cb de cellules ont entre x1 et x2 reads)
