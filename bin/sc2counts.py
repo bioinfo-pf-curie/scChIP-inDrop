@@ -214,7 +214,7 @@ def get_bins_coordinates(i, chromsize, chrom_idx, bsize):
     return str(chrname) + ":" + str(start) + "-" + str(end)
 
 
-def select_mat(x, nreads=500, verbose=False):
+def select_mat(x, nreads, verbose=False):
     """
     Select counts matrix columns
     """

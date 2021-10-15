@@ -52,9 +52,10 @@ def helpMessage() {
     -name [str]                   Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic
     --keepRTdup [bool]             Keep RT duplicats. Default is false.
     --distDup [int]                Select the number of bases after gene start sites to detect duplicates. Default is 50.
-    --minCounts [int]              Select the minimum count per barcodes after removing duplicates. Default is 1000.
+    --minCounts [int]              Select the minimum count per barcodes after removing duplicates. Default is 500.
     --keepBlacklistRegion [bool]     Keep black region. Default is false.
-    --binSize [int]                Bin size to use (in base pairs). Default is 50000. 
+    --binSize [int]                Bin size to use (in base pairs). Default is 50000.
+    --tssWindow [int]              TSS window size to use (in base pairs). Default is 5000.
  
   =======================================================
 
@@ -744,7 +745,7 @@ process  removeDup {
 
   output:
   set (prefix), file("*_rmDup.bam"),  file("*_rmDup.bam.bai") into chNoDup_ScBed, chNoDup_bigWig, chNoDup_countMatrices
-  set (prefix), file("*_rmDup.count") into chDupCounts, chRemoveDupBarcodeLog
+  set (prefix), file("*_rmDup.count") into chDupCounts, chRemoveDupBarcodeLog, chDistribUMIs
   set (prefix), file("*_rmDup.log") into chRemoveDupLog
   file("v_bedtools.txt") into chBedtoolsVersion
   
@@ -899,8 +900,8 @@ process gtfToTSSBed {
   file("*_TSS*.bed") into tssBedFile
 
   script:
-  """
-  create_transcript_annotation.sh $gtf ${params.binSize}
+  """ 
+  create_transcript_annotation.sh $gtf ${params.tssWindow}
   """
 }
 
@@ -917,7 +918,6 @@ process countMatrices {
   input:
   file tssBed from tssBedFile
   set (prefix), file (rmDupBam), file (rmDupBai) from chNoDup_countMatrices
-  //file bed from chBedCountMatrices
   set (prefix), file(countTable) from chDupCounts
 
   output:
@@ -930,8 +930,11 @@ process countMatrices {
   #Counting unique BCs
   bc_prefix=\$(basename ${rmDupBam} | sed -e 's/.bam\$//')
   barcodes=\$(wc -l ${countTable} | awk '{print \$1}')
-
   echo "Barcodes found = \$barcodes" > ${prefix}_counts.log
+  
+  # Counts are generated either per bin (--bin) and per genomics features (--bed)
+
+  # 50000 & 5000
   for bsize in ${params.binSize}
   do
     opts="-b \$bsize "
@@ -940,7 +943,8 @@ process countMatrices {
 	  fi
         sc2counts.py -i ${rmDupBam} -o ${prefix}_counts_\$bsize.tsv \$opts -s \$barcodes -v
   done
-
+ 
+  # 5000
   for bed in $tssBed
   do
     opts="-B \$bed"
@@ -966,7 +970,8 @@ process distribUMIs{
   publishDir "${params.outDir}/distribUMIs", mode: 'copy'
 
   input:
-  set val(prefix), file(matrix) from chCountMatrices
+  
+  set val(prefix), file(countedReadsPerCell_matrix) from chDistribUMIs
 
   output:
   set val(prefix), file("*distDF.mqc") into mqcDistribUMI
@@ -975,7 +980,7 @@ process distribUMIs{
 
   script:
   """
-  umisDistribution.r ${matrix} ${prefix}
+  umisDistribution.r ${countedReadsPerCell_matrix} ${prefix}
   R --version &> v_R.txt
   """ 
 }
