@@ -965,7 +965,7 @@ process countMatrices {
     if [ ! -z ${params.minCounts} ]; then
         opts="\$opts -f ${params.minCounts} "
 	  fi
-        sc2counts.py -i ${rmDupBam} -o ${prefix}_counts_\$bsize.tsv \$opts -s \$barcodes -v
+        sc2counts.py -i ${rmDupBam} -o ${prefix}_counts_bin_${params.binSize}.tsv \$opts -s \$barcodes -v
   done
  
   # 5000
@@ -975,8 +975,7 @@ process countMatrices {
     if [ ! -z ${params.minCounts} ]; then
         opts="\$opts -f ${params.minCounts} "
     fi
-    osuff=\$(basename \$bed | sed -e 's/.bed//')
-    sc2counts.py -i ${rmDupBam} -o ${prefix}_counts_\$osuff.tsv \$opts -s \$barcodes -v
+    sc2counts.py -i ${rmDupBam} -o ${prefix}_counts_TSS_${params.tssWindow}.tsv \$opts -s \$barcodes -v
   done
   
   for i in ${prefix}*.tsv; do gzip -9 \$i; done
@@ -985,7 +984,31 @@ process countMatrices {
   """
 }
 
+process create10Xoutput{
+  tag "${prefix}"
+  label 'R'
+  label 'medCpu'
+  label 'medMem'
+  publishDir "${params.outDir}/create10Xoutput", mode: 'copy'
 
+  input:
+  set val(prefix), file(binMatx), file(tssMatx) from chCountMatrices
+
+  output:
+  file (prefix) into chOut10X
+  
+  script:
+  """
+  mkdir ${prefix}
+
+  create10Xoutput.r ${binMatx} binMatx/
+  mv binMatx/ ${prefix}/
+
+  create10Xoutput.r ${tssMatx} tssMatx/
+  mv tssMatx/ ${prefix}/
+
+  """ 
+}
 
 
 /***********
