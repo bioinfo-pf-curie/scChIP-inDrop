@@ -54,7 +54,7 @@ def helpMessage() {
     --distDup [int]                Select the number of bases after gene start sites to detect duplicates. Default is 50.
     --minCounts [int]              Select the minimum count per barcodes after removing duplicates. Default is 500.
     --keepBlacklistRegion [bool]     Keep black region. Default is false.
-    --binSize [int]                Bin size to use (in base pairs). Default is 50000.
+    --binSize [int]               Bin size to use (in base pairs). Default is 50000.
     --tssWindow [int]              TSS window size to use (in base pairs). Default is 5000.
  
   =======================================================
