@@ -946,7 +946,7 @@ process countMatrices {
   set (prefix), file(countTable) from chDupCounts
 
   output:
-  set val(prefix), file ("*_bin_${params.binSize1}.tsv.gz"), file ("*_bin_${params.binSize2}.tsv.gz"), file ("*_TSS_*.tsv.gz") into chCountMatrices
+  set val(prefix), file ("*_bin_${params.binSize1}*.tsv.gz"), file ("*_bin_${params.binSize2}*.tsv.gz"), file ("*_TSS_*.tsv.gz") into chCountMatrices
   set val(prefix), file ("*_counts.log") into chCountMatricesLog
   file("v_python.txt") into chPythonVersion
   
