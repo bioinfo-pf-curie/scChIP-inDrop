@@ -14,24 +14,27 @@ if(info$size <=58){ # if empty file
     #####  Long to sparse matrix:
     ####-----------------------------------------
     library(Matrix)
-    data<-read.csv(umiMatrix, sep = '\t', header = F)
-    data$V1=as.factor(data$V1)
-    data$V2=as.factor(data$V2)
-    data$V3=as.factor(data$V3)
-    X <- with(data, sparseMatrix(i=as.numeric(V1),
-                                 j=as.numeric(V2),
-                                 x=as.numeric(V3),
-                                 dimnames=list(levels(V1), levels(V2))
+    data<-read.csv(umiMatrix, sep = '\t', header = T)
+    library(reshape2)
+    rm(data)
+    data1<-melt(data)
+    data1$X=as.factor(data1$X)
+    data1$variable=as.factor(data1$variable)
+    data1$value=as.factor(data1$value)
+    X <- with(data1, sparseMatrix(i=as.numeric(X),
+                                  j=as.numeric(variable),
+                                  x=as.numeric(value),
+                                  dimnames=list(levels(X), levels(variable))
     )
     )
     
     #### Save results like 10X 
     ####-----------------------------------------
     library("DropletUtils")
-    cell.ids <- levels(data[,2])
+    cell.ids <- levels(data1[,2])
     ngenes <- nrow(X)
     gene.ids <- paste0("ID", seq_len(ngenes))
-    gene.symb <-levels(data[,1])
+    gene.symb <-levels(data1[,1])
     
     write10xCounts(dir_res, X, gene.id=gene.ids, 
                    gene.symbol=gene.symb, barcodes=cell.ids)
