@@ -54,8 +54,9 @@ def helpMessage() {
     --distDup [int]                Select the number of bases after gene start sites to detect duplicates. Default is 50.
     --minCounts [int]              Select the minimum count per barcodes after removing duplicates. Default is 500.
     --keepBlacklistRegion [bool]     Keep black region. Default is false.
-    --binSize [int]               Bin size to use (in base pairs). Default is 50000.
-    --tssWindow [int]              TSS window size to use (in base pairs). Default is 5000.
+    --binSize1 [int]               First bin size (in base pairs). Default is 50000.
+    --binSize2 [int]               Second bin size (in base pairs). Default is 5000.
+    --tssWindow [int]              TSS window (in base pairs). Default is 5000.
  
   =======================================================
 
@@ -945,7 +946,7 @@ process countMatrices {
   set (prefix), file(countTable) from chDupCounts
 
   output:
-  set val(prefix), file ("*_bin_*.tsv.gz"), file ("*_TSS_*.tsv.gz") into chCountMatrices
+  set val(prefix), file ("*_bin_${params.binSize1}.tsv.gz"), file ("*_bin_${params.binSize2}.tsv.gz"), file ("*_TSS_*.tsv.gz") into chCountMatrices
   set val(prefix), file ("*_counts.log") into chCountMatricesLog
   file("v_python.txt") into chPythonVersion
   
@@ -956,27 +957,14 @@ process countMatrices {
   barcodes=\$(wc -l ${countTable} | awk '{print \$1}')
   echo "Barcodes found = \$barcodes" > ${prefix}_counts.log
   
-  # Counts are generated either per bin (--bin) and per genomics features (--bed)
+  # Counts are generated per bin (--bin) and per genomics features (--bed / TSS)
 
-  # 50000 & 5000
-  for bsize in ${params.binSize}
-  do
-    opts="-b \$bsize "
-    if [ ! -z ${params.minCounts} ]; then
-        opts="\$opts -f ${params.minCounts} "
-	  fi
-        sc2counts.py -i ${rmDupBam} -o ${prefix}_counts_bin_${params.binSize}.tsv \$opts -s \$barcodes -v
-  done
- 
-  # 5000
-  for bed in $tssBed
-  do
-    opts="-B \$bed"
-    if [ ! -z ${params.minCounts} ]; then
-        opts="\$opts -f ${params.minCounts} "
-    fi
-    sc2counts.py -i ${rmDupBam} -o ${prefix}_counts_TSS_${params.tssWindow}.tsv \$opts -s \$barcodes -v
-  done
+  # bin sizes: 50000 & 5000
+  sc2counts.py -i ${rmDupBam} -o ${prefix}_counts_bin_${params.binSize1}.tsv -b ${params.binSize1} -f ${params.minCounts} -s \$barcodes -v
+  sc2counts.py -i ${rmDupBam} -o ${prefix}_counts_bin_${params.binSize2}.tsv -b ${params.binSize2} -f ${params.minCounts} -s \$barcodes -v
+
+  # TSS window : 5000
+  sc2counts.py -i ${rmDupBam} -o ${prefix}_counts_TSS_${params.tssWindow}.tsv -B $tssBed -f ${params.minCounts} -s \$barcodes -v
   
   for i in ${prefix}*.tsv; do gzip -9 \$i; done
   
@@ -992,7 +980,7 @@ process create10Xoutput{
   publishDir "${params.outDir}/create10Xoutput", mode: 'copy'
 
   input:
-  set val(prefix), file(binMatx), file(tssMatx) from chCountMatrices
+  set val(prefix), file(binMatx1), file(binMatx2), file(tssMatx) from chCountMatrices
 
   output:
   file (prefix) into chOut10X
@@ -1001,11 +989,14 @@ process create10Xoutput{
   """
   mkdir ${prefix}
 
-  create10Xoutput.r ${binMatx} binMatx/
-  mv binMatx/ ${prefix}/
+  create10Xoutput.r ${binMatx1} binMatx_${params.binSize1}/
+  mv binMatx_${params.binSize1}/ ${prefix}/
 
-  create10Xoutput.r ${tssMatx} tssMatx/
-  mv tssMatx/ ${prefix}/
+  create10Xoutput.r ${binMatx2} binMatx_${params.binSize2}/
+  mv binMatx_${params.binSize2}/ ${prefix}/
+
+  create10Xoutput.r ${tssMatx} tssMatx_${params.tssWindow}/
+  mv tssMatx_${params.tssWindow}/ ${prefix}/
 
   """ 
 }
