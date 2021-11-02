@@ -50,12 +50,14 @@ def helpMessage() {
   Other options:
     --outDir [file]               The output directory where the results will be saved
     -name [str]                   Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic
+    --darkCycleDesign [bool]      Barcode first index change of position depending if dark cycles are used during the sequencing. By default, it is not so darkCycleDesign is set to false.
+    --barcode_linker_length       Barcode + linker length in R2 to be trimmed. Default is 84bp.
     --keepRTdup [bool]             Keep RT duplicats. Default is false.
     --distDup [int]                Select the number of bases after gene start sites to detect duplicates. Default is 50.
-    --minCounts [int]              Select the minimum count per barcodes after removing duplicates. Default is 500.
+    --minCounts [int]              Select the minimum count per barcodes after removing duplicates. Default is 100.
     --keepBlacklistRegion [bool]     Keep black region. Default is false.
-    --binSize1 [int]               First bin size (in base pairs). Default is 50000.
-    --binSize2 [int]               Second bin size (in base pairs). Default is 5000.
+    --binSize1 [int]               First and larger bin size (in base pairs). Default is 50000.
+    --binSize2 [int]               Second and smaller bin size (in base pairs). Default is 5000.
     --tssWindow [int]              TSS window (in base pairs). Default is 5000.
  
   =======================================================
@@ -296,102 +298,6 @@ summary['Config Profile'] = workflow.profile
 log.info summary.collect { k,v -> "${k.padRight(15)}: $v" }.join("\n")
 log.info "========================================="
 
-/*
-process bcMapping {
-  tag "${prefix}"
-  label 'bowtie2'
-  label 'highCpu'
-  label 'highMem'
-
-  publishDir "${params.outDir}/bcMapping", mode: 'copy'
-
-  input:
-  set val(prefix), file(reads) from chRawReadsBowtie2
- 
-  output:
-  set val(prefix), file("*_read_barcodes.txt") into chReadBcNames
-  file ("v_bowtie2.txt") into chBowtie2Version
-  // summary of counts
-  set val(prefix) , file("*_bowtie2.log") into chBowtie2Log
-  // for bowtie2 module in mqc
-  set val(prefix) , file("*_index_1_bw2.log") into chIndex1Bowtie2Log
-  set val(prefix) , file("*_index_2_bw2.log") into chIndex2Bowtie2Log
-  set val(prefix) , file("*_index_3_bw2.log") into chIndex3Bowtie2Log
-
-  script:
-  """
-  ##Extract three indexes from reads : 1 - 16 = index 1 ; 21 - 36 = index 2; 41 - 56 = index 3
-  gzip -cd  ${reads[1]} | awk -v start_index_1=5 -v size_index=16  'NR%4==1{print ">"substr(\$0,2)}; NR%4==2{print substr(\$0,start_index_1,size_index)}' > read_indexes_1.fasta
-  
-  gzip -cd  ${reads[1]} | awk -v start_index_2=25 -v size_index=16 'NR%4==1{print  \">\"substr(\$0,2)}; NR%4==2{print substr(\$0,start_index_2,size_index)}' > read_indexes_2.fasta
-  
-  gzip -cd  ${reads[1]} | awk -v start_index_3=45 -v size_index=16 'NR%4==1{print \">\"substr(\$0,2)}; NR%4==2{print substr(\$0,start_index_3,size_index)}' > read_indexes_3.fasta
-  
-  #Map INDEXES 1 against Index1 library
-  bowtie2 -x /data/users/lhadjabe/Gitlab/ChIP-seq_single-cell_LBC/Barcodes/LBC/bowtie_2_index_short/ref_index_1 -f read_indexes_1.fasta \
-          -N 1 -L 8 --rdg 0,7 --rfg 0,7 --mp 7,7 --ignore-quals --score-min L,0,-1 -t --no-unal --no-hd -p ${task.cpus} > index_1_bowtie2.sam 2> ${prefix}_index_1_bw2.log
-  #Keep only reads that were matched by a unique index 1 + counting matched index1
-  awk '/XS/{next} \$2!=4{print \$1,\$3;count++} ;END{print count > \"count_index_1\"}' index_1_bowtie2.sam > reads_matching_index_1.txt
-  
-
-  #Map INDEXES 2 against Index2 library
-  bowtie2 -x /data/users/lhadjabe/Gitlab/ChIP-seq_single-cell_LBC/Barcodes/LBC/bowtie_2_index_short/ref_index_2 -f read_indexes_2.fasta -N 1 -L 8 --rdg 0,7 --rfg 0,7 --mp 7,7 --ignore-quals --score-min L,0,-1 -t --no-unal --no-hd -p ${task.cpus} > index_2_bowtie2.sam 2> ${prefix}_index_2_bw2.log
-  #Keep only reads that were matched by a unique index 2 + counting matched index2
-  awk '/XS/{next} \$2!=4{print \$1,\$3;count++} ;END{print count > \"count_index_2\"}' index_2_bowtie2.sam > reads_matching_index_2.txt
-  
-  
-  #Map INDEXES 3 against Index3 library
-  bowtie2 -x /data/users/lhadjabe/Gitlab/ChIP-seq_single-cell_LBC/Barcodes/LBC/bowtie_2_index_short/ref_index_3 -f read_indexes_3.fasta -N 1 -L 8 --rdg 0,7 --rfg 0,7 --mp 7,7 --ignore-quals --score-min L,0,-1 -t --no-unal --no-hd -p ${task.cpus} > index_3_bowtie2.sam 2> ${prefix}_index_3_bw2.log
-  #Keep only reads that were matched by a unique index 3 + counting matched index3
-  awk '/XS/{next} \$2!=4{print \$1,\$3;count++} ;END{print count > \"count_index_3\"}' index_3_bowtie2.sam > reads_matching_index_3.txt
-  
-  ##Sort indexes by read name: 
-  sort -T /scratch/ --parallel=${task.cpus} -k1,1 reads_matching_index_1.txt > reads_matching_index_1_sorted.txt
-  
-  rm reads_matching_index_1.txt
-  
-  sort -T /scratch/ --parallel=${task.cpus} -k1,1 reads_matching_index_2.txt > reads_matching_index_2_sorted.txt
-
-  rm reads_matching_index_2.txt
-  
-  sort -T /scratch/ --parallel=${task.cpus} -k1,1 reads_matching_index_3.txt > reads_matching_index_3_sorted.txt
-  
-  rm reads_matching_index_3.txt
-  
-  #Join indexes 1 & 2 together (inner join)
-  join -t\$' ' -1 1 -2 1 reads_matching_index_1_sorted.txt reads_matching_index_2_sorted.txt > tmp
-  
-  #Count matched index 1 & 2
-  echo \$(wc -l tmp) | cut -d' ' -f1 > count_index_1_2
-  	
-  
-  #Join indexes (1 & 2) & 3 together to recompose full barcode (inner join)
-  join -t\$' ' -1 1 -2 1 tmp reads_matching_index_3_sorted.txt > final
-  
-  
-  #Reformat & count matched index (1 & 2 & 3) <=> barcode
-  awk '{print substr(\$1,1)\"\tBC\"substr(\$2,2)substr(\$3,2)substr(\$4,2);count++} ;END{print count > \"count_index_1_2_3\"}' final > ${prefix}_read_barcodes.txt
-  
-  ##Write logs
-  n_index_1=\$(cat count_index_1)
-  n_index_2=\$(cat count_index_2)
-  n_index_3=\$(cat count_index_3)
-  n_index_1_2=\$(cat count_index_1_2)
-  n_index_1_2_3=\$(cat count_index_1_2_3)
-
-  ## logs
-  echo "## Number of matched indexes 1: \$n_index_1" > ${prefix}_bowtie2.log
-  echo "## Number of matched indexes 2: \$n_index_2" >> ${prefix}_bowtie2.log
-  echo "## Number of matched indexes 1 and 2: \$n_index_1_2" >> ${prefix}_bowtie2.log
-  echo "## Number of matched indexes 3: \$n_index_3" >> ${prefix}_bowtie2.log
-  echo "## Number of matched barcodes: \$n_index_1_2_3" >> ${prefix}_bowtie2.log
-
-  ## version
-  bowtie2 --version > v_bowtie2.txt
-  """
-}
-*/
-
 process bcMapping {
   tag "${prefix} - ${index}"
   label 'bowtie2'
@@ -414,13 +320,19 @@ process bcMapping {
   file ("v_bowtie2.txt") into chBowtie2Version
 
   script:
-  // !!! Old design pas ajouté en option => to do 
-  start = params.barcodes[ index ].start
+  if(params.darkCycleDesign == false) {
+    start = params.barcodes[ index ].start_nodarkcycles
+  } else {
+    start = params.barcodes[ index ].start_darkcycles
+  }
   size = params.barcodes[ index ].size
   base = params.barcodes[ index ].base
   oprefix = "${prefix}_${index}"
   """
-  ##Extract three indexes from reads (old design): 1 - 16 = index 1 ; 21 - 36 = index 2; 41 - 56 = index 3
+  ##Extract three indexes from reads 
+  # darkCycles design (==the first 4 bases are not read during the sequencing, the index begin at pos 1): 1 - 16 = index 1 ; 21 - 36 = index 2; 41 - 56 = index 3
+  # not darkcycles design: 5 - 20 = index 1 ; 25 - 40 = index 2; 45 - 60 = index 3
+  # => the start change but not the length
   gzip -cd  ${reads[1]} | awk -v start_index_1=${start} -v size_index=${size} 'NR%4==1{print ">"substr(\$0,2)}; NR%4==2{print substr(\$0,start_index_1,size_index)}' > ${oprefix}Reads.fasta
 
   #Map indexes (-f) against Index libraries (-x)
@@ -936,7 +848,7 @@ process countMatrices {
   tag "${prefix}"
   label 'samtools'
   label 'highCpu'
-  label 'highMem'
+  label 'extrahMem'
 
   publishDir "${params.outDir}/countMatrices", mode: 'copy'
 
@@ -946,7 +858,7 @@ process countMatrices {
   set (prefix), file(countTable) from chDupCounts
 
   output:
-  set val(prefix), file ("*_bin_${params.binSize1}*.tsv.gz"), file ("*_bin_${params.binSize2}*.tsv.gz"), file ("*_TSS_*.tsv.gz") into chCountMatrices
+  set val(prefix), file ("*_counts_bin_${params.binSize1}_filt_*.tsv.gz"), file ("*_counts_bin_${params.binSize2}_filt_*.tsv.gz"), file ("*_TSS_*.tsv.gz") into chCountMatrices
   set val(prefix), file ("*_counts.log") into chCountMatricesLog
   file("v_python.txt") into chPythonVersion
   
@@ -980,7 +892,7 @@ process create10Xoutput{
   publishDir "${params.outDir}/create10Xoutput", mode: 'copy'
 
   input:
-  set val(prefix), file(binMatx1), file(binMatx2), file(tssMatx) from chCountMatrices
+  set (prefix), file(binMatx1), file(binMatx2), file(tssMatx) from chCountMatrices
 
   output:
   file (prefix) into chOut10X
@@ -1103,7 +1015,7 @@ process multiqc {
   metadataOpts = params.metadata ? "--metadata ${metadata}" : ""
   //isPE = params.singleEnd ? "" : "-p"
   //designOpts= params.design ? "-d ${params.design}" : ""
-  modules_list = "-m custom_content -m bowtie2 -m star"
+  modules_list = "-m custom_content -m bowtie2 -m star -m cutadapt"
   """
   stat2mqc.sh ${splan} 
   mqc_header.py --splan ${splan} --name "scChIP-seq" --version ${workflow.manifest.version} ${metadataOpts} > multiqc-config-header.yaml
