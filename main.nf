@@ -848,7 +848,7 @@ process countMatrices {
   tag "${prefix}"
   label 'samtools'
   label 'highCpu'
-  label 'extrahMem'
+  label 'extraMem'
 
   publishDir "${params.outDir}/countMatrices", mode: 'copy'
 

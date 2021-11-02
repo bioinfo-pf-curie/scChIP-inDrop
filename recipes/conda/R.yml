@@ -4,6 +4,8 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - conda-forge::r-base=4.0.5=h9e01966_1
-  - conda-forge::r-reshape2=1.4.4=r40h03ef668_1
-  - conda-forge::r-plotrix=3.8_1=r40hc72bb7e_0
+  - conda-forge::r-base=4.1.1=hb93adac_1
+  - conda-forge::r-reshape2=1.4.4=r41h03ef668_1
+  - conda-forge::r-plotrix=3.8_2=r41hc72bb7e_0
+  - conda-forge::r-matrix=1.3_4=r41he454529_0
+  - bioconda::bioconductor-dropletutils=1.12.1=r41h399db7b_0

@@ -4,8 +4,8 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - conda-forge::python=3.9.2=hffdb5ce_0_cpython
-  - conda-forge::pymdown-extensions=8.1.1=pyh44b312d_0
-  - bioconda::pysam=0.16.0.1=py39h051187c_3
+  - conda-forge::python=3.9.7=hb7a2778_3_cpython  
+  - conda-forge::pymdown-extensions=9.0=pyhd8ed1ab_0
+  - bioconda::pysam=0.17.0=py39h051187c_0
   - bioconda::bx-python=0.8.11=py39h5d76eff_1
-  - bioconda::samtools=1.12=h9aed4be_1
+  - bioconda::samtools=1.14=hb421002_0

@@ -4,4 +4,4 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
-  - bioconda::multiqc=1.10.1=py_0
+  - bioconda::multiqc=1.11=pyhdfd78af_0
