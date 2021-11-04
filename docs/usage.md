@@ -108,7 +108,8 @@ params {
     'hg19' {
       starIndex = '<path to the STAR index files>'
       gtf       = '<path to a gene annotation file in gtf format>'
-	    bed12     = '<path to annotation file in b bed12 format>'
+	    bed12     = '<path to annotation file in bed12 format>'
+      blackList = '<path to blackList regions file in bed format>'
     }
     // Any number of additional genomes, key is used with --genome
   }

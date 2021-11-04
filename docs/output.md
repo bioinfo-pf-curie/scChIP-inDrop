@@ -86,7 +86,7 @@ Summary of alignment scores accross the pipeline.
 
 ### Read distributions across cells
 
-Overview of read distribution across cells.  If you observed a bimodal distribution, your data may contain empty droplets as first pics represent the proportion of cells having a low number of reads. Higher these pics are, higher the number of cells having a low number of reads is. This information can be used to define a threshold to remove empty droplets identified by a low number of reads.  If you do not see a bimodal distribution, your data have probably been filtred on a minimum reads per cell, usually 1000.
+Overview of read distribution across cells.  If you observed a bimodal distribution, your data may contain empty droplets as first pics represent the proportion of cells having a low number of reads. Higher these pics are, higher the number of cells having a low number of reads is. This information can be used to define a threshold to remove empty droplets identified by a low number of reads. 
 
 ![MultiQC](images/umiDistrib-1.png)
 
