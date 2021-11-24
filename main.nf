@@ -409,7 +409,6 @@ process bcSubset {
   """
 }
 
-
 //2-  Trim R2 reads for genome aligning	
 process trimReads {
   tag "${prefix}"
@@ -448,8 +447,7 @@ process readsAlignment {
 
   input :
   file genomeIndex from chStar.collect()
-  set val(prefix), file(reads) from chAlignment
-  set val(prefix), file(trimmedR2) from chTrimmedReads
+  set val(prefix), file(trimmedR2), file(reads) from chTrimmedReads.join(chAlignment)
   //set val(prefix), file(barcodedR1), file(barcodedR2) from chBarcodedReads_Star
 
   output :
@@ -495,8 +493,7 @@ process  addBarcodes {
   publishDir "${params.outDir}/addBarcodes", mode: 'copy'
 
   input:
-  set val(prefix), file(alignedBam) from chAlignedBam
-  set val(prefix), file(readBarcodes) from chReadBcNames
+  set val(prefix), file(alignedBam), file(readBarcodes) from chAlignedBam.join(chReadBcNames)
 
   output:
   set (prefix), file("*_flagged.bam") into chAddedBarcodes
@@ -698,7 +695,6 @@ process distribUMIs{
   publishDir "${params.outDir}/distribUMIs", mode: 'copy'
 
   input:
-  
   set val(prefix), file(countedReadsPerCell_matrix) from chDistribUMIs
 
   output:
@@ -854,8 +850,7 @@ process countMatrices {
 
   input:
   file tssBed from tssBedFile
-  set (prefix), file (rmDupBam), file (rmDupBai) from chNoDup_countMatrices
-  set (prefix), file(countTable) from chDupCounts
+  set (prefix), file (rmDupBam), file (rmDupBai), file(countTable) from chNoDup_countMatrices.join(chDupCounts)
 
   output:
   set val(prefix), file ("*_counts_bin_${params.binSize1}_filt_*.tsv.gz"), file ("*_counts_bin_${params.binSize2}_filt_*.tsv.gz"), file ("*_TSS_*.tsv.gz") into chCountMatrices
