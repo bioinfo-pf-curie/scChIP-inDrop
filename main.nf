@@ -882,7 +882,7 @@ process countMatrices {
 process create10Xoutput{
   tag "${prefix}"
   label 'R'
-  label 'highCpu'
+  label 'medCpu'
   label 'extraMem'
   publishDir "${params.outDir}/create10Xoutput", mode: 'copy'
 
