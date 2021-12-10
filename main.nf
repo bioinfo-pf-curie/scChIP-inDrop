@@ -57,7 +57,6 @@ def helpMessage() {
     --minCounts [int]              Select the minimum count per barcodes after removing duplicates. Default is 100.
     --keepBlacklistRegion [bool]     Keep black region. Default is false.
     --binSize1 [int]               First and larger bin size (in base pairs). Default is 50000.
-    --binSize2 [int]               Second and smaller bin size (in base pairs). Default is 5000.
     --tssWindow [int]              TSS window (in base pairs). Default is 5000.
  
   =======================================================
@@ -853,7 +852,8 @@ process countMatrices {
   set (prefix), file (rmDupBam), file (rmDupBai), file(countTable) from chNoDup_countMatrices.join(chDupCounts)
 
   output:
-  set val(prefix), file ("*_counts_bin_${params.binSize1}_filt_*.tsv.gz"), file ("*_counts_bin_${params.binSize2}_filt_*.tsv.gz"), file ("*_TSS_*.tsv.gz") into chCountMatrices
+  //set val(prefix), file ("*_counts_bin_${params.binSize1}_filt_*.tsv.gz"), file ("*_counts_bin_${params.binSize2}_filt_*.tsv.gz"), file ("*_TSS_*.tsv.gz") into chCountMatrices
+  set val(prefix), file ("*_counts_bin_${params.binSize1}_filt_*.tsv.gz"), file ("*_TSS_*.tsv.gz") into chCountMatrices
   set val(prefix), file ("*_counts.log") into chCountMatricesLog
   file("v_python.txt") into chPythonVersion
   
@@ -868,7 +868,7 @@ process countMatrices {
 
   # bin sizes: 50000 & 5000
   sc2counts.py -i ${rmDupBam} -o ${prefix}_counts_bin_${params.binSize1}.tsv -b ${params.binSize1} -f ${params.minCounts} -s \$barcodes -v
-  sc2counts.py -i ${rmDupBam} -o ${prefix}_counts_bin_${params.binSize2}.tsv -b ${params.binSize2} -f ${params.minCounts} -s \$barcodes -v
+  #sc2counts.py -i ${rmDupBam} -o ${prefix}_counts_bin_${params.binSize2}.tsv -b ${params.binSize2} -f ${params.minCounts} -s \$barcodes -v
 
   # TSS window : 5000
   sc2counts.py -i ${rmDupBam} -o ${prefix}_counts_TSS_${params.tssWindow}.tsv -B $tssBed -f ${params.minCounts} -s \$barcodes -v
@@ -887,8 +887,8 @@ process create10Xoutput{
   publishDir "${params.outDir}/create10Xoutput", mode: 'copy'
 
   input:
-  set (prefix), file(binMatx1), file(binMatx2), file(tssMatx) from chCountMatrices
-
+  //set (prefix), file(binMatx1), file(binMatx2), file(tssMatx) from chCountMatrices
+  set (prefix), file(binMatx1), file(tssMatx) from chCountMatrices
   output:
   file (prefix) into chOut10X
   
@@ -900,9 +900,9 @@ process create10Xoutput{
   tar czf binMatx_${params.binSize1}.tar.gz binMatx_${params.binSize1}
   mv binMatx_${params.binSize1}.tar.gz ${prefix}/
 
-  create10Xoutput.r ${binMatx2} binMatx_${params.binSize2}/
-  tar czf binMatx_${params.binSize2}.tar.gz binMatx_${params.binSize2}
-  mv binMatx_${params.binSize2}.tar.gz ${prefix}/
+  #create10Xoutput.r ${binMatx2} binMatx_${params.binSize2}/
+  #tar czf binMatx_${params.binSize2}.tar.gz binMatx_${params.binSize2}
+  #mv binMatx_${params.binSize2}.tar.gz ${prefix}/
 
   create10Xoutput.r ${tssMatx} tssMatx_${params.tssWindow}/
   tar czf tssMatx_${params.tssWindow}.tar.gz tssMatx_${params.tssWindow}
