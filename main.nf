@@ -897,13 +897,16 @@ process create10Xoutput{
   mkdir ${prefix}
 
   create10Xoutput.r ${binMatx1} binMatx_${params.binSize1}/
-  mv binMatx_${params.binSize1}/ ${prefix}/
+  tar czf binMatx_${params.binSize1}.tar.gz binMatx_${params.binSize1}
+  mv binMatx_${params.binSize1}.tar.gz ${prefix}/
 
   create10Xoutput.r ${binMatx2} binMatx_${params.binSize2}/
-  mv binMatx_${params.binSize2}/ ${prefix}/
+  tar czf binMatx_${params.binSize2}.tar.gz binMatx_${params.binSize2}
+  mv binMatx_${params.binSize2}.tar.gz ${prefix}/
 
   create10Xoutput.r ${tssMatx} tssMatx_${params.tssWindow}/
-  mv tssMatx_${params.tssWindow}/ ${prefix}/
+  tar czf tssMatx_${params.tssWindow}.tar.gz tssMatx_${params.tssWindow}
+  mv tssMatx_${params.tssWindow}.tar.gz ${prefix}/
 
   """ 
 }
