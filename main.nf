@@ -868,7 +868,6 @@ process countMatrices {
 
   # bin sizes: 50000 & 5000
   sc2counts.py -i ${rmDupBam} -o ${prefix}_counts_bin_${params.binSize1}.tsv -b ${params.binSize1} -f ${params.minCounts} -s \$barcodes -v
-  #sc2counts.py -i ${rmDupBam} -o ${prefix}_counts_bin_${params.binSize2}.tsv -b ${params.binSize2} -f ${params.minCounts} -s \$barcodes -v
 
   # TSS window : 5000
   sc2counts.py -i ${rmDupBam} -o ${prefix}_counts_TSS_${params.tssWindow}.tsv -B $tssBed -f ${params.minCounts} -s \$barcodes -v
@@ -899,10 +898,6 @@ process create10Xoutput{
   create10Xoutput.r ${binMatx1} binMatx_${params.binSize1}/
   tar czf binMatx_${params.binSize1}.tar.gz binMatx_${params.binSize1}
   mv binMatx_${params.binSize1}.tar.gz ${prefix}/
-
-  #create10Xoutput.r ${binMatx2} binMatx_${params.binSize2}/
-  #tar czf binMatx_${params.binSize2}.tar.gz binMatx_${params.binSize2}
-  #mv binMatx_${params.binSize2}.tar.gz ${prefix}/
 
   create10Xoutput.r ${tssMatx} tssMatx_${params.tssWindow}/
   tar czf tssMatx_${params.tssWindow}.tar.gz tssMatx_${params.tssWindow}
