@@ -746,7 +746,7 @@ process bamToBigWig{
 process bamToScBed{
   tag "${prefix}"
   label 'samtools'
-  label 'highCpu'
+  label 'medCpu'
   label 'highMem'
 
   publishDir "${params.outDir}/bamToScBed", mode: 'copy'
@@ -842,7 +842,7 @@ process gtfToTSSBed {
 process countMatrices {
   tag "${prefix}"
   label 'samtools'
-  label 'highCpu'
+  label 'medCpu'
   label 'extraMem'
 
   publishDir "${params.outDir}/countMatrices", mode: 'copy'
@@ -881,7 +881,7 @@ process countMatrices {
 process create10Xoutput{
   tag "${prefix}"
   label 'R'
-  label 'extraCpu'
+  label 'medCpu'
   label 'extraMem'
   publishDir "${params.outDir}/create10Xoutput", mode: 'copy'
 
