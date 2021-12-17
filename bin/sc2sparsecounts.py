@@ -1,10 +1,8 @@
-#!/usr/bin/env python
-# coding: utf-8
-
 """
 Transform a BAM file to a count table based on barcode information and genomic bins
 """
 
+import time
 import argparse
 import sys
 import os
@@ -14,7 +12,19 @@ from collections import OrderedDict
 import pysam
 import numpy as np
 from scipy import sparse
+import scipy.io as sio
 from bx.intervals.intersection import Intersecter, Interval
+import subprocess
+    
+def timing(function, *args):
+    """                              
+    Run a fonction and return the run time and the result of the function
+    If the function requires arguments, those can be passed in
+    """
+    startTime = time.time()
+    result = function(*args)
+    print('%s function took %0.3f ms' % (function.func_name, (time.time() - startTime) * 1000))
+    return result
 
 
 def load_BED(in_file, featuresOverCoord=False, verbose=False):
@@ -29,12 +39,14 @@ def load_BED(in_file, featuresOverCoord=False, verbose=False):
     verbose = verbose mode [logical]
     """
     x = {}
+    if verbose:
+        print("## Loading BED file '", in_file, "'...")
     featureNames=[]
     nline = 0
     with open(in_file) as bed_handle:
         for line in bed_handle:
             if nline > 0 and nline % 5000==0 and verbose: 
-                print( "## %d features loaded ..." % nline)
+                print("## %d features loaded ..." % nline)
             nline +=1
             bedtab = line.split("\t")
             chromosome, start, end = bedtab[:3]
@@ -146,6 +158,7 @@ def get_features_idx(intervals, chrom, read, useWholeRead=True, verbose=False):
         feat = intervals[chrom].find(lpos, rpos)
 
         if len(feat) == 0:
+            if verbose: print(>> sys.stderr, "Warning - no feature found for read at", chrom, ":", read.pos, "- skipped")
             return None
         else:
             feat_idx = []
@@ -153,6 +166,7 @@ def get_features_idx(intervals, chrom, read, useWholeRead=True, verbose=False):
                 feat_idx.append(feat[i].value['pos'])
             return feat_idx
     else:
+        if verbose: print(>> sys.stderr, "Warning - no feature found for read at", chrom, ":", read.pos, "- skipped")
         return None
 
 
@@ -162,9 +176,10 @@ def get_bin_idx (chrname, read, chrom_idx, binSize, useWholeRead=True):
     Return a zero-based index
     """
     try:
-        chrpos = list(chrom_idx.keys()).index(chrname)
+        chrpos = chrom_idx.keys().index(chrname)
 
     except ValueError:
+        print(>> sys.stderr, "Chromosome " + chrname + " not found !")
         sys.exit(-1)
     
     if useWholeRead:
@@ -175,8 +190,8 @@ def get_bin_idx (chrname, read, chrom_idx, binSize, useWholeRead=True):
             rpos = rpos - 1
 
         ### Sum of previous chromosome + current bin (0-based)
-        idx = sum(list(chrom_idx.values())[:chrpos]) + int(math.floor(float(lpos) / float(binSize)))
-        idx_end = sum(list(chrom_idx.values())[:chrpos]) + int(math.floor(float(rpos) / float(binSize)))
+        idx = sum(chrom_idx.values()[:chrpos]) + int(math.floor(float(lpos) / float(binSize)))
+        idx_end = sum(chrom_idx.values()[:chrpos]) + int(math.floor(float(rpos) / float(binSize)))
         
         if idx != idx_end:
             return range(idx, idx_end + 1)
@@ -186,7 +201,7 @@ def get_bin_idx (chrname, read, chrom_idx, binSize, useWholeRead=True):
         lpos = get_read_start(read)
         if read.is_reverse:
             lpos = lpos - 1
-        idx = sum(list(chrom_idx.values())[:chrpos]) + int(math.floor(float(lpos) / float(binSize)))
+        idx = sum(chrom_idx.values()[:chrpos]) + int(math.floor(float(lpos) / float(binSize)))
         
         return [idx]
     
@@ -211,10 +226,10 @@ def get_bins_coordinates(i, chromsize, chrom_idx, bsize):
     end = int(start) + int(bsize)
     if end > chromsize[chrname]:
         end = chromsize[chrname]
-    return str(chrname) + ":" + str(start) + "-" + str(end)
+    return np.array([str(chrname), str(start), str(end)])
 
 
-def select_mat(x, nreads, verbose=False):
+def select_mat(x, nreads=500, verbose=False):
     """
     Select counts matrix columns
     """
@@ -222,71 +237,96 @@ def select_mat(x, nreads, verbose=False):
     cols = np.array(cx.sum(axis=0))  # sum the columns
     idx = np.where(cols >= nreads)[1]
     if verbose:
-        print( "## Select " + str(len(idx)) + " columns with at least " + str(nreads) + " counts")
+        print("## Select " + str(len(idx)) + " columns with at least " + str(nreads) + " counts")
     return idx
 
 
-def save2BinMatrix(x, colnames, ofile, chromsize, chrom_idx, bsize, filt, verbose=False, rmzeros=False):
+def save2BinSparseMatrix(x, colnames, odir, chromsize, chrom_idx, bsize, filt, verbose=False, rmzeros=False):
     """
     Write the count table into a txt file without taking too much RAM
     Note that most of the args are used to convert bin coordinate into genomic coordinates
     """
     if verbose:
-        print( "## Writting outpout file ...")
+        print("## Writting output file ...")
 
     cx = x.tocsr()
-    ofile = re.sub("\.tsv|\.txt","_filt_"+ str(filt) +".tsv",ofile)
-    if os.path.exists(ofile):
-        os.remove(ofile)
-    handle = open(ofile,'ab')
-    colnames = np.array([[" "] + colnames])
-    np.savetxt(handle, colnames, '%s', delimiter="\t")
-    for i in range(cx.shape[0]):
-        datarow = cx.getrow(i).toarray()
-        datarow = np.round(datarow)
-   
-        if np.sum(datarow) > 0 or rmzeros == False:
-            coord = get_bins_coordinates(i, chromsize, chrom_idx, bsize)
-            coord = np.array([coord])
-            val = np.concatenate([coord[:, None], datarow.astype(int)], axis=1)
-            np.savetxt(handle, val, '%s', delimiter="\t")
+    odir = odir + "_"+ str(bsize)
+    if not os.path.exists(odir):
+        os.mkdir(odir)
 
+    mtx_file = odir + "/matrix.mtx"
+    features_file = odir + "/features.tsv"
+    barcodes_file = odir + "/barcodes.tsv"
+
+    # Save matrix.mtx
+    handle = open(mtx_file,'ab')
+    sio.mmwrite(mtx_file, cx)
+    handle.close()
+    subprocess.Popen("gzip " + mtx_file, shell=True, stdin=subprocess.PIPE)
+    
+    # Save barcodes.tsv
+    handle = open(barcodes_file,'ab')
+    colnames = np.array([colnames])
+    np.savetxt(handle, colnames, '%s', delimiter="\n")
+    handle.close()
+    subprocess.Popen("gzip " + barcodes_file,shell=True, stdin=subprocess.PIPE)
+
+    # Save features.tsv
+    handle = open(features_file,'ab')
+
+    for i in range(cx.shape[0]):
+        coord = get_bins_coordinates(i, chromsize, chrom_idx, bsize)
+	coord = np.array([coord])
+        np.savetxt(handle, coord, fmt='%s', delimiter="\t")
+    
         if (i > 0 and i % 10000 == 0 and verbose):
-            print( "## Write line " + str(i))
+            print("## Write line " + str(i))
 
     handle.close()
+    subprocess.Popen("gzip " + features_file, shell=True, stdin=subprocess.PIPE)
 
 
-def save2FeatMatrix(x, colnames, ofile, rownames, filt, verbose=False, rmzeros=False):
+def save2FeatSparseMatrix(x, colnames, odir, rownames, filt, verbose=False, rmzeros=False):
     """
     Write the count table into a txt file without taking too much RAM
     """
     if verbose:
-        print( "## Writting outpout file ...")
+        print("## Writting outpout file ...")
 
+    
     cx = x.tocsr()
-    ofile = re.sub("\.tsv|\.txt","_filt_"+ str(filt) +".tsv",ofile)
-    if os.path.exists(ofile):
-        os.remove(ofile)
-    if os.path.exists(ofile + ".gz"):
-        os.remove(ofile + ".gz")
-    handle = open(ofile,'ab')
-    colnames = np.array([[" "] + colnames])
-    np.savetxt(handle, colnames, '%s', delimiter="\t")
+    if not os.path.exists(odir):
+        os.mkdir(odir)
+
+    mtx_file = odir + "/matrix.mtx"
+    features_file = odir + "/features.tsv"
+    barcodes_file = odir + "/barcodes.tsv"
+
+    # Save matrix.mtx
+    handle = open(mtx_file,'ab')
+    sio.mmwrite(mtx_file, cx)
+    handle.close()
+    subprocess.Popen("gzip " + mtx_file, shell=True, stdin=subprocess.PIPE)
+
+    # Save barcodes.tsv
+    handle = open(barcodes_file,'ab')
+    colnames = np.array([colnames])
+    np.savetxt(handle, colnames, '%s', delimiter="\n")
+    handle.close()
+    subprocess.Popen("gzip " + barcodes_file,shell=True, stdin=subprocess.PIPE)
+
+    # Save features.tsv
+    handle = open(features_file,'ab')
 
     for i in range(cx.shape[0]):
-        datarow = cx.getrow(i).toarray()
-        datarow = np.round(datarow)
-   
-        if np.sum(datarow) > 0 or rmzeros == False:
-            name = np.array([rownames[i]])
-            val = np.concatenate([name[:, None], datarow.astype(int)], axis=1)
-            np.savetxt(handle, val, '%s', delimiter="\t")
-
-        if (i > 0 and i % 10000 == 0 and verbose):
-            print( "## Write line " + str(i))
+        name = np.array([rownames[i]])
+        np.savetxt(handle, name, '%s', delimiter="\t")
     
+        if (i > 0 and i % 10000 == 0 and verbose):
+            print("## Write line " + str(i))
+ 
     handle.close()
+    subprocess.Popen("gzip " + features_file, shell=True, stdin=subprocess.PIPE)
 
 
 if __name__ == "__main__":
@@ -306,7 +346,7 @@ if __name__ == "__main__":
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-b', '--bin', help="Size of genomic bin size", default=None, type=int)
     group.add_argument('-B', '--bed', help="BED file of genomic features", default=None, type=str)
-    parser.add_argument('-o', '--output', help="Count table file. Default: counts.tsv", default="counts.tsv", type=str)
+    parser.add_argument('-o', '--output', help="Output directory where to save matrix.mtx, features.tsv and barcodes.tsv files.", default="./sparse_matrix", type=str)
     parser.add_argument('-s', '--barcodes', help="Number of barcodes in the BAM file. Default: Extracted from the BAM 'CO' field", type=int)
     parser.add_argument('-t', '--tag', help="Barcode Tag. Default: XB", default="XB", type=str)
     parser.add_argument('-f', '--filt', help="Select barcodes with at least FILT counts. Default: None", default="1", type=str)
@@ -318,35 +358,29 @@ if __name__ == "__main__":
     args = parser.parse_args()
  
     # check args
-    if os.path.isfile(args.output):
-        print( "Error: Output file '" + args.output + "' already exist. Stop.")
-        sys.exit(-1)
-
     if args.bed is None and args.bin is None:
-        print( "Error: --bin or --bed must be defined")
+        print("Error: --bin or --bed must be defined")
         sys.exit(-1)
         
-    
-
-    # Read the SAM/BAM file
-
     samfile = pysam.Samfile(args.input, "rb")
 
     # Get info from header
     chromsize = get_chromosome_size_from_header(samfile)
     if len(chromsize)==0:
+        print(>> sys.stderr, "Error : chromosome lengths not available in BAM file. Exit")
         sys.exit(-1)
 
     # Get counts dimension
     if args.barcodes is None:
         N_barcodes = get_barcode_number_from_header(samfile)
         if N_barcodes is None :
+            print(>> sys.stderr, "Erreur : unable to find barcodes number. Exit")
             sys.exit(-1)
         elif args.verbose:
-            print( "## Barcodes Number: " + str(N_barcodes) )
+            print("## Barcodes Number: " + str(N_barcodes))
     elif args.barcodes is not None:
         N_barcodes = args.barcodes
-        print( "## Barcodes Number: " + str(N_barcodes)	)
+        print("## Barcodes Number: " + str(N_barcodes)	)
     if args.bin is not None:
         chromsize_bins = get_chromosome_bins(chromsize, args.bin)
         N_bins = sum(chromsize_bins.values())
@@ -355,7 +389,7 @@ if __name__ == "__main__":
         N_bins = len(feat_bins[1]) 
  
     if args.verbose:
-        print( "## Bins/Features Number: " + str(N_bins) )
+        print("## Bins/Features Number: " + str(N_bins))
 
     ## Init count table
     ## Note that lil matrix is a sparse (ie. RAM eficient) matrix
@@ -391,12 +425,12 @@ if __name__ == "__main__":
                 non_overlapping_counter += 1
 
         if (reads_counter % 1000000 == 0 and args.verbose):
-            print( "##", reads_counter )
+            print("##", reads_counter)
     
     samfile.close()
 
     if args.verbose and non_overlapping_counter > 0:
-        print( "## Warning:", non_overlapping_counter, "reads do not overlap any features !")
+        print("## Warning:", non_overlapping_counter, "reads do not overlap any features !")
 
     ## filter mat
     if args.filt is not None:
@@ -409,9 +443,12 @@ if __name__ == "__main__":
 
             ## save Matrix
             if args.bin is not None:
-                save2BinMatrix(counts_reduced, allbarcodes_reduced, args.output, chromsize, chromsize_bins, args.bin, filt, args.verbose, rmzeros=args.rmZeros)
+                save2BinSparseMatrix(counts_reduced, allbarcodes_reduced, args.output, chromsize, chromsize_bins, args.bin, filt, args.verbose, rmzeros=args.rmZeros)
             elif args.bed is not None:
-                save2FeatMatrix(counts_reduced, allbarcodes_reduced, args.output, feat_bins[1], filt ,args.verbose, rmzeros=args.rmZeros)
+                save2FeatSparseMatrix(counts_reduced, allbarcodes_reduced, args.output, feat_bins[1], filt ,args.verbose, rmzeros=args.rmZeros)
+
+
+
 
 
 
