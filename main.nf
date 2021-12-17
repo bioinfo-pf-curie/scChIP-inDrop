@@ -658,8 +658,8 @@ process  removeDup {
   file blackListBed from chFilterBlackReg  
 
   output:
-  set (prefix), file("*_rmDup.bam"),  file("*_rmDup.bam.bai") into chNoDup_ScBed, chNoDup_bigWig, chNoDup_countMatrices
-  set (prefix), file("*_rmDup.count") into chDupCounts, chRemoveDupBarcodeLog, chDistribUMIs
+  set (prefix), file("*_rmDup.bam"),  file("*_rmDup.bam.bai") into chNoDup_ScBed, chNoDup_bigWig, chNoDupCountMatricesBin, chNoDupCountMatricesBed
+  set (prefix), file("*_rmDup.count") into chDupCountsBin, chDupCountsBed, chRemoveDupBarcodeLog, chDistribUMIs
   set (prefix), file("*_rmDup.log") into chRemoveDupLog
   file("v_bedtools.txt") into chBedtoolsVersion
   
@@ -853,12 +853,12 @@ process countMatricesPerBin {
   publishDir "${params.outDir}/countMatrices/${prefix}/", mode: 'copy'
 
   input:
-  set (prefix), file (rmDupBam), file (rmDupBai), file(countTable), val(bins) from chNoDup_countMatrices.join(chDupCounts).combine(binSizeCh)
+  set (prefix), file (rmDupBam), file (rmDupBai), file(countTable), val(bins) from chNoDupCountMatricesBin.join(chDupCountsBin).combine(binSizeCh)
 
   output:
   set val(prefix), file ("${prefix}_counts_bin_${bin}") into chCountBinMatrices
-  set val(prefix), file ("*_counts.log") into chCountMatricesLog
-  file("v_python.txt") into chPythonVersion
+  set val(prefix), file ("*_counts.log") into chCountMatricesBinLog
+  file("v_python.txt") into chPythonVersionCountsBin
   
   script:
   """
@@ -884,12 +884,12 @@ process countMatricesFromBed {
 
   input:
   file tssBed from tssBedFile
-  set (prefix), file (rmDupBam), file (rmDupBai), file(countTable), val(bins) from chNoDup_countMatrices.join(chDupCounts)
+  set (prefix), file (rmDupBam), file (rmDupBai), file(countTable), val(bins) from chNoDupCountMatricesBed.join(chDupCountsBed)
 
   output:
   set val(prefix), file ("${prefix}_counts_TSS_${params.tssWindow}") into chCountBedMatrices
-  set val(prefix), file ("*_counts.log") into chCountMatricesLog
-  file("v_python.txt") into chPythonVersion
+  set val(prefix), file ("*_counts.log") into chCountMatricesBedLog
+  file("v_python.txt") into chPythonVersionCountsBed
   
   script:
   """
@@ -955,7 +955,7 @@ process getSoftwareVersions{
   file("v_samtools.txt") from chSamtoolsVersion.first().ifEmpty([])
   file("v_deeptools.txt") from chBamCoverageVersion.first().ifEmpty([])
   file("v_bedtools.txt") from chBedtoolsVersion.first().ifEmpty([])
-  file("v_python.txt") from chPythonVersion.first().ifEmpty([])
+  file("v_python.txt") from chPythonVersionCountsBin.mix(chPythonVersionCountsBed).first().ifEmpty([])
   file("v_R.txt") from chRversion.first().ifEmpty([])
 
   output:
