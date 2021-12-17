@@ -658,8 +658,8 @@ process  removeDup {
   file blackListBed from chFilterBlackReg  
 
   output:
-  set (prefix), file("*_rmDup.bam"),  file("*_rmDup.bam.bai") into chNoDup_ScBed, chNoDup_bigWig, chNoDupCountMatricesBin, chNoDupCountMatricesBed
-  set (prefix), file("*_rmDup.count") into chDupCountsBin, chDupCountsBed, chRemoveDupBarcodeLog, chDistribUMIs
+  set (prefix), file("*_rmDup.bam"),  file("*_rmDup.bam.bai") into chNoDup_ScBed, chNoDup_bigWig, chNoDup_countMatricesBin, chNoDup_countMatricesTSS
+  set (prefix), file("*_rmDup.count") into chDupCountsBin, chDupCountsTSS, chRemoveDupBarcodeLog, chDistribUMIs
   set (prefix), file("*_rmDup.log") into chRemoveDupLog
   file("v_bedtools.txt") into chBedtoolsVersion
   
@@ -853,7 +853,7 @@ process countMatricesPerBin {
   publishDir "${params.outDir}/countMatrices/${prefix}/", mode: 'copy'
 
   input:
-  set (prefix), file (rmDupBam), file (rmDupBai), file(countTable), val(bins) from chNoDupCountMatricesBin.join(chDupCountsBin).combine(binSizeCh)
+  set (prefix), file (rmDupBam), file (rmDupBai), file(countTable), val(bins) from chNoDup_countMatricesBin.join(chDupCountsBin).combine(binSizeCh)
 
   output:
   set val(prefix), file ("${prefix}_counts_bin_${bins}") into chCountBinMatrices
