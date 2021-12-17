@@ -52,12 +52,12 @@ def helpMessage() {
     -name [str]                   Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic
     --darkCycleDesign [bool]      Barcode first index change of position depending if dark cycles are used during the sequencing. By default, it is not so darkCycleDesign is set to false.
     --barcode_linker_length       Barcode + linker length in R2 to be trimmed. Default is 84bp.
-    --keepRTdup [bool]             Keep RT duplicats. Default is false.
-    --distDup [int]                Select the number of bases after gene start sites to detect duplicates. Default is 50.
-    --minCounts [int]              Select the minimum count per barcodes after removing duplicates. Default is 100.
-    --keepBlacklistRegion [bool]     Keep black region. Default is false.
-    --binSize1 [int]               First and larger bin size (in base pairs). Default is 50000.
-    --tssWindow [int]              TSS window (in base pairs). Default is 5000.
+    --keepRTdup [bool]            Keep RT duplicats. Default is false.
+    --distDup [int]               Select the number of bases after gene start sites to detect duplicates. Default is 50.
+    --minCounts [int]             Select the minimum count per barcodes after removing duplicates. Default is 100.
+    --keepBlacklistRegion [bool]  Keep black region. Default is false.
+    --binSize [str]               Bin sizes (in base pairs, comma separated). Default is 50000.
+    --tssWindow [int]             TSS window (in base pairs). Default is 5000.
  
   =======================================================
 
@@ -127,6 +127,11 @@ if ( params.metadata ){
 }else{
   metadataCh = Channel.empty()
 }
+
+//------- Params ---------                                                                                                                                                                                 
+//------------------------
+ 
+binSizeCh = Channel.from( params.binSize ).splitCsv().flatten()
 
 //------- Genomes ---------
 //-------------------------
@@ -839,7 +844,37 @@ process gtfToTSSBed {
 
 
 // 8 - Generate count matrix
-process countMatrices {
+process countMatricesPerBin {
+  tag "${prefix}"
+  label 'samtools'
+  label 'highCpu'
+  label 'extraMem'
+
+  publishDir "${params.outDir}/countMatrices/${prefix}/", mode: 'copy'
+
+  input:
+  set (prefix), file (rmDupBam), file (rmDupBai), file(countTable), val(bins) from chNoDup_countMatrices.join(chDupCounts).combine(binSizeCh)
+
+  output:
+  set val(prefix), file ("${prefix}_counts_bin_${bin}") into chCountBinMatrices
+  set val(prefix), file ("*_counts.log") into chCountMatricesLog
+  file("v_python.txt") into chPythonVersion
+  
+  script:
+  """
+  # Counting unique BCs
+  bc_prefix=\$(basename ${rmDupBam} | sed -e 's/.bam\$//')
+  barcodes=\$(wc -l ${countTable} | awk '{print \$1}')
+  echo "Barcodes found = \$barcodes" > ${prefix}_counts.log
+  
+  # Counts are generated per bin (--bin) and per genomics features (--bed / TSS)
+  sc2sparsecounts.py -i ${rmDupBam} -o ${prefix}_counts_bin_${bin} -b ${bin} -f ${params.minCounts} -s \$barcodes -v
+
+  python --version &> v_python.txt
+  """
+}
+
+process countMatricesFromBed {
   tag "${prefix}"
   label 'samtools'
   label 'highCpu'
@@ -849,67 +884,55 @@ process countMatrices {
 
   input:
   file tssBed from tssBedFile
-  set (prefix), file (rmDupBam), file (rmDupBai), file(countTable) from chNoDup_countMatrices.join(chDupCounts)
+  set (prefix), file (rmDupBam), file (rmDupBai), file(countTable), val(bins) from chNoDup_countMatrices.join(chDupCounts)
 
   output:
-  //set val(prefix), file ("*_counts_bin_${params.binSize1}_filt_*.tsv.gz"), file ("*_counts_bin_${params.binSize2}_filt_*.tsv.gz"), file ("*_TSS_*.tsv.gz") into chCountMatrices
-  set val(prefix), file ("*_counts_bin_${params.binSize1}_filt_*.tsv.gz"), file ("*_TSS_*.tsv.gz") into chCountMatrices
+  set val(prefix), file ("${prefix}_counts_TSS_${params.tssWindow}") into chCountBedMatrices
   set val(prefix), file ("*_counts.log") into chCountMatricesLog
   file("v_python.txt") into chPythonVersion
   
   script:
   """
-  #Counting unique BCs
+  # Counting unique BCs
   bc_prefix=\$(basename ${rmDupBam} | sed -e 's/.bam\$//')
   barcodes=\$(wc -l ${countTable} | awk '{print \$1}')
   echo "Barcodes found = \$barcodes" > ${prefix}_counts.log
   
-  # Counts are generated per bin (--bin) and per genomics features (--bed / TSS)
-
-  # bin sizes: 50000 & 5000
-  sc2counts.py -i ${rmDupBam} -o ${prefix}_counts_bin_${params.binSize1}.tsv -b ${params.binSize1} -f ${params.minCounts} -s \$barcodes -v
-  #sc2counts.py -i ${rmDupBam} -o ${prefix}_counts_bin_${params.binSize2}.tsv -b ${params.binSize2} -f ${params.minCounts} -s \$barcodes -v
-
-  # TSS window : 5000
-  sc2counts.py -i ${rmDupBam} -o ${prefix}_counts_TSS_${params.tssWindow}.tsv -B $tssBed -f ${params.minCounts} -s \$barcodes -v
-  
-  for i in ${prefix}*.tsv; do gzip -9 \$i; done
+  # Counts per genomic intervals
+  sc2sparsecounts.py -i ${rmDupBam} -o ${prefix}_counts_TSS_${params.tssWindow} -B $tssBed -f ${params.minCounts} -s \$barcodes -v
   
   python --version &> v_python.txt
   """
 }
 
-process create10Xoutput{
-  tag "${prefix}"
-  label 'R'
-  label 'extraCpu'
-  label 'extraMem'
-  publishDir "${params.outDir}/create10Xoutput", mode: 'copy'
 
-  input:
-  //set (prefix), file(binMatx1), file(binMatx2), file(tssMatx) from chCountMatrices
-  set (prefix), file(binMatx1), file(tssMatx) from chCountMatrices
-  output:
-  file (prefix) into chOut10X
+//process create10Xoutput{
+//  tag "${prefix}"
+//  label 'R'
+//  label 'extraCpu'
+//  label 'extraMem'
+//  publishDir "${params.outDir}/create10Xoutput", mode: 'copy'
+
+//  input:
+//  set (prefix), file(binMatx1), file(tssMatx) from chCountBinMatrices.concat(chCountBedMatrices)
+
+// output:
+//  file (prefix) into chOut10X
   
-  script:
-  """
-  mkdir ${prefix}
+//  script:
+//  """
+//  mkdir ${prefix}
 
-  create10Xoutput.r ${binMatx1} binMatx_${params.binSize1}/
-  tar czf binMatx_${params.binSize1}.tar.gz binMatx_${params.binSize1}
-  mv binMatx_${params.binSize1}.tar.gz ${prefix}/
+//  create10Xoutput.r ${binMatx1} binMatx_${params.binSize1}/
+//  tar czf binMatx_${params.binSize1}.tar.gz binMatx_${params.binSize1}
+//  mv binMatx_${params.binSize1}.tar.gz ${prefix}/
 
-  #create10Xoutput.r ${binMatx2} binMatx_${params.binSize2}/
-  #tar czf binMatx_${params.binSize2}.tar.gz binMatx_${params.binSize2}
-  #mv binMatx_${params.binSize2}.tar.gz ${prefix}/
-
-  create10Xoutput.r ${tssMatx} tssMatx_${params.tssWindow}/
-  tar czf tssMatx_${params.tssWindow}.tar.gz tssMatx_${params.tssWindow}
-  mv tssMatx_${params.tssWindow}.tar.gz ${prefix}/
-
-  """ 
-}
+//  create10Xoutput.r ${tssMatx} tssMatx_${params.tssWindow}/
+//  tar czf tssMatx_${params.tssWindow}.tar.gz tssMatx_${params.tssWindow}
+//  mv tssMatx_${params.tssWindow}.tar.gz ${prefix}/
+//
+//  """ 
+//}
 
 
 /***********
