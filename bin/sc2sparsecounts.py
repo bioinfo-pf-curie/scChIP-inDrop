@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+"""
+Transform a BAM file to a count table based on barcode information and genomic bins
+"""
+
 import time
 import argparse
 import sys
