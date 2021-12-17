@@ -856,7 +856,7 @@ process countMatricesPerBin {
   set (prefix), file (rmDupBam), file (rmDupBai), file(countTable), val(bins) from chNoDupCountMatricesBin.join(chDupCountsBin).combine(binSizeCh)
 
   output:
-  set val(prefix), file ("${prefix}_counts_bin_${bin}") into chCountBinMatrices
+  set val(prefix), file ("${prefix}_counts_bin_${bins}") into chCountBinMatrices
   set val(prefix), file ("*_counts.log") into chCountMatricesBinLog
   file("v_python.txt") into chPythonVersionCountsBin
   
@@ -868,7 +868,7 @@ process countMatricesPerBin {
   echo "Barcodes found = \$barcodes" > ${prefix}_counts.log
   
   # Counts are generated per bin (--bin) and per genomics features (--bed / TSS)
-  sc2sparsecounts.py -i ${rmDupBam} -o ${prefix}_counts_bin_${bin} -b ${bin} -f ${params.minCounts} -s \$barcodes -v
+  sc2sparsecounts.py -i ${rmDupBam} -o ${prefix}_counts_bin_${bins} -b ${bins} -f ${params.minCounts} -s \$barcodes -v
 
   python --version &> v_python.txt
   """
@@ -884,7 +884,7 @@ process countMatricesFromBed {
 
   input:
   file tssBed from tssBedFile
-  set (prefix), file (rmDupBam), file (rmDupBai), file(countTable), val(bins) from chNoDupCountMatricesBed.join(chDupCountsBed)
+  set (prefix), file (rmDupBam), file (rmDupBai), file(countTable) from chNoDupCountMatricesBed.join(chDupCountsBed)
 
   output:
   set val(prefix), file ("${prefix}_counts_TSS_${params.tssWindow}") into chCountBedMatrices
