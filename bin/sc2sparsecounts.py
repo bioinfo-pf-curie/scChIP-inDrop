@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# coding: utf-8
 """
 Transform a BAM file to a count table based on barcode information and genomic bins
 """
@@ -292,11 +291,8 @@ if __name__ == "__main__":
     non_overlapping_counter = 0
    
     # Reads args
-    parser = argparse.ArgumentParser(prog='sc2counts.py', description='''
-    Transform a BAM file to a count table based on barcode information and genomic bins/features
-    ''', epilog='''
-    Note that --bin and --bed options are exclusive ! Counts are generated either per bin (--bin) or per genomics features (--bed)
-    ''')
+    parser = argparse.ArgumentParser(prog='sc2counts.py', description="Transform a BAM file to a count table based on barcode information and genomic bins/features", 
+                                     epilog="Note that --bin and --bed options are exclusive ! Counts are generated either per bin (--bin) or per genomics features (--bed)")
     parser.add_argument('-i', '--input', help="BAM file with barcode tag", required=True)
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-b', '--bin', help="Size of genomic bin size", default=None, type=int)
