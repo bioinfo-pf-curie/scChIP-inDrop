@@ -658,8 +658,13 @@ process  removeDup {
   file blackListBed from chFilterBlackReg  
 
   output:
+<<<<<<< HEAD
   set (prefix), file("*_rmDup.bam"),  file("*_rmDup.bam.bai") into chNoDup_ScBed, chNoDup_bigWig, chNoDup_countMatrices
   set (prefix), file("*_rmDup.count") into chDupCountsBin, chDupCountsTSS, chRemoveDupBarcodeLog, chDistribUMIs
+=======
+  set (prefix), file("*_rmDup.bam"),  file("*_rmDup.bam.bai") into chNoDup_ScBed, chNoDup_bigWig, chNoDupCountMatricesBin, chNoDupCountMatricesBed
+  set (prefix), file("*_rmDup.count") into chDupCountsBin, chDupCountsBed, chRemoveDupBarcodeLog, chDistribUMIs
+>>>>>>> 529b94d885e085e5ebef272da4c160526806f295
   set (prefix), file("*_rmDup.log") into chRemoveDupLog
   file("v_bedtools.txt") into chBedtoolsVersion
   
@@ -853,12 +858,16 @@ process countMatricesPerBin {
   publishDir "${params.outDir}/countMatrices/${prefix}/", mode: 'copy'
 
   input:
+<<<<<<< HEAD
   set (prefix), file (rmDupBam), file (rmDupBai), file(countTable), val(bins) from chNoDup_countMatrices.join(chDupCountsBin).combine(binSizeCh)
+=======
+  set (prefix), file (rmDupBam), file (rmDupBai), file(countTable), val(bins) from chNoDupCountMatricesBin.join(chDupCountsBin).combine(binSizeCh)
+>>>>>>> 529b94d885e085e5ebef272da4c160526806f295
 
   output:
   set val(prefix), file ("${prefix}_counts_bin_${bin}") into chCountBinMatrices
-  set val(prefix), file ("*_counts.log") into chCountMatricesLog
-  file("v_python.txt") into chPythonVersion
+  set val(prefix), file ("*_counts.log") into chCountMatricesBinLog
+  file("v_python.txt") into chPythonVersionCountsBin
   
   script:
   """
@@ -884,12 +893,16 @@ process countMatricesFromBed {
 
   input:
   file tssBed from tssBedFile
+<<<<<<< HEAD
   set (prefix), file (rmDupBam), file (rmDupBai), file(countTable), val(bins) from chNoDup_countMatrices.join(chDupCountsTSS)
+=======
+  set (prefix), file (rmDupBam), file (rmDupBai), file(countTable), val(bins) from chNoDupCountMatricesBed.join(chDupCountsBed)
+>>>>>>> 529b94d885e085e5ebef272da4c160526806f295
 
   output:
   set val(prefix), file ("${prefix}_counts_TSS_${params.tssWindow}") into chCountBedMatrices
-  set val(prefix), file ("*_counts.log") into chCountMatricesLog
-  file("v_python.txt") into chPythonVersion
+  set val(prefix), file ("*_counts.log") into chCountMatricesBedLog
+  file("v_python.txt") into chPythonVersionCountsBed
   
   script:
   """
@@ -955,7 +968,7 @@ process getSoftwareVersions{
   file("v_samtools.txt") from chSamtoolsVersion.first().ifEmpty([])
   file("v_deeptools.txt") from chBamCoverageVersion.first().ifEmpty([])
   file("v_bedtools.txt") from chBedtoolsVersion.first().ifEmpty([])
-  file("v_python.txt") from chPythonVersion.first().ifEmpty([])
+  file("v_python.txt") from chPythonVersionCountsBin.mix(chPythonVersionCountsBed).first().ifEmpty([])
   file("v_R.txt") from chRversion.first().ifEmpty([])
 
   output:
