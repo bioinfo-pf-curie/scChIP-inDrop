@@ -500,7 +500,7 @@ process  addBarcodes {
   set val(prefix), file(alignedBam), file(readBarcodes) from chAlignedBam.join(chReadBcNames)
 
   output:
-  set (prefix), file("*_flagged.bam") into chAddedBarcodes
+  set val(prefix), file("*_flagged.bam") into chAddedBarcodes
 
   script:
   """
@@ -548,12 +548,11 @@ process  removePcrRtDup {
   publishDir "${params.outDir}/removePcrRtDup", mode: 'copy'
 
   input:
-  set (prefix), file(flaggedBam) from chAddedBarcodes
+  set val(prefix), file(flaggedBam) from chAddedBarcodes
 
   output:
-  set (prefix), file("*_flagged_rmPCR_RT.bam") into chRTremoved
-  set (prefix), file("*_removePcrRtDup.log") into chPcrRtCountsLog
-  //set (prefix), file("*_flagged_rmPCR_RT.count") into chPcrRtCountTable
+  set val(prefix), file("*_flagged_rmPCR_RT.bam") into chRTremoved
+  set val(prefix), file("*_removePcrRtDup.log") into chPcrRtCountsLog
 
   script:
   """
@@ -569,12 +568,10 @@ process  removePcrRtDup {
   #Sort by barcode then chromosome then position R2 then Position R1 (for the PCR removal) 
   #It is important to sort by R1 pos also	because the removal is done by comparing consecutive lin
   samtools view ${prefix}_flagged.bam | LC_ALL=C sort -T /scratch/ --parallel=${task.cpus} -t \$'\t' -k \"\$barcode_field.8,\$barcode_field\"n -k 3.4,3g -k \"\$posR2_field.6,\$posR2_field\"n -k 4,4n >> ${prefix}_header.sam && samtools view -@ ${task.cpus} -b ${prefix}_header.sam > ${prefix}_flagged.sorted.bam
-
   samtools view ${prefix}_flagged.sorted.bam | awk -v bc_field=\$barcode_field '{print substr(\$bc_field,6)}' |  uniq -c > ${prefix}_flagged.count
   samtools view ${prefix}_flagged.sorted.bam | awk -v bc_field=\$barcode_field -v R2_field=\$posR2_field 'BEGIN {countR1unmappedR2=0;countPCR=0};NR==1{print \$0;lastChrom=\$3;lastBarcode=\$bc_field; split( \$R2_field,lastR2Pos,\":\"); lastR1Pos=\$4} ; NR>=2{split( \$R2_field,R2Pos,\":\");R1Pos=\$4; if(R2Pos[3]==2147483647){print \$0;countR1unmappedR2++; next}; if( (R1Pos==lastR1Pos) && (R2Pos[3]==lastR2Pos[3]) && ( \$3==lastChrom ) && (\$bc_field==lastBarcode) ){countPCR++;next} {print \$0;lastR1Pos=\$4;lastChrom=\$3;lastBarcode=\$bc_field; split( \$R2_field,lastR2Pos,\":\") }} END {print countPCR > \"count_PCR_duplicates\";print countR1unmappedR2 > \"countR1unmappedR2\"}' > ${prefix}_flagged_rmPCR.sam
-
+  # sam to bam
   samtools view -H ${prefix}_flagged.sorted.bam  | sed '/^@CO/ d' > ${prefix}_header.sam
-
   cat ${prefix}_flagged_rmPCR.sam >> ${prefix}_header.sam && samtools view -@ ${task.cpus} -b ${prefix}_header.sam > ${prefix}_flagged_rmPCR.bam
 
   #Create count Table from flagged - PCR dups (already sorted by barcode)
@@ -591,35 +588,23 @@ process  removePcrRtDup {
 
   if [ ${params.keepRTdup} == 'false' ] 
   then
-
-  #Remove RT duplicates (if two consecutive reads have the same barcode and same R2 chr&start) but not same R1 
-  cat ${prefix}_flagged_rmPCR.sam | awk -v bc_field=\$barcode_field -v R2_field=\$posR2_field 'BEGIN{count=0};NR==1{print \$0;lastChrom=\$3;lastBarcode=\$bc_field; split( \$R2_field,lastR2Pos,\":\")} ; NR>=2{split( \$R2_field,R2Pos,\":\");if((R2Pos[3]==lastR2Pos[3]) && (R2Pos[3]!=2147483647) && (lastR2Pos[3]!=2147483647)  && ( \$3==lastChrom ) && (\$bc_field==lastBarcode) ){count++;next} {print \$0;lastChrom=\$3;lastBarcode=\$bc_field; split( \$R2_field,lastR2Pos,\":\") }} END {print count > \"count_RT_duplicates\"}' > ${prefix}_flagged_rmPCR_RT.sam
-
-  samtools view -H ${prefix}_flagged.bam  | sed '/^@CO/ d' > ${prefix}_header.sam
-
-  cat ${prefix}_flagged_rmPCR_RT.sam >> ${prefix}_header.sam && samtools view -@ ${task.cpus} -b ${prefix}_header.sam > ${prefix}_flagged_rmPCR_RT.bam 
-
-  #Create count Table from flagged - PCR dups - RT dups  (already sorted by barcode)
-  samtools view ${prefix}_flagged_rmPCR_RT.bam | awk -v bc_field=\$barcode_field '{print substr(\$bc_field,6)}' | uniq -c > ${prefix}_flagged_rmPCR_RT.count
-
-  ## Sort flagged_rmPCR_RT file
-  samtools sort -@ ${task.cpus} ${prefix}_flagged_rmPCR_RT.bam > ${prefix}_flagged_rmPCR_RT_sorted.bam
-
-  ## Rename flagged_rmPCR_RT file
-  mv ${prefix}_flagged_rmPCR_RT_sorted.bam ${prefix}_flagged_rmPCR_RT.bam
+    #Remove RT duplicates (if two consecutive reads have the same barcode and same R2 chr&start) but not same R1 
+    cat ${prefix}_flagged_rmPCR.sam | awk -v bc_field=\$barcode_field -v R2_field=\$posR2_field 'BEGIN{count=0};NR==1{print \$0;lastChrom=\$3;lastBarcode=\$bc_field; split( \$R2_field,lastR2Pos,\":\")} ; NR>=2{split( \$R2_field,R2Pos,\":\");if((R2Pos[3]==lastR2Pos[3]) && (R2Pos[3]!=2147483647) && (lastR2Pos[3]!=2147483647)  && ( \$3==lastChrom ) && (\$bc_field==lastBarcode) ){count++;next} {print \$0;lastChrom=\$3;lastBarcode=\$bc_field; split( \$R2_field,lastR2Pos,\":\") }} END {print count > \"count_RT_duplicates\"}' > ${prefix}_flagged_rmPCR_RT.sam
+    # sam to bam
+    samtools view -H ${prefix}_flagged.bam  | sed '/^@CO/ d' > ${prefix}_header.sam
+    cat ${prefix}_flagged_rmPCR_RT.sam >> ${prefix}_header.sam && samtools view -@ ${task.cpus} -b ${prefix}_header.sam > ${prefix}_flagged_rmPCR_RT.bam 
+    ## Sort flagged_rmPCR_RT file
+    samtools sort -@ ${task.cpus} ${prefix}_flagged_rmPCR_RT.bam > ${prefix}_flagged_rmPCR_RT_sorted.bam
+    ## Rename flagged_rmPCR_RT file
+    mv ${prefix}_flagged_rmPCR_RT_sorted.bam ${prefix}_flagged_rmPCR_RT.bam
 
   else
     ## Copy flagged_rmPCR to flagged_rmPCR_RT
     cp ${prefix}_flagged_rmPCR.bam ${prefix}_flagged_rmPCR_RT.bam
 
-    cp ${prefix}_flagged_rmPCR.count ${prefix}_flagged_rmPCR_RT.count
-
     ## Set RT duplicate count to 0
     echo 0 > count_RT_duplicates
   fi
-
-  ## Index flagged_rmPCR_RT file
-  samtools index ${prefix}_flagged_rmPCR_RT.bam
   
   ## Rename flagged.sorted -> flagged
   mv ${prefix}_flagged.sorted.bam ${prefix}_flagged.bam
@@ -653,13 +638,13 @@ process  removeDup {
   publishDir "${params.outDir}/removeDup", mode: 'copy'
 
   input:
-  set (prefix), file(noPcrRtBam) from chRTremoved
+  set val(prefix), file(noPcrRtBam) from chRTremoved // NE MARCHE PAS , prend que le premier de la pile
   file blackListBed from chFilterBlackReg  
 
   output:
-  set (prefix), file("*_rmDup.bam"),  file("*_rmDup.bam.bai") into chNoDup_ScBed, chNoDup_bigWig, chNoDup_countMatricesBin, chNoDup_countMatricesTSS
-  set (prefix), file("*_rmDup.count") into chDupCountsBin, chDupCountsTSS, chRemoveDupBarcodeLog, chDistribUMIs
-  set (prefix), file("*_rmDup.log") into chRemoveDupLog
+  set val(prefix), file("*_rmDup.bam"),  file("*_rmDup.bam.bai") into chNoDup_ScBed, chNoDup_bigWig, chNoDup_countMatricesBin, chNoDup_countMatricesTSS
+  set val(prefix), file("*_rmDup.count") into chDupCountsBin, chDupCountsTSS, chRemoveDupBarcodeLog, chDistribUMIs
+  set val(prefix), file("*_rmDup.log") into chRemoveDupLog
   file("v_bedtools.txt") into chBedtoolsVersion
   
   script:
@@ -731,7 +716,7 @@ process bamToBigWig{
   output:
   set val(prefix), file("*.bw") into chBigWig
   file("v_deeptools.txt") into chBamCoverageVersion
-  set (prefix), file("*_bamToBigWig.log") into chBamToBigLog
+  set val(prefix), file("*_bamToBigWig.log") into chBamToBigLog
   
   script:
   """
@@ -756,7 +741,7 @@ process bamToScBed{
   publishDir "${params.outDir}/bamToScBed", mode: 'copy'
 
   input:
-  set (prefix), file (rmDupBam), file (rmDupBai) from chNoDup_ScBed
+  set val(prefix), file (rmDupBam), file (rmDupBai) from chNoDup_ScBed
   
   output:
   file (prefix) into chScBed
@@ -880,7 +865,7 @@ process countMatricesFromBed {
 
   input:
   file tssBed from tssBedFile
-  set (prefix), file (rmDupBam), file (rmDupBai), file(countTable) from chNoDup_countMatricesTSS.join(chDupCountsTSS)
+  set val(prefix), file (rmDupBam), file (rmDupBai), file(countTable) from chNoDup_countMatricesTSS.join(chDupCountsTSS)
 
   output:
   set val(prefix), file ("${prefix}_counts_TSS_${params.tssWindow}") into chCountBedMatrices
