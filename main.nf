@@ -547,10 +547,10 @@ process  removePcrRtDup {
 
   publishDir "${params.outDir}/removePcrRtDup", mode: 'copy'
 
-  input:
+  input :
   set val(prefix), file(flaggedBam) from chAddedBarcodes
 
-  output:
+  output :
   set val(prefix), file("*_flagged_rmPCR_RT.bam") into chRTremoved
   set val(prefix), file("*_removePcrRtDup.log") into chPcrRtCountsLog
 
@@ -625,6 +625,7 @@ process  removePcrRtDup {
 
   ## Remove all non used files
   rm -f count* *.sam
+  
   """
 }
 
@@ -638,7 +639,7 @@ process  removeDup {
   publishDir "${params.outDir}/removeDup", mode: 'copy'
 
   input:
-  set val(prefix), file(noPcrRtBam) from chRTremoved // NE MARCHE PAS , prend que le premier de la pile
+  set val(prefix), file(flagged_rmPCR_RT) from chRTremoved // NE MARCHE PAS , prend que le premier de la pile
   file blackListBed from chFilterBlackReg  
 
   output:
