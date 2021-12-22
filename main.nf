@@ -572,53 +572,52 @@ process  removePcrRtDup {
 
   samtools view ${prefix}_flagged.sorted.bam | awk -v bc_field=\$barcode_field '{print substr(\$bc_field,6)}' |  uniq -c > ${prefix}_flagged.count
   samtools view ${prefix}_flagged.sorted.bam | awk -v bc_field=\$barcode_field -v R2_field=\$posR2_field 'BEGIN {countR1unmappedR2=0;countPCR=0};NR==1{print \$0;lastChrom=\$3;lastBarcode=\$bc_field; split( \$R2_field,lastR2Pos,\":\"); lastR1Pos=\$4} ; NR>=2{split( \$R2_field,R2Pos,\":\");R1Pos=\$4; if(R2Pos[3]==2147483647){print \$0;countR1unmappedR2++; next}; if( (R1Pos==lastR1Pos) && (R2Pos[3]==lastR2Pos[3]) && ( \$3==lastChrom ) && (\$bc_field==lastBarcode) ){countPCR++;next} {print \$0;lastR1Pos=\$4;lastChrom=\$3;lastBarcode=\$bc_field; split( \$R2_field,lastR2Pos,\":\") }} END {print countPCR > \"count_PCR_duplicates\";print countR1unmappedR2 > \"countR1unmappedR2\"}' > ${prefix}_flagged_rmPCR.sam
-  
+
   samtools view -H ${prefix}_flagged.sorted.bam  | sed '/^@CO/ d' > ${prefix}_header.sam
-  
+
   cat ${prefix}_flagged_rmPCR.sam >> ${prefix}_header.sam && samtools view -@ ${task.cpus} -b ${prefix}_header.sam > ${prefix}_flagged_rmPCR.bam
-  
+
   #Create count Table from flagged - PCR dups (already sorted by barcode)
   samtools view ${prefix}_flagged_rmPCR.bam | awk -v bc_field=\$barcode_field '{print substr(\$bc_field,6)}' |  uniq -c > ${prefix}_flagged_rmPCR.count
-  
+
   ## Sort flagged_rmPCR file
   samtools sort -@ ${task.cpus} ${prefix}_flagged_rmPCR.bam > ${prefix}_flagged_rmPCR_sorted.bam
-  
+
   ## Rename flagged_rmPCR file
   mv ${prefix}_flagged_rmPCR_sorted.bam ${prefix}_flagged_rmPCR.bam
-  
+
   ## Index flagged_rmPCR file
   samtools index ${prefix}_flagged_rmPCR.bam
-  
+
   if [ ${params.keepRTdup} == 'false' ] 
   then
 
-    #Remove RT duplicates (if two consecutive reads have the same barcode and same R2 chr&start) but not same R1 
-    cat ${prefix}_flagged_rmPCR.sam | awk -v bc_field=\$barcode_field -v R2_field=\$posR2_field 'BEGIN{count=0};NR==1{print \$0;lastChrom=\$3;lastBarcode=\$bc_field; split( \$R2_field,lastR2Pos,\":\")} ; NR>=2{split( \$R2_field,R2Pos,\":\");if((R2Pos[3]==lastR2Pos[3]) && (R2Pos[3]!=2147483647) && (lastR2Pos[3]!=2147483647)  && ( \$3==lastChrom ) && (\$bc_field==lastBarcode) ){count++;next} {print \$0;lastChrom=\$3;lastBarcode=\$bc_field; split( \$R2_field,lastR2Pos,\":\") }} END {print count > \"count_RT_duplicates\"}' > ${prefix}_flagged_rmPCR_RT.sam
-    
-    samtools view -H ${prefix}_flagged.bam  | sed '/^@CO/ d' > ${prefix}_header.sam
+  #Remove RT duplicates (if two consecutive reads have the same barcode and same R2 chr&start) but not same R1 
+  cat ${prefix}_flagged_rmPCR.sam | awk -v bc_field=\$barcode_field -v R2_field=\$posR2_field 'BEGIN{count=0};NR==1{print \$0;lastChrom=\$3;lastBarcode=\$bc_field; split( \$R2_field,lastR2Pos,\":\")} ; NR>=2{split( \$R2_field,R2Pos,\":\");if((R2Pos[3]==lastR2Pos[3]) && (R2Pos[3]!=2147483647) && (lastR2Pos[3]!=2147483647)  && ( \$3==lastChrom ) && (\$bc_field==lastBarcode) ){count++;next} {print \$0;lastChrom=\$3;lastBarcode=\$bc_field; split( \$R2_field,lastR2Pos,\":\") }} END {print count > \"count_RT_duplicates\"}' > ${prefix}_flagged_rmPCR_RT.sam
 
-    cat ${prefix}_flagged_rmPCR_RT.sam >> ${prefix}_header.sam && samtools view -@ ${task.cpus} -b ${prefix}_header.sam > ${prefix}_flagged_rmPCR_RT.bam 
-    
-    #Create count Table from flagged - PCR dups - RT dups  (already sorted by barcode)
-    samtools view ${prefix}_flagged_rmPCR_RT.bam | awk -v bc_field=\$barcode_field '{print substr(\$bc_field,6)}' | uniq -c > ${prefix}_flagged_rmPCR_RT.count
-    
-    ## Sort flagged_rmPCR_RT file
-    samtools sort -@ ${task.cpus} ${prefix}_flagged_rmPCR_RT.bam > ${prefix}_flagged_rmPCR_RT_sorted.bam
-    
-    ## Rename flagged_rmPCR_RT file
-    mv ${prefix}_flagged_rmPCR_RT_sorted.bam ${prefix}_flagged_rmPCR_RT.bam
-  
+  samtools view -H ${prefix}_flagged.bam  | sed '/^@CO/ d' > ${prefix}_header.sam
+
+  cat ${prefix}_flagged_rmPCR_RT.sam >> ${prefix}_header.sam && samtools view -@ ${task.cpus} -b ${prefix}_header.sam > ${prefix}_flagged_rmPCR_RT.bam 
+
+  #Create count Table from flagged - PCR dups - RT dups  (already sorted by barcode)
+  samtools view ${prefix}_flagged_rmPCR_RT.bam | awk -v bc_field=\$barcode_field '{print substr(\$bc_field,6)}' | uniq -c > ${prefix}_flagged_rmPCR_RT.count
+
+  ## Sort flagged_rmPCR_RT file
+  samtools sort -@ ${task.cpus} ${prefix}_flagged_rmPCR_RT.bam > ${prefix}_flagged_rmPCR_RT_sorted.bam
+
+  ## Rename flagged_rmPCR_RT file
+  mv ${prefix}_flagged_rmPCR_RT_sorted.bam ${prefix}_flagged_rmPCR_RT.bam
+
   else
-
     ## Copy flagged_rmPCR to flagged_rmPCR_RT
     cp ${prefix}_flagged_rmPCR.bam ${prefix}_flagged_rmPCR_RT.bam
-    
+
     cp ${prefix}_flagged_rmPCR.count ${prefix}_flagged_rmPCR_RT.count
-    
+
     ## Set RT duplicate count to 0
     echo 0 > count_RT_duplicates
   fi
-  
+
   ## Index flagged_rmPCR_RT file
   samtools index ${prefix}_flagged_rmPCR_RT.bam
   
@@ -789,35 +788,33 @@ process bamToScBed{
     chr[i] = ${prefix}
     start[i] = ${params.minCounts}
     end[i] = ${params.minCounts} +1
-  }
+  } 
   NR>1{
-  if(lastBC==substr(\$bc_field,6,15)){
-    i = i +1
-    chr[i] = ${prefix}
-    start[i] = ${params.minCounts}
-    end[i] = ${params.minCounts} +1
-    }
-    else{
-    for(m=1; m<=length(min_counts);m++){
-      if(i > min_counts[m]){
-        for (x=1; x<=i; x++){
-          out = odir"_"min_counts[m]"/"lastBC".bed"
-          print chr[x],start[x],end[x] >> out
+    if(lastBC==substr(\$bc_field,6,15)){
+      i = i +1
+      chr[i] = ${prefix}
+      start[i] = ${params.minCounts}
+      end[i] = ${params.minCounts} +1
+    }else{
+      for(m=1; m<=length(min_counts);m++){
+        if(i > min_counts[m]){
+          for (x=1; x<=i; x++){
+            out = odir"_"min_counts[m]"/"lastBC".bed"
+            print chr[x],start[x],end[x] >> out
+          }
         }
       }
+      i=0
     }
-    i=0
-    }
-     lastBC=substr(\$bc_field,6,15);
-}
-'
+    lastBC=substr(\$bc_field,6,15);
+  }'
 
-#Gzip
-if [ -f scBed*/*.bed ];then
-  for i in scBed*/*.bed; do gzip -9 \$i; done
-fi
+  #Gzip
+  if [ -f scBed*/*.bed ];then
+    for i in scBed*/*.bed; do gzip -9 \$i; done
+  fi
 
-rm -f ${prefix}_tmp_header.sam ${prefix}_tmp.sorted.bam
+  rm -f ${prefix}_tmp_header.sam ${prefix}_tmp.sorted.bam
 """
 }
 
@@ -842,7 +839,6 @@ process gtfToTSSBed {
   """
 }
 
-
 // 8 - Generate count matrix
 process countMatricesPerBin {
   tag "${prefix}"
@@ -853,7 +849,7 @@ process countMatricesPerBin {
   publishDir "${params.outDir}/countMatrices/${prefix}/", mode: 'copy'
 
   input:
-  set (prefix), file (rmDupBam), file (rmDupBai), file(countTable), val(bins) from chNoDup_countMatricesBin.join(chDupCountsBin).combine(binSizeCh)
+  set(prefix), file (rmDupBam), file (rmDupBai), file(countTable), val(bins) from chNoDup_countMatricesBin.join(chDupCountsBin).combine(binSizeCh)
 
   output:
   set val(prefix), file ("${prefix}_counts_bin_${bins}") into chCountBinMatrices
@@ -904,36 +900,6 @@ process countMatricesFromBed {
   python --version &> v_python.txt
   """
 }
-
-
-//process create10Xoutput{
-//  tag "${prefix}"
-//  label 'R'
-//  label 'extraCpu'
-//  label 'extraMem'
-//  publishDir "${params.outDir}/create10Xoutput", mode: 'copy'
-
-//  input:
-//  set (prefix), file(binMatx1), file(tssMatx) from chCountBinMatrices.concat(chCountBedMatrices)
-
-// output:
-//  file (prefix) into chOut10X
-  
-//  script:
-//  """
-//  mkdir ${prefix}
-
-//  create10Xoutput.r ${binMatx1} binMatx_${params.binSize1}/
-//  tar czf binMatx_${params.binSize1}.tar.gz binMatx_${params.binSize1}
-//  mv binMatx_${params.binSize1}.tar.gz ${prefix}/
-
-//  create10Xoutput.r ${tssMatx} tssMatx_${params.tssWindow}/
-//  tar czf tssMatx_${params.tssWindow}.tar.gz tssMatx_${params.tssWindow}
-//  mv tssMatx_${params.tssWindow}.tar.gz ${prefix}/
-//
-//  """ 
-//}
-
 
 /***********
  * MultiQC *
