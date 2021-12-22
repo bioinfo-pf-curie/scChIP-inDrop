@@ -652,9 +652,9 @@ process  removeDup {
   """
   # window param
   if [ ! -z ${params.distDup} ]; then
-	  rmDup.py -v -i ${noPcrRtBam} -o ${prefix}_rmDup.bam -d ${params.distDup} > ${prefix}_rmDup.log
+	  rmDup.py -v -i ${flagged_rmPCR_RT} -o ${prefix}_rmDup.bam -d ${params.distDup} > ${prefix}_rmDup.log
   else
-	  rmDup.py -v -i ${noPcrRtBam} -o ${prefix}_rmDup.bam > ${prefix}_rmDup.log
+	  rmDup.py -v -i ${flagged_rmPCR_RT} -o ${prefix}_rmDup.bam > ${prefix}_rmDup.log
   fi
     
   #Create count Table from flagged - PCR dups - RT dups and window-based rmDup (need to sort by barcode)
