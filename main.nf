@@ -656,56 +656,6 @@ process removePcrRtDup {
   """
 }
 
-
-/*
-// 6-Remove duplicates by window (if R2 is unmapped)
-process removeDup {
-  tag "${prefix}"
-  label 'bedtools'
-  label 'medCpu'
-  label 'medMem'
-
-  publishDir "${params.outDir}/removeDup", mode: 'copy'
-
-  input:
-  set val(prefix), file(flagged_rmPCR_RT) from chRemovePcrRtDup // NE MARCHE PAS , prend que le premier de la pile
-  file blackListBed from chFilterBlackReg  
-
-  output:
-  set val(prefix), file("*_rmDup.bam"),  file("*_rmDup.bam.bai") into chNoDup_ScBed, chNoDup_bigWig, chNoDup_countMatricesBin, chNoDup_countMatricesTSS
-  set val(prefix), file("*_rmDup.count") into chDupCountsBin, chDupCountsTSS, chRemoveDupBarcodeLog, chDistribUMIs
-  set val(prefix), file("*_rmDup.log") into chRemoveDupLog
-  file("v_bedtools.txt") into chBedtoolsVersion
-  
-  script:
-  """
-  # window param
-  if [ ! -z ${params.distDup} ]; then
-	  rmDup.py -v -i ${flagged_rmPCR_RT} -o ${prefix}_rmDup.bam -d ${params.distDup} > ${prefix}_rmDup.log
-  else
-	  rmDup.py -v -i ${flagged_rmPCR_RT} -o ${prefix}_rmDup.bam > ${prefix}_rmDup.log
-  fi
-    
-  #Create count Table from flagged - PCR dups - RT dups and window-based rmDup (need to sort by barcode)
-  barcode_field=\$(samtools view ${prefix}_rmDup.bam  | sed -n \"1 s/XB.*//p\" | sed 's/[^\t]//g' | wc -c)
-  
-  samtools view ${prefix}_rmDup.bam | awk -v bc_field=\$barcode_field '{print substr(\$bc_field,6)}' | sort | uniq -c > ${prefix}_rmDup.count	
-
-  # Removing encode black regions
-  if [[${params.keepBlacklistRegion} == "false"]]
-  then
-    bedtools intersect -v -abam ${prefix}_rmDup.bam -b ${blackListBed} > ${prefix}_rmDup_rmBlackReg.bam && mv ${prefix}_rmDup_rmBlackReg.bam ${prefix}_rmDup.bam
-  fi
-
-  bedtools --version &> v_bedtools.txt
-
-  ## Index BAM file
-  samtools index ${prefix}_rmDup.bam
-  """
-}
-*/
-
-
 // Plot read distributions accross cells (used to filtre out low read cells)
 process distribUMIs{
   tag "${prefix}"
