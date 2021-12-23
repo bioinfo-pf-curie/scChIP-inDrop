@@ -141,7 +141,6 @@ params.starIndex = genomeRef ? params.genomes[ genomeRef ].starIndex ?: false : 
 if (params.starIndex){
   Channel
     .fromPath(params.starIndex, checkIfExists: true)
-    .ifEmpty {exit 1, "STAR index file not found: ${params.starIndex}"}
     .set { chStar }
 } else {
   exit 1, "STAR index file not found: ${params.starIndex}"
@@ -156,24 +155,13 @@ if (params.gtf) {
   exit 1, "GTF annotation file not not found: ${params.gtf}"
 }
 
-params.bed12 = genomeRef ? params.genomes[ genomeRef ].bed12 ?: false : false
-if (params.bed12) {
-  Channel  
-    .fromPath(params.bed12)
-    .ifEmpty { exit 1, "BED12 annotation file not found: ${params.bed12}" }
-    .set { chBedGeneCov } 
-}else {
-  exit 1, "BED12 annotation file not not found: ${params.bed12}"
-}
-
 params.blackList = genomeRef ? params.genomes[ genomeRef ].blackList ?: false : false
 if (params.blackList) {
-  Channel  
-    .fromPath(params.blackList)
-    .ifEmpty { exit 1, "blackList annotation file not found: ${params.bed12}" }
-    .into { chFilterBlackReg; chFilterBlackReg_bamToBigWig } 
+  Channel
+    .fromPath(params.blackList, checkIfExists: true)
+    .into { chFilterBlackReg ; chFilterBlackReg_bamToBigWig }
 }else {
-  exit 1, "BED12 annotation file not not found: ${params.bed12}"
+  exit 1, "blackList annotation file not not found: ${params.blackList}"
 }
 
 //------- Custom barcode indexes--------
@@ -549,7 +537,7 @@ process removePcrRtDup {
 
   input :
   set val(prefix), file(flaggedBam) from chAddedBarcodes
-  //file (blackListBed) from chFilterBlackReg    
+  file (blackListBed) from chFilterBlackReg    
 
   output :
   set val(prefix), file("*RT.bam") into chRemovePcrRtDup
@@ -644,6 +632,12 @@ process removePcrRtDup {
   barcode_field=\$(samtools view ${prefix}_rmDup.bam  | sed -n \"1 s/XB.*//p\" | sed 's/[^\t]//g' | wc -c)
   
   samtools view ${prefix}_rmDup.bam | awk -v bc_field=\$barcode_field '{print substr(\$bc_field,6)}' | sort | uniq -c > ${prefix}_rmDup.count	
+
+  # Removing encode black regions
+  if [[${params.keepBlacklistRegion} == "false"]]
+  then
+    bedtools intersect -v -abam ${prefix}_rmDup.bam -b $blackListBed > ${prefix}_rmDup_rmBlackReg.bam && mv ${prefix}_rmDup_rmBlackReg.bam ${prefix}_rmDup.bam
+  fi
 
   bedtools --version &> v_bedtools.txt
 
