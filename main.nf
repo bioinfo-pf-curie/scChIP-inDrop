@@ -537,7 +537,7 @@ process removePcrRtDup {
 
   input :
   set val(prefix), file(flaggedBam) from chAddedBarcodes
-  file blackListBed from chFilterBlackReg.collect()
+  file(blackListBed) from chFilterBlackReg.collect()
 
   output :
   set val(prefix), file("*RT.bam") into chRemovePcrRtDup
@@ -636,7 +636,7 @@ process removePcrRtDup {
   # Removing encode black regions
   if [[${params.keepBlacklistRegion} == "false"]]
   then
-    bedtools intersect -v -abam ${prefix}_rmDup.bam -b $blackListBed > ${prefix}_rmDup_rmBlackReg.bam && mv ${prefix}_rmDup_rmBlackReg.bam ${prefix}_rmDup.bam
+    bedtools intersect -v -abam ${prefix}_rmDup.bam -b ${blackListBed} > ${prefix}_rmDup_rmBlackReg.bam && mv ${prefix}_rmDup_rmBlackReg.bam ${prefix}_rmDup.bam
   fi
 
   bedtools --version &> v_bedtools.txt
