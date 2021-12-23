@@ -656,6 +656,8 @@ process removePcrRtDup {
   """
 }
 
+
+/*
 // 6-Remove duplicates by window (if R2 is unmapped)
 process removeDup {
   tag "${prefix}"
@@ -701,6 +703,8 @@ process removeDup {
   samtools index ${prefix}_rmDup.bam
   """
 }
+*/
+
 
 // Plot read distributions accross cells (used to filtre out low read cells)
 process distribUMIs{
