@@ -537,7 +537,7 @@ process removePcrRtDup {
 
   input :
   set val(prefix), file(flaggedBam) from chAddedBarcodes
-  file (blackListBed) from chFilterBlackReg    
+  file blackListBed from chFilterBlackReg.collect()
 
   output :
   set val(prefix), file("*RT.bam") into chRemovePcrRtDup
@@ -632,7 +632,13 @@ process removePcrRtDup {
   barcode_field=\$(samtools view ${prefix}_rmDup.bam  | sed -n \"1 s/XB.*//p\" | sed 's/[^\t]//g' | wc -c)
   
   samtools view ${prefix}_rmDup.bam | awk -v bc_field=\$barcode_field '{print substr(\$bc_field,6)}' | sort | uniq -c > ${prefix}_rmDup.count	
-  
+
+  # Removing encode black regions
+  if [[${params.keepBlacklistRegion} == "false"]]
+  then
+    bedtools intersect -v -abam ${prefix}_rmDup.bam -b $blackListBed > ${prefix}_rmDup_rmBlackReg.bam && mv ${prefix}_rmDup_rmBlackReg.bam ${prefix}_rmDup.bam
+  fi
+
   bedtools --version &> v_bedtools.txt
 
   ## Index BAM file
