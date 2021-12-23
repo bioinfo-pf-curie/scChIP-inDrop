@@ -498,6 +498,7 @@ process  addBarcodes {
 
   input:
   set val(prefix), file(alignedBam), file(readBarcodes) from chAlignedBam.join(chReadBcNames)
+  file blackListBed from chFilterBlackReg_bamToBigWig    
 
   output:
   set val(prefix), file("*_flagged.bam") into chAddedBarcodes
