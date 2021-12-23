@@ -537,15 +537,10 @@ process removePcrRtDup {
 
   input :
   set val(prefix), file(flaggedBam) from chAddedBarcodes
-  file(blackListBed) from chFilterBlackReg.collect()
 
   output :
-  set val(prefix), file("*RT.bam") into chRemovePcrRtDup
+  set val(prefix), file("*_flagged_rmPCR_RT.bam") into chRemovePcrRtDup
   set val(prefix), file("*_removePcrRtDup.log") into chPcrRtCountsLog
-  set val(prefix), file("*_rmDup.bam"),  file("*_rmDup.bam.bai") into chNoDup_ScBed, chNoDup_bigWig, chNoDup_countMatricesBin, chNoDup_countMatricesTSS
-  set val(prefix), file("*_rmDup.count") into chDupCountsBin, chDupCountsTSS, chRemoveDupBarcodeLog, chDistribUMIs
-  set val(prefix), file("*_rmDup.log") into chRemoveDupLog
-  file("v_bedtools.txt") into chBedtoolsVersion
 
   script:
   """
@@ -616,16 +611,41 @@ process removePcrRtDup {
   echo "## Number of R1 mapped but R2 unmapped: \$n_R1_mapped_R2_unmapped" >> ${prefix}_removePcrRtDup.log
   echo "## Number of reads after PCR and RT removal (not R1 unmapped R2): \$n_unique_except_R1_unmapped_R2" >> ${prefix}_removePcrRtDup.log
 
-  ###########
+  ## Remove all non used files
+  rm -f count* *.sam
+  """
+}
 
+
+// 6-Remove duplicates by window (if R2 is unmapped)
+process removeDup {
+  tag "${prefix}"
+  label 'bedtools'
+  label 'medCpu'
+  label 'medMem'
+
+  publishDir "${params.outDir}/removeDup", mode: 'copy'
+
+  input:
+  set val(prefix), file(flagged_rmPCR_RT) from chRemovePcrRtDup 
+  file (blackListBed) from chFilterBlackReg.collect()
+
+  output:
+  set val(prefix), file("*_rmDup.bam"),  file("*_rmDup.bam.bai") into chNoDup_ScBed, chNoDup_bigWig, chNoDup_countMatricesBin, chNoDup_countMatricesTSS
+  set val(prefix), file("*_rmDup.count") into chDupCountsBin, chDupCountsTSS, chRemoveDupBarcodeLog, chDistribUMIs
+  set val(prefix), file("*_rmDup.log") into chRemoveDupLog
+  file("v_bedtools.txt") into chBedtoolsVersion
+  
+  script:
+  """
   ## Index BAM file
   samtools index ${prefix}_flagged_rmPCR_RT.bam
 
   # window param
   if [ ! -z ${params.distDup} ]; then
-	  rmDup.py -v -i ${prefix}_flagged_rmPCR_RT.bam -o ${prefix}_rmDup.bam -d ${params.distDup} > ${prefix}_rmDup.log
+	  rmDup.py -v -i ${flagged_rmPCR_RT} -o ${prefix}_rmDup.bam -d ${params.distDup} > ${prefix}_rmDup.log
   else
-	  rmDup.py -v -i ${prefix}_flagged_rmPCR_RT.bam -o ${prefix}_rmDup.bam > ${prefix}_rmDup.log
+	  rmDup.py -v -i ${flagged_rmPCR_RT} -o ${prefix}_rmDup.bam > ${prefix}_rmDup.log
   fi
     
   #Create count Table from flagged - PCR dups - RT dups and window-based rmDup (need to sort by barcode)
@@ -643,7 +663,6 @@ process removePcrRtDup {
 
   ## Index BAM file
   samtools index ${prefix}_rmDup.bam
-  
   """
 }
 
@@ -684,7 +703,7 @@ process bamToBigWig{
 
   input:
   set val(prefix), file (rmDupBam), file (rmDupBai) from chNoDup_bigWig
-  file blackListBed from chFilterBlackReg_bamToBigWig    
+  file(blackListBed) from chFilterBlackReg_bamToBigWig.collect()
       
   output:
   set val(prefix), file("*.bw") into chBigWig
@@ -695,7 +714,7 @@ process bamToBigWig{
   """
   if [[${params.keepBlacklistRegion} == "false"]]
   then
-      bamCoverage --bam ${rmDupBam} --outFileName ${prefix}.bw --numberOfProcessors ${task.cpus} --normalizeUsing CPM --ignoreForNormalization chrX --binSize 50 --smoothLength 500 --extendReads 150 --blackListFileName $blackListBed &> ${prefix}_bamToBigWig.log
+      bamCoverage --bam ${rmDupBam} --outFileName ${prefix}.bw --numberOfProcessors ${task.cpus} --normalizeUsing CPM --ignoreForNormalization chrX --binSize 50 --smoothLength 500 --extendReads 150 --blackListFileName ${blackListBed} &> ${prefix}_bamToBigWig.log
   else
       bamCoverage --bam ${rmDupBam} --outFileName ${prefix}.bw --numberOfProcessors ${task.cpus} --normalizeUsing CPM --ignoreForNormalization chrX --binSize 50 --smoothLength 500 --extendReads 150 &> ${prefix}_bamToBigWig.log
   fi
