@@ -1,4 +1,5 @@
-#!/usr/bin/env nextflow
+ 
+ #!/usr/bin/env nextflow
 
 /*
 Copyright Institut Curie 2020
@@ -539,7 +540,7 @@ process  addBarcodes {
 
 
 //5- Remove PCR and Reverse Transcription duplicate  - (STAR)
-process  removePcrRtDup {
+process removePcrRtDup {
   tag "${prefix}"
   label 'samtools'
   label 'highCpu'
@@ -551,7 +552,7 @@ process  removePcrRtDup {
   set val(prefix), file(flaggedBam) from chAddedBarcodes
 
   output :
-  set val(prefix), file("*_flagged_rmPCR_RT.bam") into chRTremoved
+  set val(prefix), file("*RT.bam") into chRemovePcrRtDup
   set val(prefix), file("*_removePcrRtDup.log") into chPcrRtCountsLog
 
   script:
@@ -630,7 +631,7 @@ process  removePcrRtDup {
 }
 
 // 6-Remove duplicates by window (if R2 is unmapped)
-process  removeDup {
+process removeDup {
   tag "${prefix}"
   label 'bedtools'
   label 'medCpu'
@@ -639,7 +640,7 @@ process  removeDup {
   publishDir "${params.outDir}/removeDup", mode: 'copy'
 
   input:
-  set val(prefix), file(flagged_rmPCR_RT) from chRTremoved // NE MARCHE PAS , prend que le premier de la pile
+  set val(prefix), file(flagged_rmPCR_RT) from chRemovePcrRtDup // NE MARCHE PAS , prend que le premier de la pile
   file blackListBed from chFilterBlackReg  
 
   output:
