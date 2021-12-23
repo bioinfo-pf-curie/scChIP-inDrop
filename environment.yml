@@ -15,6 +15,7 @@ dependencies:
   - bioconda::deeptools=3.5.1=py_0
   - conda-forge::gawk=5.1.0=h7f98852_0
   ## python
+  - conda-forge::markdown
   - conda-forge::python=3.9.7=hb7a2778_3_cpython
   - conda-forge::pymdown-extensions=9.0=pyhd8ed1ab_0
   - bioconda::pysam=0.17.0=py39h051187c_0
