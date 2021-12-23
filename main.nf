@@ -1,5 +1,5 @@
  
- #!/usr/bin/env nextflow
+#!/usr/bin/env nextflow
 
 /*
 Copyright Institut Curie 2020
@@ -802,7 +802,7 @@ process bamToScBed{
   fi
 
   rm -f ${prefix}_tmp_header.sam ${prefix}_tmp.sorted.bam
-"""
+  """
 }
 
 // 8 - Generate TSS bed file
@@ -836,7 +836,7 @@ process countMatricesPerBin {
   publishDir "${params.outDir}/countMatrices/${prefix}/", mode: 'copy'
 
   input:
-  set(prefix), file (rmDupBam), file (rmDupBai), file(countTable), val(bins) from chNoDup_countMatricesBin.join(chDupCountsBin).combine(binSizeCh)
+  set val(prefix), file (rmDupBam), file (rmDupBai), file(countTable), val(bins) from chNoDup_countMatricesBin.join(chDupCountsBin).combine(binSizeCh)
 
   output:
   set val(prefix), file ("${prefix}_counts_bin_${bins}") into chCountBinMatrices
