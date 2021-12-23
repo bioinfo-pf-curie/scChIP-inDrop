@@ -856,7 +856,7 @@ process countMatricesFromBed {
   publishDir "${params.outDir}/countMatrices", mode: 'copy'
 
   input:
-  file tssBed from tssBedFile
+  file(tssBed) from tssBedFile.collect()
   set val(prefix), file (rmDupBam), file (rmDupBai), file(countTable) from chNoDup_countMatricesTSS.join(chDupCountsTSS)
 
   output:
@@ -872,7 +872,7 @@ process countMatricesFromBed {
   echo "Barcodes found = \$barcodes" > ${prefix}_counts.log
   
   # Counts per genomic intervals
-  sc2sparsecounts.py -i ${rmDupBam} -o ${prefix}_counts_TSS_${params.tssWindow} -B $tssBed -f ${params.minCounts} -s \$barcodes -v
+  sc2sparsecounts.py -i ${rmDupBam} -o ${prefix}_counts_TSS_${params.tssWindow} -B ${tssBed} -f ${params.minCounts} -s \$barcodes -v
   
   python --version &> v_python.txt
   """
