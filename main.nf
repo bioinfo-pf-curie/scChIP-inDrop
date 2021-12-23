@@ -549,7 +549,7 @@ process removePcrRtDup {
 
   input :
   set val(prefix), file(flaggedBam) from chAddedBarcodes
-  file blackListBed from chFilterBlackReg    
+  file (blackListBed) from chFilterBlackReg    
 
   output :
   set val(prefix), file("*RT.bam") into chRemovePcrRtDup
@@ -627,7 +627,7 @@ process removePcrRtDup {
   echo "## Number of rt duplicates: \$n_rt_duplicates" >> ${prefix}_removePcrRtDup.log
   echo "## Number of R1 mapped but R2 unmapped: \$n_R1_mapped_R2_unmapped" >> ${prefix}_removePcrRtDup.log
   echo "## Number of reads after PCR and RT removal (not R1 unmapped R2): \$n_unique_except_R1_unmapped_R2" >> ${prefix}_removePcrRtDup.log
-  
+
   ###########
 
   ## Index BAM file
