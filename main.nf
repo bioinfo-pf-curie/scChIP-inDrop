@@ -487,7 +487,7 @@ process  addBarcodes {
   set val(prefix), file(alignedBam), file(readBarcodes) from chAlignedBam.join(chReadBcNames)
 
   output:
-  set val(prefix), file("*_flagged.bam") into chAddedBarcodes
+  set val(prefix), file("*_flagged.bam") into chAddedBarcodes, chAddedBarcodes_rmRT
 
   script:
   """
@@ -594,6 +594,7 @@ process removeRTdup {
   publishDir "${params.outDir}/removeRTdup", mode: 'copy'
 
   input:
+  set val(prefix), file(flaggedBam) from chAddedBarcodes_rmRT
   set val(prefix), file(flaggedRmPCRbam) from chRemovePCRdupBam
   set val(prefix), file(flaggedRmPCRsam) from chRemovePCRdupSam
  
@@ -604,6 +605,12 @@ process removeRTdup {
   
   script:
   """
+  ##Sort by barcode then chromosome then position R2
+  #Find the column containing the barcode tag XB
+  barcode_field=\$(samtools view ${flaggedBam} | sed -n \"1 s/XB.*//p\" | sed 's/[^\t]//g' | wc -c)
+  #Find the column containing the position R2 tag XS
+  posR2_field=\$(samtools view ${flaggedBam} | sed -n \"1 s/XS.*//p\" | sed 's/[^\t]//g' | wc -c)
+  
   ## Index flagged_rmPCR file
   samtools index ${flaggedRmPCRbam}
 
