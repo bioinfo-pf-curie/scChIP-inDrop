@@ -686,7 +686,7 @@ process removeBlackRegions {
 
   output:
   file("v_bedtools.txt") into chBedtoolsVersion
-  set val(prefix), file("*_rmDup.bam"),  file("*_rmDup.bam.bai") into chNoDup_ScBed, chNoDup_bigWig, chNoDup_countMatricesBin, chNoDup_countMatricesTSS
+  set val(prefix), file("*BlackReg.bam"),  file("*.bam.bai") into chNoDup_ScBed, chNoDup_bigWig, chNoDup_countMatricesBin, chNoDup_countMatricesTSS
   set val(prefix), file("*_rmDup.sam") into chCountSummary
 
   script:
@@ -695,12 +695,14 @@ process removeBlackRegions {
   if [[ "${params.removeBlackRegions}" == "true" ]]
   then
     samtools index ${rmDupBam}
-    bedtools intersect -v -abam ${rmDupBam} -b ${blackListBed} > ${prefix}_rmDup_rmBlackReg.bam && mv ${prefix}_rmDup_rmBlackReg.bam ${prefix}_rmDup.bam
+    bedtools intersect -v -abam ${rmDupBam} -b ${blackListBed} > ${prefix}_rmDup_rmBlackReg.bam
+    samtools index ${prefix}_rmDup_rmBlackReg.bam
   else
-    samtools index ${rmDupBam}
+    cp ${rmDupBam} ${prefix}_rmDup_withBlackReg.bam
+    samtools index ${prefix}_rmDup_withBlackReg.bam
   fi
 
-  samtools view ${prefix}_rmDup.bam > ${prefix}_rmDup.sam
+  samtools view ${prefix}*BlackReg.bam > ${prefix}_rmDup.sam
 
   bedtools --version &> v_bedtools.txt
   """
