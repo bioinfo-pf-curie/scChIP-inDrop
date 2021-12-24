@@ -55,7 +55,7 @@ def helpMessage() {
     --keepRTdup [bool]            Keep RT duplicats. Default is false.
     --distDup [int]               Select the number of bases after gene start sites to detect duplicates. Default is 50.
     --minCounts [int]             Select the minimum count per barcodes after removing duplicates. Default is 100.
-    --keepBlacklistRegion [bool]  Keep black region. Default is false.
+    --removeBlackRegions [bool]  Remove black region. Default is true.
     --binSize [str]               Bin sizes (in base pairs, comma separated). Default is 50000.
     --tssWindow [int]             TSS window (in base pairs). Default is 5000.
  
@@ -694,7 +694,7 @@ process removeBlackRegions {
   # Removing encode black regions 
 
   # If no skipping == do it 
-  if [[${params.skipRemoveBlackRegions} == 'false']]
+  if [[${params.removeBlackRegions} == "true"]]
   then
     samtools index ${rmDupBam}
     bedtools intersect -v -abam ${rmDupBam} -b ${blackListBed} > ${prefix}_rmDup_rmBlackReg.bam && mv ${prefix}_rmDup_rmBlackReg.bam ${prefix}_rmDup.bam
