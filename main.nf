@@ -958,7 +958,7 @@ process getSoftwareVersions{
   file("v_samtools.txt") from chSamtoolsVersion.first().ifEmpty([])
   file("v_deeptools.txt") from chBamCoverageVersion.first().ifEmpty([])
   file("v_bedtools.txt") from chBedtoolsVersion.first().ifEmpty([])
-  file("v_python.txt") from chPythonVersionCountsBin.mix(chPythonVersionCountsBed).first().ifEmpty([])
+  file("v_python.txt") from chPythonVersionCountsBin.first().ifEmpty([])
   file("v_R.txt") from chRversion.first().ifEmpty([])
 
   output:
