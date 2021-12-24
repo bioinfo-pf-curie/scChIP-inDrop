@@ -798,7 +798,7 @@ process bamToBigWig{
   
   script:
   """
-  if [[${params.keepBlacklistRegion} == "false"]]
+  if [[ "${params.removeBlackRegions}" == "true" ]]
   then
       bamCoverage --bam ${rmDupBam} --outFileName ${prefix}.bw --numberOfProcessors ${task.cpus} --normalizeUsing CPM --ignoreForNormalization chrX --binSize 50 --smoothLength 500 --extendReads 150 --blackListFileName ${blackListBed} &> ${prefix}_bamToBigWig.log
   else
