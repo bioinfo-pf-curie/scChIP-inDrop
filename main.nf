@@ -687,6 +687,7 @@ process removeBlackRegions {
   output:
   file("v_bedtools.txt") into chBedtoolsVersion
   set val(prefix), file("*_rmDup.bam"),  file("*_rmDup.bam.bai") into chNoDup_ScBed, chNoDup_bigWig, chNoDup_countMatricesBin, chNoDup_countMatricesTSS
+  set val(prefix), file("*_rmDup.sam") into chCountSummary
 
   script:
   """
@@ -700,6 +701,8 @@ process removeBlackRegions {
   else
     samtools index ${rmDupBam}
   fi
+
+  samtools view ${prefix}_rmDup.bam > ${prefix}_rmDup.sam
 
   bedtools --version &> v_bedtools.txt
   """
@@ -718,6 +721,7 @@ process countSummary {
   set val(prefix), file(pcrDup) from chPCRdupCount
   set val(prefix), file(rtDup) from chRTdupCount
   set val(prefix), file(r1UnmappedR2) from chR1unmappedR2Count
+  set val(prefix), file(rmDupSam) from chCountSummary
 
   output:
   set val(prefix), file("*_removePcrRtDup.log") into chPcrRtCountsLog
@@ -741,8 +745,8 @@ process countSummary {
 
   ### 2. Count final number of barcoded cells 
   # Count nb barcodes from flagged - PCR, RT & window dups  (need to sort by barcode)
-  barcode_field=\$(samtools view ${prefix}_rmDup.bam  | sed -n \"1 s/XB.*//p\" | sed 's/[^\t]//g' | wc -c)
-  samtools view ${prefix}_rmDup.bam | awk -v bc_field=\$barcode_field '{print substr(\$bc_field,6)}' | sort | uniq -c > ${prefix}_rmDup.count
+  barcode_field=\$( cat ${rmDupSam} | sed -n \"1 s/XB.*//p\" | sed 's/[^\t]//g' | wc -c)
+  cat ${rmDupSam} | awk -v bc_field=\$barcode_field '{print substr(\$bc_field,6)}' | sort | uniq -c > ${prefix}_rmDup.count
   barcodes=\$(wc -l ${prefix}_rmDup.count | awk '{print \$1}')
   echo "Barcodes found = \$barcodes" > ${prefix}_counts.log  
   """
