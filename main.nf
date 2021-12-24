@@ -692,9 +692,7 @@ process removeBlackRegions {
   script:
   """
   # Removing encode black regions 
-
-  # If no skipping == do it 
-  if [[${params.removeBlackRegions} == "true"]]
+  if [[ "${params.removeBlackRegions}" == "true" ]]
   then
     samtools index ${rmDupBam}
     bedtools intersect -v -abam ${rmDupBam} -b ${blackListBed} > ${prefix}_rmDup_rmBlackReg.bam && mv ${prefix}_rmDup_rmBlackReg.bam ${prefix}_rmDup.bam
