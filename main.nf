@@ -725,7 +725,7 @@ process countSummary {
 
   output:
   set val(prefix), file("*_removePcrRtDup.log") into chPcrRtCountsLog
-  set val(prefix), file("*_rmDup.count") into chDistribUMIs, chRemoveDupBarcodeLog
+  set val(prefix), file("*_rmDup.count") into chDistribUMIs, chRemoveDupBarcodeLog, chPerBin, chPerTSS
   set val(prefix), file ("*_counts.log") into chCountMatricesBinLog
   
   script:
@@ -912,7 +912,7 @@ process countMatricesPerBin {
   publishDir "${params.outDir}/countMatrices/${prefix}/", mode: 'copy'
 
   input:
-  set val(prefix), file (rmDupBam), file (rmDupBai), val(bins) from chNoDup_countMatricesBin.combine(binSizeCh)
+  set val(prefix), file (rmDupBam), file (rmDupBai), file(bcCount), val(bins) from chNoDup_countMatricesBin.join(chPerBin).combine(binSizeCh)
 
   output:
   set val(prefix), file ("${prefix}_counts_bin_${bins}") into chCountBinMatrices
@@ -920,6 +920,8 @@ process countMatricesPerBin {
   
   script:
   """
+  barcodes=\$(wc -l ${bcCount} | awk '{print \$1}')
+
   # Counts per bin (--bin)
   sc2sparsecounts.py -i ${rmDupBam} -o ${prefix}_counts_bin_${bins} -b ${bins} -f ${params.minCounts} -s \$barcodes -v
 
@@ -937,13 +939,15 @@ process countMatricesFromBed {
 
   input:
   file(tssBed) from tssBedFile.collect()
-  set val(prefix), file (rmDupBam), file (rmDupBai) from chNoDup_countMatricesTSS
+  set val(prefix), file (rmDupBam), file (rmDupBai), file(bcCount) from chNoDup_countMatricesTSS.join(chPerTSS)
 
   output:
   set val(prefix), file ("${prefix}_counts_TSS_${params.tssWindow}") into chCountBedMatrices
   
   script:
   """
+  barcodes=\$(wc -l ${bcCount} | awk '{print \$1}')
+  
   # Counts per genomic intervals
   sc2sparsecounts.py -i ${rmDupBam} -o ${prefix}_counts_TSS_${params.tssWindow} -B ${tssBed} -f ${params.minCounts} -s \$barcodes -v
   """
