@@ -92,7 +92,6 @@ if (params.genomes && params.genome && !params.genomes.containsKey(params.genome
   exit 1, "The provided genome '${params.genome}' is not available in the genomes.config file. Currently the available genomes are ${params.genomes.keySet().join(", ")}"
 }
 
-
 // Has the run name been specified by the user?
 // this has the bonus effect of catching both -name and --name
 customRunName = params.name
@@ -525,6 +524,223 @@ process  addBarcodes {
   """
 }
 
+//-------- Remove duplicats ----------//
+// PCR duplicats == same barcode + R2 + R1
+// RT duplicats == same barcode + R2 // different R1 (because during RT; 5bp are randomly added to introduce the R1 primer)
+// window duplicats = same barcode + R2 (start +/- 50bp)
+
+
+process removePCRdup {
+  tag "${prefix}"
+  label 'samtools'
+  label 'medCpu'
+  label 'medMem'
+
+  publishDir "${params.outDir}/removePCRdup", mode: 'copy'
+
+  input:
+  set val(prefix), file(flaggedBam) from chAddedBarcodes
+ 
+  output :
+  set val(prefix), file("*_flagged_rmPCR.bam") into chRemovePCRdupBam
+  set val(prefix), file("*_flagged_rmPCR.sam") into chRemovePCRdupSam
+  // For countSummary
+  set val(prefix), file("*_count_PCR_duplicates.txt") into chPCRdupCount
+  set val(prefix), file("*_countR1unmappedR2.txt") into chR1unmappedR2Count
+  set val(prefix), file("*_flagged.sorted.bam") into chFlaggedBam
+
+  
+  output:
+  
+  script:
+  """
+  ##Sort by barcode then chromosome then position R2
+  #Find the column containing the barcode tag XB
+  barcode_field=\$(samtools view ${flaggedBam} | sed -n \"1 s/XB.*//p\" | sed 's/[^\t]//g' | wc -c)
+  #Find the column containing the position R2 tag XS
+  posR2_field=\$(samtools view ${flaggedBam} | sed -n \"1 s/XS.*//p\" | sed 's/[^\t]//g' | wc -c)
+
+  printf '@HD\tVN:1.4\tSO:unsorted\n' > ${prefix}_header.sam
+  samtools view -H ${prefix}_flagged.bam | sed '/^@HD/ d' >> ${prefix}_header.sam
+
+  #Sort by barcode then chromosome then position R2 then Position R1 (for the PCR removal) 
+  #It is important to sort by R1 pos also	because the removal is done by comparing consecutive lin
+  samtools view ${prefix}_flagged.bam | LC_ALL=C sort -T /scratch/ --parallel=${task.cpus} -t \$'\t' -k \"\$barcode_field.8,\$barcode_field\"n -k 3.4,3g -k \"\$posR2_field.6,\$posR2_field\"n -k 4,4n >> ${prefix}_header.sam && samtools view -@ ${task.cpus} -b ${prefix}_header.sam > ${prefix}_flagged.sorted.bam
+  samtools view ${prefix}_flagged.sorted.bam | awk -v bc_field=\$barcode_field '{print substr(\$bc_field,6)}' |  uniq -c > ${prefix}_flagged.count
+  samtools view ${prefix}_flagged.sorted.bam | awk -v bc_field=\$barcode_field -v R2_field=\$posR2_field 'BEGIN {countR1unmappedR2=0;countPCR=0};NR==1{print \$0;lastChrom=\$3;lastBarcode=\$bc_field; split( \$R2_field,lastR2Pos,\":\"); lastR1Pos=\$4} ; NR>=2{split( \$R2_field,R2Pos,\":\");R1Pos=\$4; if(R2Pos[3]==2147483647){print \$0;countR1unmappedR2++; next}; if( (R1Pos==lastR1Pos) && (R2Pos[3]==lastR2Pos[3]) && ( \$3==lastChrom ) && (\$bc_field==lastBarcode) ){countPCR++;next} {print \$0;lastR1Pos=\$4;lastChrom=\$3;lastBarcode=\$bc_field; split( \$R2_field,lastR2Pos,\":\") }} END {print countPCR > \"count_PCR_duplicates\";print countR1unmappedR2 > \"countR1unmappedR2\"}' > ${prefix}_flagged_rmPCR.sam
+
+  # Save counts
+  mv count_PCR_duplicates ${prefix}_count_PCR_duplicates.txt
+  mv countR1unmappedR2 ${prefix}_countR1unmappedR2.txt
+
+  # sam to bam
+  samtools view -H ${prefix}_flagged.sorted.bam  | sed '/^@CO/ d' > ${prefix}_header.sam
+  cat ${prefix}_flagged_rmPCR.sam >> ${prefix}_header.sam && samtools view -@ ${task.cpus} -b ${prefix}_header.sam > ${prefix}_flagged_rmPCR.bam
+
+  ## Sort flagged_rmPCR file
+  samtools sort -@ ${task.cpus} ${prefix}_flagged_rmPCR.bam > ${prefix}_flagged_rmPCR_sorted.bam
+
+  ## Rename flagged_rmPCR file
+  mv ${prefix}_flagged_rmPCR_sorted.bam ${prefix}_flagged_rmPCR.bam
+  """
+}
+
+process removeRTdup {
+  tag "${prefix}"
+  label 'samtools'
+  label 'medCpu'
+  label 'medMem'
+
+  publishDir "${params.outDir}/removeRTdup", mode: 'copy'
+
+  input:
+  set val(prefix), file(flaggedRmPCRbam) from chRemovePCRdupBam
+  set val(prefix), file(flaggedRmPCRsam) from chRemovePCRdupSam
+ 
+  output:
+  set val(prefix), file("*_flagged_rmPCR_RT.bam") into chRemovePcrRtDup
+  // For countSummary
+  set val(prefix), file("*_count_RT_duplicates.txt") into chRTdupCount
+  
+  script:
+  """
+  ## Index flagged_rmPCR file
+  samtools index ${flaggedRmPCRbam}
+
+  if [ ${params.keepRTdup} == 'false' ] 
+  then
+    #Remove RT duplicates (if two consecutive reads have the same barcode and same R2 chr&start) but not same R1 
+    cat ${flaggedRmPCRbam} | awk -v bc_field=\$barcode_field -v R2_field=\$posR2_field 'BEGIN{count=0};NR==1{print \$0;lastChrom=\$3;lastBarcode=\$bc_field; split( \$R2_field,lastR2Pos,\":\")} ; NR>=2{split( \$R2_field,R2Pos,\":\");if((R2Pos[3]==lastR2Pos[3]) && (R2Pos[3]!=2147483647) && (lastR2Pos[3]!=2147483647)  && ( \$3==lastChrom ) && (\$bc_field==lastBarcode) ){count++;next} {print \$0;lastChrom=\$3;lastBarcode=\$bc_field; split( \$R2_field,lastR2Pos,\":\") }} END {print count > \"count_RT_duplicates\"}' > ${prefix}_flagged_rmPCR_RT.sam
+    # sam to bam
+    samtools view -H ${prefix}_flagged.bam  | sed '/^@CO/ d' > ${prefix}_header.sam
+    cat ${prefix}_flagged_rmPCR_RT.sam >> ${prefix}_header.sam && samtools view -@ ${task.cpus} -b ${prefix}_header.sam > ${prefix}_flagged_rmPCR_RT.bam 
+    ## Sort flagged_rmPCR_RT file
+    samtools sort -@ ${task.cpus} ${prefix}_flagged_rmPCR_RT.bam > ${prefix}_flagged_rmPCR_RT_sorted.bam
+    ## Rename flagged_rmPCR_RT file
+    mv ${prefix}_flagged_rmPCR_RT_sorted.bam ${prefix}_flagged_rmPCR_RT.bam
+
+  # If no RT duplicates removing:
+  else
+    ## Copy flagged_rmPCR to flagged_rmPCR_RT
+    cp ${flaggedRmPCRbam} ${prefix}_flagged_rmPCR_RT.bam
+    ## Set RT duplicate count to 0
+    echo 0 > count_RT_duplicates
+  fi
+
+  # Save counts
+  mv count_RT_duplicates ${prefix}_count_RT_duplicates.txt
+  """
+}
+
+process removeWindoWdup {
+  tag "${prefix}"
+  label 'python'
+  label 'medCpu'
+  label 'medMem'
+
+  publishDir "${params.outDir}/removeWindoWdup", mode: 'copy'
+
+  input:
+  set val(prefix), file(flaggednoPCRrTBam) from chRemovePcrRtDup
+ 
+  output:
+  set val(prefix), file("*_rmDup.bam") into chRemoveBlackReg
+  set val(prefix), file("*_rmDup.log") into chRemoveDupLog
+  
+  script:
+  """
+  ## Index BAM file
+  samtools index ${flaggednoPCRrTBam}
+
+  # window param
+  if [ ! -z ${params.distDup} ]; then
+	  rmDup.py -v -i ${flaggednoPCRrTBam} -o ${prefix}_rmDup.bam -d ${params.distDup} > ${prefix}_rmDup.log
+  else
+	  rmDup.py -v -i ${flaggednoPCRrTBam} -o ${prefix}_rmDup.bam > ${prefix}_rmDup.log
+  fi
+  """
+}
+
+//------- Remove balck regions ---------//
+// == regions of high signal that presumably represent unannotated repeats in the genome
+// leads to artefacts when do peaks calling that need normalization of the signal
+
+process removeBlackRegions {
+  tag "${prefix}"
+  label 'bedtools'
+  label 'medCpu'
+  label 'medMem'
+
+  publishDir "${params.outDir}/removeBlackRegions", mode: 'copy'
+
+  input:
+  file (blackListBed) from chFilterBlackReg.collect()
+  set val(prefix), file(rmDupBam) from chRemoveBlackReg
+
+  output:
+  file("v_bedtools.txt") into chBedtoolsVersion
+  set val(prefix), file("*_rmDup.bam"),  file("*_rmDup.bam.bai") into chNoDup_ScBed, chNoDup_bigWig, chNoDup_countMatricesBin, chNoDup_countMatricesTSS
+
+  script:
+  """
+  # Removing encode black regions 
+
+  # If no skipping == do it 
+  if [[${params.skipRemoveBlackRegions} == 'false']]
+  then
+    samtools index ${rmDupBam}
+    bedtools intersect -v -abam ${rmDupBam} -b ${blackListBed} > ${prefix}_rmDup_rmBlackReg.bam && mv ${prefix}_rmDup_rmBlackReg.bam ${prefix}_rmDup.bam
+  else
+    samtools index ${rmDupBam}
+  fi
+
+  bedtools --version &> v_bedtools.txt
+  """
+}
+
+process countSummary {
+  tag "${prefix}"
+  label 'samtools'
+  label 'medCpu'
+  label 'medMem'
+
+  publishDir "${params.outDir}/countSummary", mode: 'copy'
+
+  input:
+  set val(prefix), file(flaggedBam) from chFlaggedBam
+  set val(prefix), file(pcrDup) from chPCRdupCount
+  set val(prefix), file(rtDup) from chRTdupCount
+  set val(prefix), file(r1UnmappedR2) from chR1unmappedR2Count
+
+  output:
+  set val(prefix), file("*_removePcrRtDup.log") into chPcrRtCountsLog
+  set val(prefix), file("*_rmDup.count") into chDistribUMIs, chRemoveDupBarcodeLog
+  set val(prefix), file ("*_counts.log") into chCountMatricesBinLog
+  
+  script:
+  """
+  ### 1. Count duplicate proportions
+  n_mapped_barcoded=\$(samtools view -c  ${flaggedBam})
+  n_pcr_duplicates=\$(cat ${pcrDup})
+  n_rt_duplicates=\$(cat ${rtDup})
+  n_R1_mapped_R2_unmapped=\$(cat ${r1UnmappedR2})
+  n_unique_except_R1_unmapped_R2=\$((\$n_mapped_barcoded - \$n_pcr_duplicates - \$n_rt_duplicates))
+
+  echo "## Number of reads mapped and barcoded: \$n_mapped_barcoded" >> ${prefix}_removePcrRtDup.log
+  echo "## Number of pcr duplicates: \$n_pcr_duplicates" >> ${prefix}_removePcrRtDup.log
+  echo "## Number of rt duplicates: \$n_rt_duplicates" >> ${prefix}_removePcrRtDup.log
+  echo "## Number of R1 mapped but R2 unmapped: \$n_R1_mapped_R2_unmapped" >> ${prefix}_removePcrRtDup.log
+  echo "## Number of reads after PCR and RT removal (not R1 unmapped R2): \$n_unique_except_R1_unmapped_R2" >> ${prefix}_removePcrRtDup.log
+
+  ### 2. Count final number of barcoded cells 
+  # Count nb barcodes from flagged - PCR, RT & window dups  (need to sort by barcode)
+  barcode_field=\$(samtools view ${prefix}_rmDup.bam  | sed -n \"1 s/XB.*//p\" | sed 's/[^\t]//g' | wc -c)
+  samtools view ${prefix}_rmDup.bam | awk -v bc_field=\$barcode_field '{print substr(\$bc_field,6)}' | sort | uniq -c > ${prefix}_rmDup.count
+  barcodes=\$(wc -l ${prefix}_rmDup.count | awk '{print \$1}')
+  echo "Barcodes found = \$barcodes" > ${prefix}_counts.log  
+  """
+}
+
 
 //5- Remove PCR and Reverse Transcription duplicate  - (STAR)
 process removePcrRtDup {
@@ -563,7 +779,7 @@ process removePcrRtDup {
   cat ${prefix}_flagged_rmPCR.sam >> ${prefix}_header.sam && samtools view -@ ${task.cpus} -b ${prefix}_header.sam > ${prefix}_flagged_rmPCR.bam
 
   #Create count Table from flagged - PCR dups (already sorted by barcode)
-  samtools view ${prefix}_flagged_rmPCR.bam | awk -v bc_field=\$barcode_field '{print substr(\$bc_field,6)}' |  uniq -c > ${prefix}_flagged_rmPCR.count
+  #samtools view ${prefix}_flagged_rmPCR.bam | awk -v bc_field=\$barcode_field '{print substr(\$bc_field,6)}' |  uniq -c > ${prefix}_flagged_rmPCR.count
 
   ## Sort flagged_rmPCR file
   samtools sort -@ ${task.cpus} ${prefix}_flagged_rmPCR.bam > ${prefix}_flagged_rmPCR_sorted.bam
@@ -615,8 +831,6 @@ process removePcrRtDup {
   rm -f count* *.sam
   """
 }
-
-
 // 6-Remove duplicates by window (if R2 is unmapped)
 process removeDup {
   tag "${prefix}"
@@ -632,8 +846,8 @@ process removeDup {
 
   output:
   set val(prefix), file("*_rmDup.bam"),  file("*_rmDup.bam.bai") into chNoDup_ScBed, chNoDup_bigWig, chNoDup_countMatricesBin, chNoDup_countMatricesTSS
-  set val(prefix), file("*_rmDup.count") into chDupCountsBin, chDupCountsTSS, chRemoveDupBarcodeLog, chDistribUMIs
-  set val(prefix), file("*_rmDup.log") into chRemoveDupLog
+  set val(prefix), file("*_rmDup.count") into chDupCountsBin, chDupCountsTSS, chRemoveDupBarcodeLog, chDistribUMIs // nb barcodes
+  set val(prefix), file("*_rmDup.log") into chRemoveDupLog // black region counts
   file("v_bedtools.txt") into chBedtoolsVersion
   
   script:
@@ -648,12 +862,12 @@ process removeDup {
 	  rmDup.py -v -i ${flagged_rmPCR_RT} -o ${prefix}_rmDup.bam > ${prefix}_rmDup.log
   fi
     
-  #Create count Table from flagged - PCR dups - RT dups and window-based rmDup (need to sort by barcode)
+  #Create count Table from flagged - PCR dups - RT dups and window-based dups (need to sort by barcode)
   barcode_field=\$(samtools view ${prefix}_rmDup.bam  | sed -n \"1 s/XB.*//p\" | sed 's/[^\t]//g' | wc -c)
   
   samtools view ${prefix}_rmDup.bam | awk -v bc_field=\$barcode_field '{print substr(\$bc_field,6)}' | sort | uniq -c > ${prefix}_rmDup.count	
 
-  # Removing encode black regions
+  # Removing encode black regions 
   if [[${params.keepBlacklistRegion} == "false"]]
   then
     bedtools intersect -v -abam ${prefix}_rmDup.bam -b ${blackListBed} > ${prefix}_rmDup_rmBlackReg.bam && mv ${prefix}_rmDup_rmBlackReg.bam ${prefix}_rmDup.bam
@@ -665,6 +879,8 @@ process removeDup {
   samtools index ${prefix}_rmDup.bam
   """
 }
+
+
 
 // Plot read distributions accross cells (used to filtre out low read cells)
 process distribUMIs{
@@ -826,21 +1042,15 @@ process countMatricesPerBin {
   publishDir "${params.outDir}/countMatrices/${prefix}/", mode: 'copy'
 
   input:
-  set val(prefix), file (rmDupBam), file (rmDupBai), file(countTable), val(bins) from chNoDup_countMatricesBin.join(chDupCountsBin).combine(binSizeCh)
+  set val(prefix), file (rmDupBam), file (rmDupBai), val(bins) from chNoDup_countMatricesBin.combine(binSizeCh)
 
   output:
   set val(prefix), file ("${prefix}_counts_bin_${bins}") into chCountBinMatrices
-  set val(prefix), file ("*_counts.log") into chCountMatricesBinLog
   file("v_python.txt") into chPythonVersionCountsBin
   
   script:
   """
-  # Counting unique BCs
-  bc_prefix=\$(basename ${rmDupBam} | sed -e 's/.bam\$//')
-  barcodes=\$(wc -l ${countTable} | awk '{print \$1}')
-  echo "Barcodes found = \$barcodes" > ${prefix}_counts.log
-  
-  # Counts are generated per bin (--bin) and per genomics features (--bed / TSS)
+  # Counts per bin (--bin)
   sc2sparsecounts.py -i ${rmDupBam} -o ${prefix}_counts_bin_${bins} -b ${bins} -f ${params.minCounts} -s \$barcodes -v
 
   python --version &> v_python.txt
@@ -861,20 +1071,11 @@ process countMatricesFromBed {
 
   output:
   set val(prefix), file ("${prefix}_counts_TSS_${params.tssWindow}") into chCountBedMatrices
-  set val(prefix), file ("*_counts.log") into chCountMatricesBedLog
-  file("v_python.txt") into chPythonVersionCountsBed
   
   script:
   """
-  # Counting unique BCs
-  bc_prefix=\$(basename ${rmDupBam} | sed -e 's/.bam\$//')
-  barcodes=\$(wc -l ${countTable} | awk '{print \$1}')
-  echo "Barcodes found = \$barcodes" > ${prefix}_counts.log
-  
   # Counts per genomic intervals
   sc2sparsecounts.py -i ${rmDupBam} -o ${prefix}_counts_TSS_${params.tssWindow} -B ${tssBed} -f ${params.minCounts} -s \$barcodes -v
-  
-  python --version &> v_python.txt
   """
 }
 
