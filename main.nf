@@ -926,7 +926,7 @@ process countMatricesFromBed {
 
   input:
   file(tssBed) from tssBedFile.collect()
-  set val(prefix), file (rmDupBam), file (rmDupBai), file(countTable) from chNoDup_countMatricesTSS.join(chDupCountsTSS)
+  set val(prefix), file (rmDupBam), file (rmDupBai) from chNoDup_countMatricesTSS
 
   output:
   set val(prefix), file ("${prefix}_counts_TSS_${params.tssWindow}") into chCountBedMatrices
