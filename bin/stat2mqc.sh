@@ -13,8 +13,6 @@ echo "Sample_id,Sample_name,Deduplicated reads, Window duplicates,RT duplicates,
 ## Summary table
 # The column names have to be the same as the column ids in the multiqcConfig.yaml !!!!! 
 echo -e "Sample_id,Sample_name,Cells,Cells>1000reads,~Reads/cell,Aligned,Aligned & Barcoded,Unique Reads" > scChIPseq_table.csv
-===> regarder dans scChIPseq_table.csv si ecrit median reads + envoyer à Pacome res
-
 
 for sample in $all_samples
 do
