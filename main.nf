@@ -577,7 +577,6 @@ process removePCRdup {
   ## Rename flagged_rmPCR file
   mv ${prefix}_flagged_rmPCR_sorted.bam ${prefix}_flagged_rmPCR.bam
 
-  rm *.sam
   """
 }
 
