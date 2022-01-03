@@ -40,7 +40,7 @@ custom_data:
               scale: 'YlGn'
               placement: 4000
             Median (cells>1000reads):
-              description: 'Reads (median over cells>1000reads)'
+              description: 'Reads(median)/cell'
               max: 100
               min: 0
               scale: 'YlGn'
