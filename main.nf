@@ -496,27 +496,22 @@ process  addBarcodes {
 
   # If read is mapped R1 & unmapped R2 -> set R2 position as '2147483647'
   cat ${prefix}.sam | awk -v OFS='\t' 'NR%2==1{print \$0} NR%2==0{if(\$3==\"*\"){\$4=2147483647;print \$0} else{print \$0} }' > ${prefix}_2.sam
-
   # Remove comments from the header that produce bugs in the count phase
   samtools view -H ${alignedBam} | sed '/^@CO/ d' > ${prefix}_header.sam
-
   cat ${prefix}_2.sam >> ${prefix}_header.sam && mv ${prefix}_header.sam ${prefix}.sam && samtools view -b -@ ${task.cpus} ${prefix}.sam > ${prefix}_unique.bam
-
   rm -f ${prefix}_2.sam ${prefix}.sam
   
-  #Keeping R1 aligned + R2 start as tag 'XS' (Switch from Paired End Bam to Single End Bam)
+  # Keeping R1 aligned + R2 start as tag 'XS' (Switch from Paired End Bam to Single End Bam)
   samtools view ${prefix}_unique.bam | awk '{OFS = \"\t\" ; if(NR%2==1 && !(\$3==\"*\")) {R1=\$0} else if(NR%2==1){R1=0}; if(NR%2==0 && !(R1==0)){tagR2Seq=\"XD:Z:\"\$10; tagR2Pos=\"XS:i:\"\$4;print R1,tagR2Pos,tagR2Seq}}' > ${prefix}_unique.sam
   
-  #Sort and join on read names reads barcoded and reads mapped to genome (barcode as tag 'XB') --> filter out unbarcoded OR unmapped reads
+  # Sort and join on read names reads barcoded and reads mapped to genome (barcode as tag 'XB') 
   sort -T /scratch/ --parallel=${task.cpus} -k1,1 ${prefix}_unique.sam > ${prefix}_unique_sorted.sam
-  
+  # filter out unbarcoded OR unmapped reads 
   join -1 1  -2 1  ${prefix}_unique_sorted.sam <(awk -v OFS=\"\t\" '{print \$1,\"XB:Z:\"\$2}' ${readBarcodes}) > ${prefix}_flagged.sam
-  
   sed -i 's/ /\t/g' ${prefix}_flagged.sam
   
   #Remove comments from the header that produce bugs in the count phase
   samtools view -H ${prefix}_unique.bam | sed '/^@CO/ d' > ${prefix}_header.sam
-  
   cat ${prefix}_flagged.sam >> ${prefix}_header.sam && mv ${prefix}_header.sam ${prefix}_flagged.sam && samtools view -@ ${task.cpus} -b ${prefix}_flagged.sam > ${prefix}_flagged.bam
   
   #Cleaning
@@ -524,7 +519,7 @@ process  addBarcodes {
   """
 }
 
-//-------- Remove duplicats ----------//
+//-------- Remove duplicates ----------//
 // PCR duplicats == same barcode + R2 + R1
 // RT duplicats == same barcode + R2 // different R1 (because during RT; 5bp are randomly added to introduce the R1 primer)
 // window duplicats = same barcode + R2 (start +/- 50bp)
@@ -554,7 +549,6 @@ process removePCRdup {
   
   script:
   """
-  ##Sort by barcode then chromosome then position R2
   #Find the column containing the barcode tag XB
   barcode_field=\$(samtools view ${flaggedBam} | sed -n \"1 s/XB.*//p\" | sed 's/[^\t]//g' | wc -c)
   #Find the column containing the position R2 tag XS
@@ -564,7 +558,7 @@ process removePCRdup {
   samtools view -H ${prefix}_flagged.bam | sed '/^@HD/ d' >> ${prefix}_header.sam
 
   #Sort by barcode then chromosome then position R2 then Position R1 (for the PCR removal) 
-  #It is important to sort by R1 pos also	because the removal is done by comparing consecutive lin
+  #It is important to sort by R1 pos also	because the removal is done by comparing consecutive lines
   samtools view ${prefix}_flagged.bam | LC_ALL=C sort -T /scratch/ --parallel=${task.cpus} -t \$'\t' -k \"\$barcode_field.8,\$barcode_field\"n -k 3.4,3g -k \"\$posR2_field.6,\$posR2_field\"n -k 4,4n >> ${prefix}_header.sam && samtools view -@ ${task.cpus} -b ${prefix}_header.sam > ${prefix}_flagged.sorted.bam
   samtools view ${prefix}_flagged.sorted.bam | awk -v bc_field=\$barcode_field '{print substr(\$bc_field,6)}' |  uniq -c > ${prefix}_flagged.count
   samtools view ${prefix}_flagged.sorted.bam | awk -v bc_field=\$barcode_field -v R2_field=\$posR2_field 'BEGIN {countR1unmappedR2=0;countPCR=0};NR==1{print \$0;lastChrom=\$3;lastBarcode=\$bc_field; split( \$R2_field,lastR2Pos,\":\"); lastR1Pos=\$4} ; NR>=2{split( \$R2_field,R2Pos,\":\");R1Pos=\$4; if(R2Pos[3]==2147483647){print \$0;countR1unmappedR2++; next}; if( (R1Pos==lastR1Pos) && (R2Pos[3]==lastR2Pos[3]) && ( \$3==lastChrom ) && (\$bc_field==lastBarcode) ){countPCR++;next} {print \$0;lastR1Pos=\$4;lastChrom=\$3;lastBarcode=\$bc_field; split( \$R2_field,lastR2Pos,\":\") }} END {print countPCR > \"count_PCR_duplicates\";print countR1unmappedR2 > \"countR1unmappedR2\"}' > ${prefix}_flagged_rmPCR.sam
@@ -582,6 +576,8 @@ process removePCRdup {
 
   ## Rename flagged_rmPCR file
   mv ${prefix}_flagged_rmPCR_sorted.bam ${prefix}_flagged_rmPCR.bam
+
+  rm *.sam
   """
 }
 
@@ -605,7 +601,6 @@ process removeRTdup {
   
   script:
   """
-  ##Sort by barcode then chromosome then position R2
   #Find the column containing the barcode tag XB
   barcode_field=\$(samtools view ${flaggedBam} | sed -n \"1 s/XB.*//p\" | sed 's/[^\t]//g' | wc -c)
   #Find the column containing the position R2 tag XS
@@ -626,16 +621,16 @@ process removeRTdup {
     ## Rename flagged_rmPCR_RT file
     mv ${prefix}_flagged_rmPCR_RT_sorted.bam ${prefix}_flagged_rmPCR_RT.bam
 
-  # If no RT duplicates removing:
-  else
-    ## Copy flagged_rmPCR to flagged_rmPCR_RT
-    cp ${flaggedRmPCRbam} ${prefix}_flagged_rmPCR_RT.bam
-    ## Set RT duplicate count to 0
-    echo 0 > count_RT_duplicates
-  fi
+    # If no RT duplicates removing:
+    else
+      ## Copy flagged_rmPCR to flagged_rmPCR_RT
+      cp ${flaggedRmPCRbam} ${prefix}_flagged_rmPCR_RT.bam
+      ## Set RT duplicate count to 0
+      echo 0 > count_RT_duplicates
+    fi
 
-  # Save counts
-  mv count_RT_duplicates ${prefix}_count_RT_duplicates.txt
+    # Save counts
+    mv count_RT_duplicates ${prefix}_count_RT_duplicates.txt
   """
 }
 
@@ -947,7 +942,7 @@ process countMatricesFromBed {
   script:
   """
   barcodes=\$(wc -l ${bcCount} | awk '{print \$1}')
-  
+
   # Counts per genomic intervals
   sc2sparsecounts.py -i ${rmDupBam} -o ${prefix}_counts_TSS_${params.tssWindow} -B ${tssBed} -f ${params.minCounts} -s \$barcodes -v
   """
