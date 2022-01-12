@@ -983,10 +983,6 @@ process getSoftwareVersions{
 
 
 process workflowSummaryMqc {
-  label 'unix'
-  label 'lowCpu'
-  label 'lowMem'
-
   when:
   !params.skipMultiQC
 
