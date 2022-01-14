@@ -431,7 +431,7 @@ process trimReads {
 process readsAlignment {
   tag "${prefix}"
   label 'star'
-  label 'extraCpu'
+  label 'highCpu'
   label 'extraMem'
 
   publishDir "${params.outDir}/readsAlignment", mode: 'copy'
