@@ -542,7 +542,7 @@ process removePCRdup {
   // For countSummary
   set val(prefix), file("*_count_PCR_duplicates.txt") into chPCRdupCount
   set val(prefix), file("*_countR1unmappedR2.txt") into chR1unmappedR2Count
-  set val(prefix), file("*_flagged.sorted.bam") into chFlaggedBam
+  //set val(prefix), file("*_flagged.sorted.bam") into chFlaggedBam
 
   
   output:
@@ -594,7 +594,7 @@ process removeRTdup {
   set val(prefix), file(flaggedRmPCRsam) from chRemovePCRdupSam
  
   output:
-  set val(prefix), file("*_flagged_rmPCR_RT.bam") into chRemovePcrRtDup
+  set val(prefix), file("*_flagged_rmPCR_RT.bam") into chRemovePcrRtDup, chRemovePcrRtDup_Log
   // For countSummary
   set val(prefix), file("*_count_RT_duplicates.txt") into chRTdupCount
   
@@ -711,7 +711,7 @@ process countSummary {
   publishDir "${params.outDir}/countSummary", mode: 'copy'
 
   input:
-  set val(prefix), file(flaggedBam) from chFlaggedBam
+  set val(prefix), file(flaggedBam) from chRemovePcrRtDup_Log
   set val(prefix), file(pcrDup) from chPCRdupCount
   set val(prefix), file(rtDup) from chRTdupCount
   set val(prefix), file(r1UnmappedR2) from chR1unmappedR2Count
@@ -725,7 +725,7 @@ process countSummary {
   script:
   """
   ### 1. Count duplicate proportions
-  n_mapped_barcoded=\$(samtools view -c  ${flaggedBam})
+  n_mapped_barcoded=\$(samtools view -c ${flaggedBam})
   n_pcr_duplicates=\$(cat ${pcrDup})
   n_rt_duplicates=\$(cat ${rtDup})
   n_R1_mapped_R2_unmapped=\$(cat ${r1UnmappedR2})
