@@ -15,7 +15,7 @@ custom_data:
     scChIPseq_general_table:
         file_format: 'csv'
         section_name: 'General Metrics'
-        description: "For a correct sample, at least 500 cells should have more than 1000 reads and the median number of reads for these cells should be at least 1100.\n  At least 60% of aligned reads and 15% of aligned and barcoded reads are expected.\n Finaly, a minimum of 3 to 5% of unique reads is needed."
+        description: "For a correct sample, at least 500 cells should have more than 1000 reads and the median number of reads for these cells should be at least 1100.\n At least 60% of aligned reads and 15% of aligned and barcoded reads are expected.\n Finaly, a minimum of 3 to 5% of unique reads is needed."
         plot_type: 'table'
         pconfig:
             id: 'scChIPseq_general_table'
@@ -39,8 +39,8 @@ custom_data:
               min: 0
               scale: 'YlGn'
               placement: 4000
-            Median (cells>1000reads):
-              description: 'Median(cells>1000reads)'
+            Reads(median)/cell:
+              description: 'Reads(median)/cell'
               max: 100
               min: 0
               scale: 'YlGn'

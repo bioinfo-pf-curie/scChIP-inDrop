@@ -6,7 +6,7 @@ channels:
 dependencies:
   - bioconda::multiqc=1.11=pyhdfd78af_0
   - bioconda::bowtie2=2.4.2=py39hc9c6fcd_2
-  - bioconda::star=2.7.9a=h9ee0642_0
+  - bioconda::star=2.7.8a=h9ee0642_1
   - bioconda::cutadapt=3.5=py39h38f01e4_0
   - bioconda::seqtk=1.3=h5bf99c6_3
   - bioconda::samtools=1.14=hb421002_0
@@ -15,6 +15,7 @@ dependencies:
   - bioconda::deeptools=3.5.1=py_0
   - conda-forge::gawk=5.1.0=h7f98852_0
   ## python
+  - conda-forge::markdown
   - conda-forge::python=3.9.7=hb7a2778_3_cpython
   - conda-forge::pymdown-extensions=9.0=pyhd8ed1ab_0
   - bioconda::pysam=0.17.0=py39h051187c_0

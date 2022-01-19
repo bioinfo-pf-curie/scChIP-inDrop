@@ -11,8 +11,8 @@ echo "Sample_id,Sample_name,Barcoded,Index 1 and 2 found not 3,Index 1 found not
 ## Mapping
 echo "Sample_id,Sample_name,Deduplicated reads, Window duplicates,RT duplicates,PCR duplicates,Uniquely mapped not barcoded,Mapped to multiple loci,Unmapped" > scChIPseq_alignments.csv
 ## Summary table
-# The column names have to be the same as the column ids in the multiqcConfig.yaml !!!!! 
-echo -e "Sample_id,Sample_name,Cells,Cells>1000reads,Median (cells>1000reads),Aligned,Aligned & Barcoded,Unique Reads" > scChIPseq_table.csv
+# The column names have to be the same as the ID column in the multiqcConfig.yaml !!!!! 
+echo -e "Sample_id,Sample_name,Cells,Cells>1000reads,Reads(median)/cell,Aligned,Aligned & Barcoded,Unique Reads" > scChIPseq_table.csv
 
 for sample in $all_samples
 do
@@ -86,29 +86,36 @@ do
     echo "${sample},$sname,$unique_reads,$R2_unmapped_duplicates,$rt_duplicates,$pcr_duplicates,$uniquely_mapped_unbarcoded,$multimapped,$unmapped" >> scChIPseq_alignments.csv
 
     ## Data for cell thresholds
+    # total cells 
     nbCell=$(wc -l < cellThresholds/${sample}_rmDup.count)
+    # nb cells with more than 1000 reads
     n1000=$( sed 's/^\s*//g' cellThresholds/${sample}_rmDup.count | awk -v limit=1000 '$1>=limit && NR>1{c++} END{print c+0}')
 
+    # Median reads per cell with more than 1000 reads
     if (( $n1000>1 ))
     then 
-        awk -v limit=1000 '$1>=limit && NR>1 {print $1}' cellThresholds/${sample}_rmDup.count | sort -n | uniq > list
-        nb_lines=$(wc -l < list)
-        mod=$(($nb_lines%2))
+        awk -v limit=1000 '$1>=limit && NR>1 {print $1}' cellThresholds/${sample}_rmDup.count | sort -n > list_nbReads_over1000
+        mod=$(($n1000%2))
         if (( $mod == 0 ))
         then
-            line_first=$(( $nb_lines/2 ))
+            # get the first number that cut in two the number of read range
+            line_first=$(( $n1000/2 ))
+            first_num=$(sed "${line_first}q;d" list_nbReads_over1000)
+            # get the second number that cut in two the number of read range
             line_sec=$(( $line_first+1 ))
-            first_num=$(sed "${line_first}q;d" list)
-            sec_num=$(sed "${line_sec}q;d" list)
+            sec_num=$(sed "${line_sec}q;d" list_nbReads_over1000)
             
             #median=$( echo "scale=0; (($first_num+$sec_num)/2)" | bc -l )
-            median=$(echo "$first_num $sec_num" | awk ' { printf "%.0f", ($1+$2)/2 } ')
+            median=$(echo "$first_num $sec_num" | awk ' { printf "%.1f", ($1+$2)/2 } ')
         else
             #median=$( echo "scale=0; (($nbcell+1)/2)" | bc -l )
-            median=$(echo "$nbcell" | awk ' { printf "%.0f", ($1+1)/2 } ')
+            line_median=$(( $n1000/2 ))
+            median=$(sed "${line_median}q;d" list_nbReads_over1000)
         fi
     else
-        median=$n1000
+    # if there is one cell take the first line == number of reads within this cell
+    # if there is no cell, it will write 0
+        median=$(sed "1q;d" cellThresholds/${sample}_rmDup.count)
     fi
     
     ## Summary table

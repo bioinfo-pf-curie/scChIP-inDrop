@@ -50,7 +50,7 @@ def get_args():
 
 def get_read_tag(read, tag):
     """
-    Extract a flag from a read alignment
+    Extract barcode from a read 
     """
     for t in read.tags:
         if t[0] == tag:
