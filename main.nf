@@ -910,28 +910,15 @@ process countMatricesPerBin {
   set val(prefix), file (rmDupBam), file (rmDupBai), file(bcCount), val(bins) from chNoDup_countMatricesBin.join(chPerBin).combine(binSizeCh)
 
   output:
-<<<<<<< HEAD
-  set val(prefix), file ("*_counts_bin_${params.binSize1}_filt_*.tsv.gz"), file ("*_counts_bin_${params.binSize2}_filt_*.tsv.gz"), file ("*_TSS_*.tsv.gz") into chCountMatrices
-  set val(prefix), file ("*_counts.log") into chCountMatricesLog
-  file("v_python.txt") into chPythonVersion
-=======
   set val(prefix), file ("${prefix}_counts_bin_${bins}") into chCountBinMatrices
   file("v_python.txt") into chPythonVersionCountsBin
->>>>>>> optim
   
   script:
   """
   barcodes=\$(wc -l ${bcCount} | awk '{print \$1}')
 
-<<<<<<< HEAD
-  # bin sizes: 50000 & 5000
-  sc2counts.py -i ${rmDupBam} -o ${prefix}_counts_bin_${params.binSize1}.tsv -b ${params.binSize1} -f ${params.minCounts} -s \$barcodes -v
-
-  sc2counts.py -i ${rmDupBam} -o ${prefix}_counts_bin_${params.binSize2}.tsv -b ${params.binSize2} -f ${params.minCounts} -s \$barcodes -v
-=======
   # Counts per bin (--bin)
   sc2sparsecounts.py -i ${rmDupBam} -o ${prefix}_counts_bin_${bins} -b ${bins} -f ${params.minCounts} -s \$barcodes -v
->>>>>>> optim
 
   python --version &> v_python.txt
   """
