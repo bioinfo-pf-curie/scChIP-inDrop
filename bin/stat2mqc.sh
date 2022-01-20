@@ -115,7 +115,7 @@ do
     else
     # if there is one cell take the first line == number of reads within this cell
     # if there is no cell, it will write 0
-        median=$(sed "1q;d" cellThresholds/${sample}_rmDup.count)
+        median=$(cat list_nbReads_over1000)
     fi
     
     ## Summary table
