@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Transform a BAM file to a count table based on barcode information and genomic bins
 """
