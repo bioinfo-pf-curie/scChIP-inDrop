@@ -113,8 +113,9 @@ do
             median=$(sed "${line_median}q;d" list_nbReads_over1000)
         fi
     else
-    # if there is one cell take the first line == number of reads within this cell
-    # if there is no cell, it will write 0
+        # if there is one cell take the first line == number of reads within this cell
+        # if there is no cell, it will write 0
+        awk -v limit=1000 '$1>=limit && NR>1 {print $1}' cellThresholds/${sample}_rmDup.count | sort -n > list_nbReads_over1000
         median=$(cat list_nbReads_over1000)
     fi
     
