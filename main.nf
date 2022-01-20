@@ -1045,7 +1045,7 @@ process multiqc {
   metadataOpts = params.metadata ? "--metadata ${metadata}" : ""
   //isPE = params.singleEnd ? "" : "-p"
   //designOpts= params.design ? "-d ${params.design}" : ""
-  modules_list = "-m custom_content -m bowtie2 -m star -m cutadapt"
+  modules_list = "-m custom_content -m star -m cutadapt"
   """
   stat2mqc.sh ${splan} 
   mqc_header.py --splan ${splan} --name "scChIP-seq" --version ${workflow.manifest.version} ${metadataOpts} > multiqc-config-header.yaml
