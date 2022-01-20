@@ -26,13 +26,6 @@ custom_data:
               title: 'Sample Name'
               scale: false
               placement: 2000
-            Cells:
-              description: 'Cells'
-              format: '{:,.0f}'
-              max: 100
-              min: 0
-              scale: 'YlGn'
-              placement: 3000
             Cells>1000reads:
               description: 'Cells>1000reads'
               max: 100
@@ -74,7 +67,7 @@ custom_data:
         id: 'scChIPseq_barcode'
         file_format: 'csv'
         description: 'If 40% or more sequences are correctly barcoded, the barcoding step went well. If it is between 20% and 40% be carrefull and if it less, barcoding step went wrong.'
-        section_name: 'Barcode Matching'
+        section_name: 'Barcode alignments'
         plot_type: 'bargraph'
         pconfig:
             title: 'Barcode Mapping'
@@ -85,7 +78,7 @@ custom_data:
         id: 'scChIPseq_alignments'
         file_format: 'csv'
         description: 'Arround 5-10% of deduplicated reads (at least 5%), arround 40-50% of RT & PCR duplicates (no more than 50%) and arround 10-15% of window duplicates (no more than 15%) are expected.'
-        section_name: Alignment Scores'
+        section_name: 'Alignment summary'
         plot_type: 'bargraph'
         pconfig:
             id: 'scChIPseq_alignments_plot'
@@ -119,11 +112,8 @@ sp:
 ## Modules 
 
 module_order:
-  - bowtie2:
-     name: 'Bowtie2'
-     info: 'Alignment results of the three barcode indexes. Index1 should be arround 75%, index2 arround 50% and index3 arround 40%.'
   - star:
-     name: 'STAR'
+     name: 'Genome alignments'
      info: "Alignement is made on all the initial reads. \nReads passing alignment are uniquely mapped or mapped to multiple loci.\nIf this two made up to 60%, the alignemnt is a success. If they made between 60 and 40%, be carrefull and if they made less than 40% the sample may have a problem."
 #############################
 ## Display
