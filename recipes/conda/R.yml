@@ -1,4 +1,4 @@
-name: star
+name: R
 channels:
   - conda-forge
   - bioconda
