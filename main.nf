@@ -21,7 +21,7 @@ scChIP-inDrop
 */
 
 // File with text to display when a developement version is used
-devMessageFile = file("$baseDir/assets/devMessage.txt")
+devMessageFile = file("$projectDir/assets/devMessage.txt")
 
 def helpMessage() {
   if ("${workflow.manifest.version}" =~ /dev/ ){
@@ -103,8 +103,8 @@ if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
 Channel
   .fromPath(params.multiqcConfig, checkIfExists: true)
   .set{chMultiqcConfig}
-chOutputDocs = file("$baseDir/docs/output.md", checkIfExists: true)
-chOutputDocsImages = file("$baseDir/docs/images/", checkIfExists: true)
+chOutputDocs = file("$projectDir/docs/output.md", checkIfExists: true)
+chOutputDocsImages = file("$projectDir/docs/images/", checkIfExists: true)
 
 /************
  * CHANNELS *
@@ -1103,12 +1103,12 @@ workflow.onComplete {
 
   // Render the TXT template
   def engine = new groovy.text.GStringTemplateEngine()
-  def tf = new File("$baseDir/assets/onCompleteTemplate.txt")
+  def tf = new File("$projectDir/assets/onCompleteTemplate.txt")
   def txtTemplate = engine.createTemplate(tf).make(reportFields)
   def reportTxt = txtTemplate.toString()
 
   // Render the HTML template
-  def hf = new File("$baseDir/assets/onCompleteTemplate.html")
+  def hf = new File("$projectDir/assets/onCompleteTemplate.html")
   def htmlTemplate = engine.createTemplate(hf).make(reportFields)
   def reportHtml = htmlTemplate.toString()
 
