@@ -15,7 +15,7 @@ custom_data:
     scChIPseq_general_table:
         file_format: 'csv'
         section_name: 'General Metrics'
-        description: "For a correct sample, at least 500 cells should have more than 1000 reads and the median number of reads for these cells should be at least 1100.\n At least 60% of aligned reads and 15% of aligned and barcoded reads are expected.\n Finaly, a minimum of 3 to 5% of unique reads is needed."
+        description: "A standard experiment will yield at least 1,000 cells with more than 1,000 reads. Sequencing reads usually contain At least 60% of aligned reads and 15% of aligned and barcoded reads are expected."
         plot_type: 'table'
         pconfig:
             id: 'scChIPseq_general_table'
@@ -26,6 +26,10 @@ custom_data:
               title: 'Sample Name'
               scale: false
               placement: 2000
+            Totreads:
+              description: 'Tot. reads'
+              scale: 'YlGn'
+              placement: 3000
             Cells>1000reads:
               description: 'Cells>1000reads'
               max: 100
@@ -66,36 +70,34 @@ custom_data:
     scChIPseq_barcode:
         id: 'scChIPseq_barcode'
         file_format: 'csv'
-        description: 'If 40% or more sequences are correctly barcoded, the barcoding step went well. If it is between 20% and 40% be carrefull and if it less, barcoding step went wrong.'
-        section_name: 'Barcode alignments'
+        description: 'In a standard experiment, we expect > 40% of barcoded reads, below 20% the experiment should be repeated.'
+        section_name: 'Barcode alignment'
         plot_type: 'bargraph'
         pconfig:
-            title: 'Barcode Mapping'
             ylab: '# Reads'
             cpswitch_counts_label': 'Number of Reads'
 
     scChIPseq_alignments:
         id: 'scChIPseq_alignments'
         file_format: 'csv'
-        description: 'Arround 5-10% of deduplicated reads (at least 5%), arround 40-50% of RT & PCR duplicates (no more than 50%) and arround 10-15% of window duplicates (no more than 15%) are expected.'
-        section_name: 'Alignment summary'
+        description: 'Here is a combined summary of genome and barcode alignment statistics. The deduplicated reads (uniquely mapped and barcoded) are the reads used to compute the count matrices of the sample. They correspond to the DNA fragments that were barcoded in drops and immuno-precipitated. In a standard experiment, we expect > 5% of deduplicated mapped reads.'
+        section_name: 'Overall alignment summary'
         plot_type: 'bargraph'
         pconfig:
             id: 'scChIPseq_alignments_plot'
-            title: 'scChIPseq: Barcode Mapping'
             ylab: '# Reads'
             cpswitch_counts_label': 'Number of Reads'
 
     umiDistrib:
       file_format: 'csv'
-      section_name: 'Read distributions across cells'
-      description: 'Overview of read distribution across cells.  If you observed a bimodal distribution, your data may contain empty droplets as first pics represent the proportion of cells having a low number of reads. Higher these pics are, higher the number of cells having a low number of reads is. This information can be used to define a threshold to remove empty droplets identified by a low number of reads.  If you do not see a bimodal distribution, your data have probably been filtred on a minimum reads per cell, usually 1000.'
+      section_name: 'Coverage'
+      description: 'Weighted distribution of the number of unique reads per cell/barcode for all barcodes, without any filtration step. In a standard experiment, we expect a bimodal distribution of the number of reads per barcode. The first peak (<100 unique reads per barcode) corresponds to drops with no cell, and the second peak to drops with cells.'
       plot_type: 'linegraph'
       pconfig:
         id: 'umiDistrib'
         title: 'Weighted Histogram'
-        ylab: 'Sum of reads per bin'
-        xlab: 'log10(#Reads/cell)'
+        ylab: 'Number of barcodes'
+        xlab: 'log10(unique reads)'
 
 sp:
   scChIPseq_general_table:
@@ -113,8 +115,8 @@ sp:
 
 module_order:
   - star:
-     name: 'Genome alignments'
-     info: "Alignement is made on all the initial reads. \nReads passing alignment are uniquely mapped or mapped to multiple loci.\nIf this two made up to 60%, the alignemnt is a success. If they made between 60 and 40%, be carrefull and if they made less than 40% the sample may have a problem."
+     name: 'Genome alignment'
+     info: "Alignment is made on all initial reads. Reads are either uniquely mapped or mapped to multiple loci. In a standard experiment, we expect > 40% of uniquely mapped reads."
 #############################
 ## Display
 

@@ -12,7 +12,7 @@ echo "Sample_id,Sample_name,Barcoded,Index 1 and 2 found not 3,Index 1 found not
 echo "Sample_id,Sample_name,Deduplicated reads, Window duplicates,RT duplicates,PCR duplicates,Uniquely mapped not barcoded,Mapped to multiple loci,Unmapped" > scChIPseq_alignments.csv
 ## Summary table
 # The column names have to be the same as the ID column in the multiqcConfig.yaml !!!!! 
-echo -e "Sample_id,Sample_name,Cells>1000reads,Reads(median)/cell,Aligned,Aligned & Barcoded,Unique Reads" > scChIPseq_table.csv
+echo -e "Sample_id,Sample_name,Totreads,Cells>1000reads,Reads(median)/cell,Aligned,Aligned & Barcoded,Unique Reads" > scChIPseq_table.csv
 
 for sample in $all_samples
 do
@@ -85,6 +85,8 @@ do
     # Table
     echo "${sample},$sname,$unique_reads,$R2_unmapped_duplicates,$rt_duplicates,$pcr_duplicates,$uniquely_mapped_unbarcoded,$multimapped,$unmapped" >> scChIPseq_alignments.csv
 
+    # nb reads per sample
+    nbReads=$(awk 'NR>1 {sum+=$1;} END{print sum;}' cellThresholds/${sample}_rmDup.count)
     ## Data for cell thresholds
     # total cells 
     nbCell=$(wc -l < cellThresholds/${sample}_rmDup.count)
@@ -120,7 +122,7 @@ do
     fi
     
     ## Summary table
-    echo -e "${sample},$sname,$n1000,$median,$uniquely_mapped_percent,$uniquely_mapped_and_barcoded_percent,$unique_reads_percent" >> scChIPseq_table.csv
+    echo -e "${sample},$sname,$nbReads,$n1000,$median,$uniquely_mapped_percent,$uniquely_mapped_and_barcoded_percent,$unique_reads_percent" >> scChIPseq_table.csv
 
 done
 
