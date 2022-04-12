@@ -26,7 +26,7 @@ custom_data:
               title: 'Sample Name'
               scale: false
               placement: 2000
-            Totreads:
+            Tot. reads:
               description: 'Tot. reads'
               scale: 'YlGn'
               placement: 3000
