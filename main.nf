@@ -146,6 +146,7 @@ if (params.starIndex){
 }
 
 params.gtf = genomeRef ? params.genomes[ genomeRef ].gtf ?: false : false
+
 if (params.gtf) {
   Channel
     .fromPath(params.gtf, checkIfExists: true)
@@ -165,6 +166,7 @@ if (params.blackList) {
 
 //------- Custom barcode indexes--------
 //--------------------------------------
+params.barcodes = genomeRef ? params.barcodes ?: false : false
 for ( idx in params.barcodes.keySet() ){
   if ( params.barcodes[ idx ].bwt2 ){
     lastPath = params.barcodes[ idx ].bwt2.lastIndexOf(File.separator)
