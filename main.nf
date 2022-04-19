@@ -166,7 +166,6 @@ if (params.blackList) {
 
 //------- Custom barcode indexes--------
 //--------------------------------------
-params.barcodes = genomeRef ? params.barcodes ?: false : false
 for ( idx in params.barcodes.keySet() ){
   if ( params.barcodes[ idx ].bwt2 ){
     lastPath = params.barcodes[ idx ].bwt2.lastIndexOf(File.separator)
