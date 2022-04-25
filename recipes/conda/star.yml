@@ -4,6 +4,6 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - bioconda::star=2.7.8a=h9ee0642_0
+  - bioconda::star=2.7.8a=h9ee0642_1
   - bioconda::samtools=1.14=hb421002_0
   

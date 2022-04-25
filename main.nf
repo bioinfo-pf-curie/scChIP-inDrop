@@ -545,7 +545,7 @@ process removePCRdup {
   set val(prefix), file("*_countR1unmappedR2.txt") into chR1unmappedR2Count
   set val(prefix), file("*_flagged.sorted.bam") into chRemovePcrRtDup_Log
 
-  
+
   output:
   
   script:
