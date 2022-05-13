@@ -49,6 +49,7 @@ def helpMessage() {
 
   Other options:
     --outDir [file]               The output directory where the results will be saved
+    --tmpDir [path]               The output temporary directory
     -name [str]                   Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic
     --darkCycleDesign [bool]      Barcode first index change of position depending if dark cycles are used during the sequencing. By default, it is not so darkCycleDesign is set to false.
     --barcode_linker_length       Barcode + linker length in R2 to be trimmed. Default is 84bp.
@@ -340,7 +341,7 @@ process bcMapping {
   wc -l < ${oprefix}ReadsMatching.txt  > ${oprefix}_count_index.txt
   
   ##Sort indexes by read name: 
-  sort -T /scratch/ --parallel=${task.cpus} -k1,1 ${oprefix}ReadsMatching.txt > ${oprefix}_ReadsMatchingSorted.txt 
+  sort -T ${params.tmpDir} --parallel=${task.cpus} -k1,1 ${oprefix}ReadsMatching.txt > ${oprefix}_ReadsMatchingSorted.txt 
 
   #delete useless files
   rm ${oprefix}ReadsMatching.txt ${oprefix}Bowtie2.sam ${oprefix}Reads.fasta
@@ -506,7 +507,7 @@ process  addBarcodes {
   samtools view ${prefix}_unique.bam | awk '{OFS = \"\t\" ; if(NR%2==1 && !(\$3==\"*\")) {R1=\$0} else if(NR%2==1){R1=0}; if(NR%2==0 && !(R1==0)){tagR2Seq=\"XD:Z:\"\$10; tagR2Pos=\"XS:i:\"\$4;print R1,tagR2Pos,tagR2Seq}}' > ${prefix}_unique.sam
   
   # Sort and join on read names reads barcoded and reads mapped to genome (barcode as tag 'XB') 
-  sort -T /scratch/ --parallel=${task.cpus} -k1,1 ${prefix}_unique.sam > ${prefix}_unique_sorted.sam
+  sort -T ${params.tmpDir} --parallel=${task.cpus} -k1,1 ${prefix}_unique.sam > ${prefix}_unique_sorted.sam
   # filter out unbarcoded OR unmapped reads 
   join -1 1  -2 1  ${prefix}_unique_sorted.sam <(awk -v OFS=\"\t\" '{print \$1,\"XB:Z:\"\$2}' ${readBarcodes}) > ${prefix}_flagged.sam
   sed -i 's/ /\t/g' ${prefix}_flagged.sam
@@ -559,7 +560,7 @@ process removePCRdup {
   #It is important to sort by R1 pos also	because the removal is done by comparing consecutive lines
   printf '@HD\tVN:1.4\tSO:unsorted\n' > ${prefix}_header.sam
   samtools view -H ${flaggedBam} | sed '/^@HD/ d' >> ${prefix}_header.sam
-  samtools view ${flaggedBam} | LC_ALL=C sort -T /scratch/ --parallel=${task.cpus} -t \$'\t' -k \"\$barcode_field.8,\$barcode_field\"n -k 3.4,3g -k \"\$posR2_field.6,\$posR2_field\"n -k 4,4n >> ${prefix}_header.sam && samtools view -@ ${task.cpus} -b ${prefix}_header.sam > ${prefix}_flagged.sorted.bam
+  samtools view ${flaggedBam} | LC_ALL=C sort -T ${params.tmpDir} --parallel=${task.cpus} -t \$'\t' -k \"\$barcode_field.8,\$barcode_field\"n -k 3.4,3g -k \"\$posR2_field.6,\$posR2_field\"n -k 4,4n >> ${prefix}_header.sam && samtools view -@ ${task.cpus} -b ${prefix}_header.sam > ${prefix}_flagged.sorted.bam
   
   # counts
   samtools view ${prefix}_flagged.sorted.bam | awk -v bc_field=\$barcode_field '{print substr(\$bc_field,6)}' |  uniq -c > ${prefix}_flagged.count
@@ -832,7 +833,7 @@ process bamToScBed{
   samtools view -H ${rmDupBam} | sed '/^@HD/ d' > ${prefix}_tmp_header.sam
   
   #Sort by Barcode, Chr, Pos R1 :
-  samtools view ${rmDupBam} | LC_ALL=C sort -T /scratch/ --parallel=${task.cpus} -t \$'\t' -k \"\$barcode_field.8,\$barcode_field\"n -k 3.4,3g -k 4,4n >> ${prefix}_tmp_header.sam
+  samtools view ${rmDupBam} | LC_ALL=C sort -T ${params.tmpDir} --parallel=${task.cpus} -t \$'\t' -k \"\$barcode_field.8,\$barcode_field\"n -k 3.4,3g -k 4,4n >> ${prefix}_tmp_header.sam
   
   samtools view -@ ${task.cpus} -b ${prefix}_tmp_header.sam > ${prefix}_tmp.sorted.bam
   
@@ -1104,7 +1105,7 @@ workflow.onComplete {
 
   // Render the TXT template
   def engine = new groovy.text.GStringTemplateEngine()
-  def tf = new File("$projectDir/assets/onCompleteTemplate.txt")
+  def tf = new File("$projectDir/assets/workflowOnComplete.txt")
   def txtTemplate = engine.createTemplate(tf).make(reportFields)
   def reportTxt = txtTemplate.toString()
 
