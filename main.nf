@@ -668,7 +668,6 @@ process removeWindoWdup {
 //------- Remove balck regions ---------//
 // == regions of high signal that presumably represent unannotated repeats in the genome
 // leads to artefacts when do peaks calling that need normalization of the signal
-
 process removeBlackRegions {
   tag "${prefix}"
   label 'bedtools'
@@ -928,7 +927,7 @@ process countMatricesPerBin {
 
 process countMatricesFromBed {
   tag "${prefix}"
-  label 'samtools'
+  label 'python'
   label 'highCpu'
   label 'extraMem'
 
