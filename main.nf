@@ -901,7 +901,7 @@ process gtfToTSSBed {
 // 8 - Generate count matrix
 process countMatricesPerBin {
   tag "${prefix}"
-  label 'samtools'
+  label 'python'
   label 'medCpu'
   label 'extraMem'
 

@@ -5,3 +5,7 @@ channels:
   - bioconda
 dependencies:
   - bioconda::multiqc=1.11=pyhdfd78af_0
+  - conda-forge::markdown
+  - conda-forge::python=3.9.7=hb7a2778_3_cpython
+  - conda-forge::pymdown-extensions=9.0=pyhd8ed1ab_0
+  - bioconda::pysam=0.17.0=py39h051187c_0
