@@ -36,51 +36,25 @@ if(nrow(matrix)>1){
     # Histogram and pdf export
     pdf(paste0(as.character(prefix), 'distribution.pdf'))
     # y = sum des reads par bin, x= #readsTot/cell (on ne sait cb de cellules ont entre x1 et x2 reads)
-    p<-weighted.hist(log10(matrix$nbReads), w=log10(matrix$nbReads), ylab ="sum #reads/bin", xlab="log10(#reads/cell)")
+    p<-weighted.hist(log10(matrix$nbReads), w=log10(matrix$nbReads), ylab ="Number of barcodes", xlab="log10(UMIs)")
     # somme des reads par bin <=> somme des reads de toutes les cellules qui ont entre x1 et x2 
     # Pour les pics les plus à gauche: pic haut = bcp de cellules qui ont peu de reads
     # ==> Le weighted hist permet de montrer la proportion de cellules ayant un faible nombre de reads
     dev.off()
     
     # Export table to create the plot with multiqc
+    yy<-data.frame(p["counts"])
+    # double all y values to create bin limits 
+    y<-yy %>% slice(rep(1:n(), each = 2))
     
-    # 1st - calculate the center (== mean) of each bin because only a curve can be drawn with mqc
-    # Get first list of mean bins = group valules two by two to calculate means of first set of bins
-    if(length(p[["breaks"]])%%2 == 1){ # if nb breaks is odd
-        # x1 = - last
-        breaks1<-list(p[["breaks"]][-length(p[["breaks"]])])
-        splitNum<-length(breaks1[[1]])/2
-        ## split the list into "splitNum" of sublists of 2 values==bin borders
-        splitedBreaks1 <- lapply(breaks1, function(x) split(unlist(x), cut(seq_along(unlist(x)), splitNum, labels = F)))
-        # x2 = - first
-        breaks2<-list(p[["breaks"]][-1])
-        spitNum<-length(breaks2[[1]])/2
-        splitedBreaks2 <- lapply(breaks2, function(x) split(unlist(x), cut(seq_along(unlist(x)), spitNum, labels = F)))
-    }else{ # if even
-        # x1
-        breaks1<-list(p[["breaks"]])
-        splitNum<-length(breaks1[[1]])/2
-        ## split the list into "splitNum" of sublists of 2 values==bin borders
-        splitedBreaks1 <- lapply(breaks1, function(x) split(unlist(x), cut(seq_along(unlist(x)), splitNum, labels = F)))
-        # x2 = - first and last
-        breaks2<-list(p[["breaks"]][-c(1,length(p[["breaks"]]))])
-        spitNum<-length(breaks2[[1]])/2
-        splitedBreaks2 <- lapply(breaks2, function(x) split(unlist(x), cut(seq_along(unlist(x)), spitNum, labels = F)))
-    }
+    xx<-data.frame(x=p[["breaks"]])
+    # remove first and last value in x 
+    x<-data.frame(x=p[["breaks"]][-c(1,length(p[["breaks"]]))])
+    x<-rbind(xx,x)
+    # increasing order
+    x<-arrange(x, as.numeric(x))
     
-    # calculate means
-    splitedBreaks1<-unlist(splitedBreaks1, recursive = F)
-    x1<-lapply(splitedBreaks1, mean)
-    splitedBreaks2<-unlist(splitedBreaks2, recursive = F)
-    x2<-lapply(splitedBreaks2, mean)
-    # Merge both x and sort to have all bin means == curve x axis
-    xUnsorted<-unlist(append(x1,x2))
-    x<-sort(xUnsorted)
-    
-    # Get y values == counts
-    y<-p["counts"]
-    
-    weightedHist_DF<-data.frame(x=x,y=y)
+    weightedHist_DF<-cbind(x, y)
     write.table(weightedHist_DF, paste0(as.character(prefix), "_distDF.mqc"),
                 sep=',', row.names=FALSE, col.names=FALSE)
 }else{ # If only one cell, create empty files

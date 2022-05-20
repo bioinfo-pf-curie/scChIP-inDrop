@@ -97,7 +97,7 @@ custom_data:
         id: 'umiDistrib'
         title: 'Weighted Histogram'
         ylab: 'Number of barcodes'
-        xlab: 'log10(unique reads)'
+        xlab: 'log10(UMIs)'
 
 sp:
   scChIPseq_general_table:
