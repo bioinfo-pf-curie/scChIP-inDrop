@@ -20,6 +20,7 @@ dependencies:
   - conda-forge::pymdown-extensions=9.0=pyhd8ed1ab_0
   - bioconda::pysam=0.17.0=py39h051187c_0
   - bioconda::bx-python=0.8.11=py39h5d76eff_1
+  - conda-forge::scipy=1.7.1=py39hee8e79c_0
   ## R
   - conda-forge::r-base=4.1.1=hb93adac_1
   - conda-forge::r-reshape2=1.4.4=r41h03ef668_1

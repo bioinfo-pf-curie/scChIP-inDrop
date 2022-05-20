@@ -9,3 +9,4 @@ dependencies:
   - bioconda::pysam=0.17.0=py39h051187c_0
   - bioconda::bx-python=0.8.11=py39h5d76eff_1
   - bioconda::samtools=1.14=hb421002_0
+  - conda-forge::scipy=1.7.1=py39hee8e79c_0
