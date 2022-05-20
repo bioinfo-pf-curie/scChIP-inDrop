@@ -9,3 +9,4 @@ dependencies:
   - conda-forge::r-plotrix=3.8_2=r41hc72bb7e_0
   - conda-forge::r-matrix=1.3_4=r41he454529_0
   - bioconda::bioconductor-dropletutils=1.12.1=r41h399db7b_0
+  - conda-forge::r-dplyr-1.0.9=r41h7525677_0

@@ -15,7 +15,7 @@
 ##############################################################################
 library(plotrix)
 library(reshape2)
-
+library(dplyr)
 # Aim weighted hist : better vizualisation
 #  cellules avec peu de reads/umis >> cellules avec bcp reads/umis 
 #  Pour voir les 2 distributions de manière égale on donne plus de poids aux cellules avec bcp reads/umis. 
