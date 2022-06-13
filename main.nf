@@ -49,7 +49,7 @@ def helpMessage() {
 
   Other options:
     --outDir [file]               The output directory where the results will be saved
-    --tmpDir [path]               The output temporary directory
+    --tmpDir [path]               The temporary directory 
     -name [str]                   Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic
     --darkCycleDesign [bool]      Barcode first index change of position depending if dark cycles are used during the sequencing. By default, it is not so darkCycleDesign is set to false.
     --barcode_linker_length       Barcode + linker length in R2 to be trimmed. Default is 84bp.
