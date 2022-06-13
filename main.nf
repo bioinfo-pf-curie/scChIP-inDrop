@@ -435,6 +435,7 @@ process readsAlignment {
   label 'star'
   label 'highCpu'
   label 'extraMem'
+  label 'highTime'
 
   publishDir "${params.outDir}/readsAlignment", mode: 'copy'
 
