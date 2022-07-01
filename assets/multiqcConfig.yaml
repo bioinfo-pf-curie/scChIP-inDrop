@@ -48,7 +48,7 @@ custom_data:
               max: 100
               min: 0
               suffix: '%'
-              scale: 'RdYlGn-rev'
+              scale: 'YlGnBu'
               placement: 6000
             Aligned & Barcoded:
               description: 'Aligned & Barcoded (%)'
@@ -56,7 +56,7 @@ custom_data:
               max: 100
               min: 0
               suffix: '%'
-              scale: 'RdYlGn-rev'
+              scale: 'YlGnBu'
               placement: 7000
             Unique Reads:
               description: 'Unique Reads (%)'
@@ -64,7 +64,7 @@ custom_data:
               max: 100
               min: 0
               suffix: '%'
-              scale: 'RdYlGn-rev'
+              scale: 'YlGnBu'
               placement: 8000
             
     scChIPseq_barcode:
