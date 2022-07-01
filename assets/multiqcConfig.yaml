@@ -15,7 +15,7 @@ custom_data:
     scChIPseq_general_table:
         file_format: 'csv'
         section_name: 'General Metrics'
-        description: "A standard experiment will yield at least 1,000 cells with more than 1,000 reads. Sequencing reads usually contain at least 60% of aligned reads and 15% of aligned, deduplicated and barcoded reads are expected."
+        description: "A standard experiment will yield at least 1,000 cells with more than 1,000 reads. Sequencing reads usually contain at least 60% of aligned reads and 15% of unique reads (barcoded, aligned and deduplicated reads) are expected."
         plot_type: 'table'
         pconfig:
             id: 'scChIPseq_general_table'
