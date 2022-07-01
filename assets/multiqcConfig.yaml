@@ -15,7 +15,7 @@ custom_data:
     scChIPseq_general_table:
         file_format: 'csv'
         section_name: 'General Metrics'
-        description: "A standard experiment will yield at least 1,000 cells with more than 1,000 reads. Sequencing reads usually contain At least 60% of aligned reads and 15% of aligned and barcoded reads are expected."
+        description: "A standard experiment will yield at least 1,000 cells with more than 1,000 reads. Sequencing reads usually contain at least 60% of aligned reads and 15% of aligned, deduplicated and barcoded reads are expected."
         plot_type: 'table'
         pconfig:
             id: 'scChIPseq_general_table'
@@ -48,7 +48,7 @@ custom_data:
               max: 100
               min: 0
               suffix: '%'
-              scale: 'YlGn'
+              scale: 'RdYlGn-rev'
               placement: 6000
             Aligned & Barcoded:
               description: 'Aligned & Barcoded (%)'
@@ -56,7 +56,7 @@ custom_data:
               max: 100
               min: 0
               suffix: '%'
-              scale: 'YlGn'
+              scale: 'RdYlGn-rev'
               placement: 7000
             Unique Reads:
               description: 'Unique Reads (%)'
@@ -64,7 +64,7 @@ custom_data:
               max: 100
               min: 0
               suffix: '%'
-              scale: 'YlGn'
+              scale: 'RdYlGn-rev'
               placement: 8000
             
     scChIPseq_barcode:
@@ -80,11 +80,10 @@ custom_data:
     scChIPseq_alignments:
         id: 'scChIPseq_alignments'
         file_format: 'csv'
-        description: 'Here is a combined summary of genome and barcode alignment statistics. The deduplicated reads (uniquely mapped and barcoded) are the reads used to compute the count matrices of the sample. They correspond to the DNA fragments that were barcoded in drops and immuno-precipitated. In a standard experiment, we expect > 5% of deduplicated mapped reads.'
+        description: 'Here is a combined summary of genome and barcode alignment statistics. The deduplicated reads (uniquely mapped and barcoded) are the reads used to compute the count matrices of the sample. They correspond to the DNA fragments that were barcoded in drops and immuno-precipitated. In a standard experiment, we expect > 5% of deduplicated mapped reads. PCR duplciates are reads having the same barcode and same R1 and R2 positions, RT duplicates are reads having the same barcode and R1 position and Window duplicates are reads having the same barcode and the same R2 position +/- 50bp (window).'
         section_name: 'Overall alignment summary'
         plot_type: 'bargraph'
         pconfig:
-            id: 'scChIPseq_alignments_plot'
             ylab: '# Reads'
             cpswitch_counts_label': 'Number of Reads'
 
