@@ -115,14 +115,14 @@ table_cond_formatting_rules:
             - lt: 65
         fail:
             - lt: 60
-    Aligned & Barcoded:
+    Aligned_Barcoded:
         pass:
             - gt: 20
         warn:
             - lt: 20
         fail:
             - lt: 15
-    Deduplicated reads_per:
+    Deduplicated_reads_per:
         pass:
             - gt: 10
         warn:
