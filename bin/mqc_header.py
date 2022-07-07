@@ -105,6 +105,27 @@ if args.metadata is not None:
         ('ngs_contact', "Contact E-mail")
     ])
 
+##
+## Saturation curve
+##
+
+mx="{0:.0f}".format(int(2))
+multiqc_list += ["custom_plot_config:"]
+multiqc_list += ["   umiDistrib_plot:"]
+multiqc_list += ["      xPlotLines:"]
+multiqc_list += ["         - color: '#a9a9a9'"]
+multiqc_list += ["           value: " + str(mx)]
+multiqc_list += ["           dashStyle: 'LongDash'"]
+multiqc_list += ["           width: 1"]
+multiqc_list += ["           label:"]
+multiqc_list += ["              style: {color: '#a9a9a9'}"]
+multiqc_list += ["              text: 'Approximative threshold'"]
+multiqc_list += ["              verticalAlign: 'top'"]
+multiqc_list += ["              y: 0"]
+
+
+
+
     # get data from metadata
     metadict = dict()
     with open(args.metadata, 'r') as fp:
