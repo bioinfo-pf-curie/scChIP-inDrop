@@ -110,17 +110,23 @@ sp:
 table_cond_formatting_rules:
     Aligned:
         pass:
-            - gt: 60
-        fail:
-            - lt: 50
-    Aligned & Barcoded:
-        pass:
-            - gt: 60
+            - gt: 65
+        warn:
+            - lt: 65
         fail:
             - lt: 60
+    Aligned & Barcoded:
+        pass:
+            - gt: 20
+        warn:
+            - lt: 20
+        fail:
+            - lt: 15
     Deduplicated reads_per:
         pass:
-            - gt: 5
+            - gt: 10
+        warn:
+            - lt: 10
         fail:
             - lt: 5
     

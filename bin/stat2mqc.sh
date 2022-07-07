@@ -12,7 +12,7 @@ echo "Sample_id,Sample_name,Barcoded,Index 1 and 2 found not 3,Index 1 found not
 echo "Sample_id,Sample_name,Deduplicated reads, Window duplicates,RT duplicates,PCR duplicates,Uniquely mapped not barcoded,Mapped to multiple loci,Unmapped" > scChIPseq_alignments.csv
 ## Summary table
 # The column names have to be the same as the ID column in the multiqcConfig.yaml !!!!! 
-echo -e "Sample_id,Sample_name,Deduplicated reads,Cells>1000reads,Reads(median)/cell,Aligned,Aligned & Barcoded,Deduplicated reads (%)" > scChIPseq_table.csv
+echo -e "Sample_id,Sample_name,Deduplicated reads,Cells>1000reads,Reads(median)/cell,Aligned,Aligned & Barcoded,Deduplicated reads_per" > scChIPseq_table.csv
 
 for sample in $all_samples
 do
