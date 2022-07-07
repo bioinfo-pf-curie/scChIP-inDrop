@@ -15,7 +15,7 @@ custom_data:
     scChIPseq_general_table:
         file_format: 'csv'
         section_name: 'General Metrics'
-        description: "A standard experiment will yield at least 1,000 cells with more than 1,000 reads. Sequencing reads usually contain at least 60% of aligned reads and 15% of unique reads (barcoded, aligned and deduplicated reads) are expected."
+        description: "A standard experiment will yield at least 1,000 cells with more than 1,000 deduplicated reads. Sequencing reads usually contain at least 60% of aligned reads and 15% of deduplicated reads (unique reads)."
         plot_type: 'table'
         pconfig:
             id: 'scChIPseq_general_table'
@@ -26,45 +26,44 @@ custom_data:
               title: 'Sample Name'
               scale: false
               placement: 2000
-            Tot. reads:
-              description: 'Tot. reads'
-              scale: 'YlGn'
+            Deduplicated reads:
+              description: 'Deduplicated reads'
+              scale: 'YlGnBu'
+              format: '{:,.0f}'
               placement: 3000
             Cells>1000reads:
               description: 'Cells>1000reads'
-              max: 100
-              min: 0
               scale: 'YlGn'
+              format: '{:,.0f}'
               placement: 4000
             Reads(median)/cell:
               description: 'Reads(median)/cell'
-              max: 100
-              min: 0
               scale: 'YlGn'
+              format: '{:,.0f}'
               placement: 5000
             Aligned:
               description: 'Aligned (%)'
               format: '{:,.0f}'
-              max: 100
               min: 0
+              max: 100
               suffix: '%'
-              scale: 'YlGnBu'
+              scale: 'RdYlGn'
               placement: 6000
             Aligned & Barcoded:
               description: 'Aligned & Barcoded (%)'
               format: '{:,.0f}'
-              max: 100
               min: 0
+              max: 100
               suffix: '%'
-              scale: 'YlGnBu'
+              scale: 'RdYlGn'
               placement: 7000
-            Unique Reads:
-              description: 'Unique Reads (%)'
+            Deduplicated reads:
+              description: 'Deduplicated reads (%)'
               format: '{:,.0f}'
-              max: 100
               min: 0
+              max: 100
               suffix: '%'
-              scale: 'YlGnBu'
+              scale: 'RdYlGn'
               placement: 8000
             
     scChIPseq_barcode:
