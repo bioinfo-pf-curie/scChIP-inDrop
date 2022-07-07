@@ -109,9 +109,9 @@ table_cond_formatting_rules:
             - lt: 60
     Aligned_Barcoded:
         pass:
-            - gt: 20
+            - gt: 19
         warn:
-            - lt: 20
+            - lt: 19
         fail:
             - lt: 15
     
