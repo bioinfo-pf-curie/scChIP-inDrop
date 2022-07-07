@@ -57,7 +57,7 @@ custom_data:
               suffix: '%'
               scale: 'RdYlGn'
               placement: 7000
-            Deduplicated reads:
+            Deduplicated reads_per:
               description: 'Deduplicated reads (%)'
               format: '{:,.0f}'
               min: 0
