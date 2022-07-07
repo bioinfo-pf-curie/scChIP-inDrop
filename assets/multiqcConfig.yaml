@@ -31,24 +31,16 @@ custom_data:
               scale: 'YlGn'
               format: '{:,.0f}'
               placement: 3000
-            Deduplicated_reads:
-              title: 'Deduplicated reads (%)'
-              format: '{:,.0f}'
-              min: 0
-              max: 100
-              suffix: '%'
-              scale: 'YlGnBu'
-              placement: 4000
             Cells>1000reads:
               title: 'Cells > 1000reads'
               scale: 'YlGn'
               format: '{:,.0f}'
-              placement: 5000
+              placement: 4000
             Reads(median)/cell:
               title: 'Reads (median)/cell'
               scale: 'YlGn'
               format: '{:,.0f}'
-              placement: 6000
+              placement: 5000
             Aligned:
               title: 'Aligned (%)'
               format: '{:,.0f}'
@@ -56,9 +48,17 @@ custom_data:
               max: 100
               suffix: '%'
               scale: 'YlGnBu'
-              placement: 7000
+              placement: 6000
             Aligned_Barcoded:
               title: 'Aligned & Barcoded (%)'
+              format: '{:,.0f}'
+              min: 0
+              max: 100
+              suffix: '%'
+              scale: 'YlGnBu'
+              placement: 7000
+            Deduplicated_reads:
+              title: 'Deduplicated reads (%)'
               format: '{:,.0f}'
               min: 0
               max: 100
