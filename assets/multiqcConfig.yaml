@@ -88,7 +88,7 @@ custom_data:
         title: 'Weighted Histogram'
         ylab: 'Number of barcodes'
         xlab: 'log10(UMIs)'
-        xPlotLines: 2
+        xPlotLines: '2'
         dashStyle: 'LongDash'
 
 sp:
