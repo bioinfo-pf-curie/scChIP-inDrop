@@ -47,7 +47,7 @@ custom_data:
               min: 0
               max: 100
               suffix: '%'
-              scale: 'RdYlGn'
+              scale: 'YlGnBu'
               placement: 6000
             Aligned & Barcoded:
               description: 'Aligned & Barcoded (%)'
@@ -55,15 +55,15 @@ custom_data:
               min: 0
               max: 100
               suffix: '%'
-              scale: 'RdYlGn'
+              scale: 'YlGnBu'
               placement: 7000
-            Deduplicated reads (%):
-              description: 'Deduplicated reads (%)'
+            Deduplicated reads_per:
+              title: 'Deduplicated reads (%)'
               format: '{:,.0f}'
               min: 0
               max: 100
               suffix: '%'
-              scale: 'RdYlGn'
+              scale: 'YlGnBu'
               placement: 8000
             
     scChIPseq_barcode:
@@ -107,7 +107,23 @@ sp:
   umiDistrib:
       fn: '*_distDF.mqc'
 
-
+table_cond_formatting_rules:
+    Aligned:
+        pass:
+            - gt: 60
+        fail:
+            - lt: 50
+    Aligned & Barcoded:
+        pass:
+            - gt: 60
+        fail:
+            - lt: 60
+    Deduplicated reads_per:
+        pass:
+            - gt: 5
+        fail:
+            - lt: 5
+    
 ###############################
 ## Modules 
 
