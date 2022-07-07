@@ -28,7 +28,7 @@ custom_data:
               placement: 2000
             Deduplicated reads:
               description: 'Deduplicated reads'
-              scale: 'YlGnBu'
+              scale: 'YlGn'
               format: '{:,.0f}'
               placement: 3000
             Cells>1000reads:
@@ -57,7 +57,7 @@ custom_data:
               suffix: '%'
               scale: 'RdYlGn'
               placement: 7000
-            Deduplicated reads_per:
+            Deduplicated reads (%):
               description: 'Deduplicated reads (%)'
               format: '{:,.0f}'
               min: 0
