@@ -1037,7 +1037,6 @@ process multiqc {
   // Weighted histogram
   file ('countUMI/*') from mqcDistribUMI.collect().ifEmpty([])
 
-
   output: 
   file splan
   file "*report.html" into multiqc_report

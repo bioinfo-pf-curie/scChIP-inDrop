@@ -15,7 +15,7 @@ custom_data:
     scChIPseq_general_table:
         file_format: 'csv'
         section_name: 'General Metrics'
-        description: "A standard experiment will yield at least 1,000 cells with more than 1,000 deduplicated reads. Sequencing reads usually contain at least 60% of aligned reads and 15% of aligned & barcoded reads."
+        description: "A standard experiment will yield at least 1,000 cells with more than 1,000 deduplicated reads. Sequencing reads usually contain at least 60% of aligned reads, 15% of aligned & barcoded reads and 10% of deduplicated reads."
         plot_type: 'table'
         pconfig:
             id: 'scChIPseq_general_table'
@@ -26,21 +26,29 @@ custom_data:
               title: 'Sample Name'
               scale: false
               placement: 2000
-            Deduplicated_reads:
-              title: 'Deduplicated reads'
+            Tot_frag:
+              title: 'Tot. Fragments'
               scale: 'YlGn'
               format: '{:,.0f}'
               placement: 3000
+            Deduplicated_reads:
+              title: 'Deduplicated reads (%)'
+              format: '{:,.0f}'
+              min: 0
+              max: 100
+              suffix: '%'
+              scale: 'YlGnBu'
+              placement: 4000
             Cells>1000reads:
               title: 'Cells > 1000reads'
               scale: 'YlGn'
               format: '{:,.0f}'
-              placement: 4000
+              placement: 5000
             Reads(median)/cell:
               title: 'Reads (median)/cell'
               scale: 'YlGn'
               format: '{:,.0f}'
-              placement: 5000
+              placement: 6000
             Aligned:
               title: 'Aligned (%)'
               format: '{:,.0f}'
@@ -48,7 +56,7 @@ custom_data:
               max: 100
               suffix: '%'
               scale: 'YlGnBu'
-              placement: 6000
+              placement: 7000
             Aligned_Barcoded:
               title: 'Aligned & Barcoded (%)'
               format: '{:,.0f}'
@@ -56,7 +64,7 @@ custom_data:
               max: 100
               suffix: '%'
               scale: 'YlGnBu'
-              placement: 7000
+              placement: 8000
             
     scChIPseq_barcode:
         id: 'scChIPseq_barcode'
@@ -88,8 +96,6 @@ custom_data:
         title: 'Weighted Histogram'
         ylab: 'Number of barcodes'
         xlab: 'log10(UMIs)'
-        xPlotLines: '2'
-        dashStyle: 'LongDash'
 
 sp:
   scChIPseq_general_table:
@@ -102,6 +108,13 @@ sp:
       fn: '*_distDF.mqc'
 
 table_cond_formatting_rules:
+    Deduplicated_reads:
+        pass:
+            - gt: 10
+        warn:
+            - lt: 10
+        fail:
+            - lt: 7
     Aligned:
         pass:
             - gt: 65
