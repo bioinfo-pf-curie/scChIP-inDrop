@@ -15,7 +15,7 @@ custom_data:
     scChIPseq_general_table:
         file_format: 'csv'
         section_name: 'General Metrics'
-        description: "A standard experiment will yield at least 1,000 cells with more than 1,000 deduplicated reads. Sequencing reads usually contain at least 60% of aligned reads and 15% of deduplicated reads (unique reads)."
+        description: "A standard experiment will yield at least 1,000 cells with more than 1,000 deduplicated reads. Sequencing reads usually contain at least 60% of aligned reads and 15% of aligned & barcoded reads."
         plot_type: 'table'
         pconfig:
             id: 'scChIPseq_general_table'
@@ -57,14 +57,6 @@ custom_data:
               suffix: '%'
               scale: 'YlGnBu'
               placement: 7000
-            Deduplicated_reads_per:
-              title: 'Deduplicated reads (%)'
-              format: '{:,.0f}'
-              min: 0
-              max: 100
-              suffix: '%'
-              scale: 'YlGnBu'
-              placement: 8000
             
     scChIPseq_barcode:
         id: 'scChIPseq_barcode'
@@ -122,13 +114,6 @@ table_cond_formatting_rules:
             - lt: 20
         fail:
             - lt: 15
-    Deduplicated_reads_per:
-        pass:
-            - gt: 10
-        warn:
-            - lt: 10
-        fail:
-            - lt: 5
     
 ###############################
 ## Modules 
