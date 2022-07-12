@@ -108,26 +108,24 @@ sp:
       fn: '*_distDF.mqc'
 
 table_cond_formatting_rules:
-    Deduplicated_reads:
-        pass:
-            - gt: 10
-        warn:
-            - lt: 10
-        fail:
-            - lt: 7
     Aligned:
         pass:
             - gt: 65
         warn:
             - lt: 65
         fail:
-            - lt: 60
+            - lt: 25
     Aligned_Barcoded:
         pass:
-            - gt: 19
+            - gt: 20
         warn:
-            - lt: 19
+            - lt: 20
         fail:
+            - lt: 5
+    Deduplicated_reads:
+        pass:
+            - gt: 15
+        warn:
             - lt: 15
     
 ###############################
