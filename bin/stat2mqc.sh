@@ -25,6 +25,7 @@ do
     match_index_1_2=$(grep -e "## Number of matched indexes 1 and 2:" bowtie2/${sample}_bowtie2.log | sed 's/.*://g' | grep -o -e '[0-9]*\.*[0-9]*')
     match_index_3=$(grep -e "## Number of matched indexes 3:" bowtie2/${sample}_bowtie2.log | sed 's/.*://g' | grep -o -e '[0-9]*\.*[0-9]*')
     match_barcode=$(grep -e "## Number of matched barcodes:" bowtie2/${sample}_bowtie2.log | sed 's/.*://g' | grep -o -e '[0-9]*\.*[0-9]*')
+    total_frag=`grep "reads; of these:" index/${sample}_indexBBowtie2.log | cut -f1 -d' ' `
 
     # Remove RT & PCR duplicats
     uniquely_mapped_and_barcoded=$(grep -e "## Number of reads mapped and barcoded:" removeRtPcr/${sample}_removePcrRtDup.log | sed 's/.*://g' | grep -o -e '[0-9]*\.*[0-9]*')
@@ -33,53 +34,34 @@ do
     R1_mapped_R2_unmapped=$(grep -e "## Number of R1 mapped but R2 unmapped:" removeRtPcr/${sample}_removePcrRtDup.log | sed 's/.*://g' | grep -o -e '[0-9]*\.*[0-9]*')
     reads_after_pcr_rt_rm=$(grep -e "## Number of reads after PCR and RT removal (not R1 unmapped R2):" removeRtPcr/${sample}_removePcrRtDup.log | sed 's/.*://g' | grep -o -e '[0-9]*\.*[0-9]*')
     
-    # rmDup
+    # rmDup R2_unmapped_duplicates is in fact window dup -> erreur d'annot.
     R2_unmapped_duplicates=$(grep -e "## Number of duplicates:" rmDup/${sample}_rmDup.log | sed 's/.*://g' | grep -o -e '[0-9]*\.*[0-9]*')
     unique_reads=$(grep -e "## Number of reads after duplicates removal:" rmDup/${sample}_rmDup.log | sed 's/.*://g' | grep -o -e '[0-9]*\.*[0-9]*')
 
     # STAR 
-    total_reads=`grep -e "Number of input reads " star/${sample}Log.final.out | sed 's/.*|//g' | grep -o -e '[0-9]*\.*[0-9]*' `
-    total_frag=$(( $total_reads / 2 ))
     uniquely_mapped=`grep "Uniquely mapped reads number" star/${sample}Log.final.out | awk '{print $NF}'`
     uniquely_mapped_percent=`grep "Uniquely mapped reads %" star/${sample}Log.final.out | awk '{print $NF}' | sed -e 's/%//'`
     multimapped=$(grep -e "Number of reads mapped to multiple loci " star/${sample}Log.final.out | sed 's/.*|//g' | grep -o -e '[0-9]*\.*[0-9]*')
     multimapped_toomany=$(grep -e "Number of reads mapped to too many loci " star/${sample}Log.final.out | sed 's/.*|//g' | grep -o -e '[0-9]*\.*[0-9]*')    
 
     ## Data for the barcode matching graph
-    #reads_after_pcr_rt_rm=$( echo "scale=2; ($reads_after_pcr_rt_rm - $R1_mapped_R2_unmapped)" | bc -l ) 
     reads_after_pcr_rt_rm=$(echo "$reads_after_pcr_rt_rm $R1_mapped_R2_unmapped" | awk ' { printf "%.2f", $1-$2 } ')
-    #index_1_2_not_3=$( echo "scale=2; ($match_index_1_2 - $match_barcode)" | bc -l ) 
     index_1_2_not_3=$(echo "$match_index_1_2 $match_barcode" | awk ' { printf "%.2f", $1-$2 } ')
-    #index_1_not_2_not_3=$( echo "scale=2; ( $match_index_1 - $index_1_2_not_3 - $match_barcode)" | bc -l ) 
     index_1_not_2_not_3=$(echo "$match_index_1 $index_1_2_not_3 $match_barcode" | awk ' { printf "%.2f", $1-$2-$3 } ')
-    #index_2_not_1_3=$( echo "scale=2; ( $match_index_2 - $match_index_1_2)" | bc -l )
     index_2_not_1_3=$(echo "$match_index_2 $match_index_1_2" | awk ' { printf "%.2f", $1-$2 } ')
-    #index_3_not_1_2=$( echo "scale=2; ( $match_index_3 - $match_barcode)" | bc -l ) 
     index_3_not_1_2=$(echo "$match_index_3 $match_barcode" | awk ' { printf "%.2f", $1-$2 } ')
-    #no_index_found=$( echo "scale=2; ( $total_reads - $match_barcode - $index_1_2_not_3 - $index_1_not_2_not_3 - $index_2_not_1_3 - $index_3_not_1_2)" | bc -l ) 
-    no_index_found=$(echo "$total_reads $match_barcode $index_1_2_not_3 $index_1_not_2_not_3 $index_2_not_1_3 $index_3_not_1_2" | awk ' { printf "%.2f", $1-$2-$3-$4-$5-$6 } ')
-    #uniquely_mapped_and_barcoded_percent=$( echo "scale=2; ( 100*$uniquely_mapped_and_barcoded / $total_reads)" | bc -l )
-    uniquely_mapped_and_barcoded_percent=$(echo "$uniquely_mapped_and_barcoded $total_reads" | awk ' { printf "%.2f", 100*$1/$2 } ')
-    #unique_reads_percent=$( echo "scale=2; ( 100*$unique_reads/ $total_reads)" | bc -l )
-    unique_reads_percent=$(echo "$unique_reads $total_reads" | awk ' { printf "%.2f", 100*$1/$2 } ')
+    no_index_found=$(echo "$total_frag $match_barcode $index_1_2_not_3 $index_1_not_2_not_3 $index_2_not_1_3 $index_3_not_1_2" | awk ' { printf "%.2f", $1-$2-$3-$4-$5-$6 } ')
+    uniquely_mapped_and_barcoded_percent=$(echo "$uniquely_mapped_and_barcoded $total_frag" | awk ' { printf "%.2f", 100*$1/$2 } ')
+    unique_reads_percent=$(echo "$unique_reads $total_frag" | awk ' { printf "%.2f", 100*$1/$2 } ')
 
     # Table
     echo "${sample},$sname,$match_barcode,$index_1_2_not_3,$index_1_not_2_not_3,$index_2_not_1_3,$index_3_not_1_2,$no_index_found" >> scChIPseq_barcode.csv
 
     ## Data for mapping - STAR
-    #total_mapped=$( echo "scale=2; ($uniquely_mapped + $multimapped + $multimapped_toomany)" | bc -l )
     total_mapped=$(echo "$uniquely_mapped $multimapped $multimapped_toomany" | awk ' { printf "%.2f", $1+$2+$3 } ')
-
-    #unmapped_count=$( echo "scale=2; ($total_reads - $total_mapped)" | bc -l )
-    unmapped_count=$(echo "$total_reads $total_mapped" | awk ' { printf "%.2f", $1-$2 } ')
-
-    #total_unmapped_percent=$( echo "scale=2; ($unmapped_mismatches_percent + $unmapped_tooshort_percent + $unmapped_other_percent)" | bc -l )
+    unmapped_count=$(echo "$total_frag $total_mapped" | awk ' { printf "%.2f", $1-$2 } ')
     total_unmapped_percent=$(echo "$unmapped_mismatches_percent $unmapped_tooshort_percent $unmapped_other_percent" | awk ' { printf "%.2f", $1+$2+$3 } ')
-
-    #uniquely_mapped_unbarcoded=$( echo "scale=2; ( $uniquely_mapped - $uniquely_mapped_and_barcoded)" | bc -l ) 
     uniquely_mapped_unbarcoded=$(echo "$uniquely_mapped $uniquely_mapped_and_barcoded" | awk ' { printf "%.2f", $1-$2 } ')
-
-    #multimapped=$( echo "scale=2; ( $multimapped + $multimapped_toomany)" | bc -l )
     multimapped=$(echo "$multimapped $multimapped_toomany" | awk ' { printf "%.2f", $1+$2 } ')
 
     unmapped=$unmapped_count
