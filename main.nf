@@ -819,62 +819,22 @@ process bamToScBed{
   set val(prefix), file (rmDupBam), file (rmDupBai) from chNoDup_ScBed
   
   output:
-  file (prefix) into chScBed
+  file (prefix), file("*.fragments.tsv.gz") into chFragment
   
   script:
   """
-  mkdir -p ${prefix}
-  for i in \$(echo ${params.minCounts} | sed 's/,/ /g'); do mkdir -p ${prefix}/scBed_\$i/ ; done
-  
-  #Get barcode field & read length
-  barcode_field=\$(samtools view ${rmDupBam}  | sed -n "1 s/XB.*//p" | sed 's/[^\t]//g' | wc -c)
-  
-  #Create header
-  samtools view -H ${rmDupBam} | sed '/^@HD/ d' > ${prefix}_tmp_header.sam
-  
-  #Sort by Barcode, Chr, Pos R1 :
-  samtools view ${rmDupBam} | LC_ALL=C sort -T ${params.tmpDir} --parallel=${task.cpus} -t \$'\t' -k \"\$barcode_field.8,\$barcode_field\"n -k 3.4,3g -k 4,4n >> ${prefix}_tmp_header.sam
-  
-  samtools view -@ ${task.cpus} -b ${prefix}_tmp_header.sam > ${prefix}_tmp.sorted.bam
-  
-  #Convert to bedgraph: Input must be sorted by barcode, chr, position R1
-  samtools view ${prefix}_tmp.sorted.bam | awk -v odir=${prefix}/scBed -v bc_field=\$barcode_field -v OFS="\t" -v count=${params.minCounts} '
-  BEGIN{
-    split(count,min_counts,",")
-  }
-  NR==1{
-    lastBC=substr(\$bc_field,6,15);
-    i=1
-    chr[i] = ${prefix}
-    start[i] = ${params.minCounts}
-    end[i] = ${params.minCounts} +1
-  } 
-  NR>1{
-    if(lastBC==substr(\$bc_field,6,15)){
-      i = i +1
-      chr[i] = ${prefix}
-      start[i] = ${params.minCounts}
-      end[i] = ${params.minCounts} +1
-    }else{
-      for(m=1; m<=length(min_counts);m++){
-        if(i > min_counts[m]){
-          for (x=1; x<=i; x++){
-            out = odir"_"min_counts[m]"/"lastBC".bed"
-            print chr[x],start[x],end[x] >> out
-          }
-        }
-      }
-      i=0
-    }
-    lastBC=substr(\$bc_field,6,15);
-  }'
+  ##Sort by barcode then chromosome then position R2
+  #Find the column containing the barcode tag XB
+  barcode_field=$(samtools view ${rmDupBam} |sed -n "1 s/XB.*//p" |sed 's/[^\t]//g' | wc -c)
 
-  #Gzip
-  if [ -f scBed*/*.bed ];then
-    for i in scBed*/*.bed; do gzip -9 \$i; done
-  fi
+  #Sort by barcode then chromosome then read position
+  samtools view ${rmDupBam} | grep -E "XB:Z" | awk -v bc_field=\$barcode_field -v OFS="\t" '{gsub("XB:Z:","",\$bc_field); print \$3,\$4,\$4+100,\$bc_field,1}' > ${prefix}.fragments.tsv
 
-  rm -f ${prefix}_tmp_header.sam ${prefix}_tmp.sorted.bam
+  #Compress
+  bgzip -@ 8 -f -l 9 ${prefix}.fragments.tsv
+
+  ## Index flagged_rmPCR_RT file
+  tabix -p bed ${prefix}.fragments.tsv.gz
   """
 }
 
