@@ -825,7 +825,7 @@ process bamToScBed{
   """
   ##Sort by barcode then chromosome then position R2
   #Find the column containing the barcode tag XB
-  barcode_field=$(samtools view ${rmDupBam} |sed -n "1 s/XB.*//p" |sed 's/[^\t]//g' | wc -c)
+  barcode_field=\$(samtools view ${rmDupBam} |sed -n "1 s/XB.*//p" |sed 's/[^\t]//g' | wc -c)
 
   #Sort by barcode then chromosome then read position
   samtools view ${rmDupBam} | grep -E "XB:Z" | awk -v bc_field=\$barcode_field -v OFS="\t" '{gsub("XB:Z:","",\$bc_field); print \$3,\$4,\$4+100,\$bc_field,1}' > ${prefix}.fragments.tsv
