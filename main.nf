@@ -819,7 +819,7 @@ process bamToScBed{
   set val(prefix), file (rmDupBam), file (rmDupBai) from chNoDup_ScBed
   
   output:
-  file (prefix), file("*.fragments.tsv.gz") into chFragment
+  set val (prefix), file("*.fragments.tsv.gz") into chFragment
   
   script:
   """
