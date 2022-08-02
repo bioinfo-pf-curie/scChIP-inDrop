@@ -12,7 +12,7 @@ echo "Sample_id,Sample_name,Barcoded,Index 1 and 2 found not 3,Index 1 found not
 echo "Sample_id,Sample_name,Deduplicated reads, Window duplicates,RT duplicates,PCR duplicates,Uniquely mapped not barcoded,Mapped to multiple loci,Unmapped" > scChIPseq_alignments.csv
 ## Summary table
 # The column names have to be the same as the ID column in the multiqcConfig.yaml !!!!! 
-echo -e "Sample_id,Sample_name,Tot_frag,Cells>1000reads,Reads(median)/cell,Aligned,Aligned_Barcoded,Deduplicated_reads" > scChIPseq_table.csv
+echo -e "Sample_id,Sample_name,Tot_frag,Cells>100reads,Reads(median)/cell,Aligned,Aligned_Barcoded,Deduplicated_reads" > scChIPseq_table.csv
 
 for sample in $all_samples
 do
@@ -72,17 +72,17 @@ do
     # total cells 
     nbCell=$(wc -l < cellThresholds/${sample}_rmDup.count)
     # nb cells with more than 1000 reads
-    n1000=$( sed 's/^\s*//g' cellThresholds/${sample}_rmDup.count | awk -v limit=1000 '$1>=limit && NR>1{c++} END{print c+0}')
+    n100=$( sed 's/^\s*//g' cellThresholds/${sample}_rmDup.count | awk -v limit=1000 '$1>=limit && NR>1{c++} END{print c+0}')
 
     # Median reads per cell with more than 1000 reads
-    if (( $n1000>1 ))
+    if (( $n100>1 ))
     then 
-        awk -v limit=1000 '$1>=limit && NR>1 {print $1}' cellThresholds/${sample}_rmDup.count | sort -n > list_nbReads_over1000
-        mod=$(($n1000%2))
+        awk -v limit=100 '$1>=limit && NR>1 {print $1}' cellThresholds/${sample}_rmDup.count | sort -n > list_nbReads_over1000
+        mod=$(($n100%2))
         if (( $mod == 0 ))
         then
             # get the first number that cut in two the number of read range
-            line_first=$(( $n1000/2 ))
+            line_first=$(( $n100/2 ))
             first_num=$(sed "${line_first}q;d" list_nbReads_over1000)
             # get the second number that cut in two the number of read range
             line_sec=$(( $line_first+1 ))
@@ -92,7 +92,7 @@ do
             median=$(echo "$first_num $sec_num" | awk ' { printf "%.1f", ($1+$2)/2 } ')
         else
             #median=$( echo "scale=0; (($nbcell+1)/2)" | bc -l )
-            line_median=$(( $n1000/2 ))
+            line_median=$(( $n100/2 ))
             median=$(sed "${line_median}q;d" list_nbReads_over1000)
         fi
     else
@@ -103,7 +103,7 @@ do
     fi
     
     ## Summary table
-    echo -e "${sample},$sname,$total_frag,$n1000,$median,$uniquely_mapped_percent,$uniquely_mapped_and_barcoded_percent,$unique_reads_percent" >> scChIPseq_table.csv
+    echo -e "${sample},$sname,$total_frag,$n100,$median,$uniquely_mapped_percent,$uniquely_mapped_and_barcoded_percent,$unique_reads_percent" >> scChIPseq_table.csv
 
 done
 

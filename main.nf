@@ -807,13 +807,13 @@ process bamToBigWig{
 }
 
 //7bis-Generate scBed file
-process bamToScBed{
+process bamToFrag{
   tag "${prefix}"
   label 'samtools'
   label 'medCpu'
   label 'highMem'
 
-  publishDir "${params.outDir}/bamToScBed", mode: 'copy'
+  publishDir "${params.outDir}/bamToFrag", mode: 'copy'
 
   input:
   set val(prefix), file (rmDupBam), file (rmDupBai) from chNoDup_ScBed
