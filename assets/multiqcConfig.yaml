@@ -32,7 +32,7 @@ custom_data:
               format: '{:,.0f}'
               placement: 3000
             Cells>100reads:
-              title: 'Cells > 100reads'
+              title: 'Cells > 1000reads'
               scale: 'YlGn'
               format: '{:,.0f}'
               placement: 4000
