@@ -12,7 +12,7 @@ echo "Sample_id,Sample_name,Barcoded,Index 1 and 2 found not 3,Index 1 found not
 echo "Sample_id,Sample_name,Deduplicated reads, Window duplicates,RT duplicates,PCR duplicates,Uniquely mapped not barcoded,Mapped to multiple loci,Unmapped" > scChIPseq_alignments.csv
 ## Summary table
 # The column names have to be the same as the ID column in the multiqcConfig.yaml !!!!! 
-echo -e "Sample_id,Sample_name,Tot_frag,Cells>100reads,Reads(median)/cell,Aligned,Aligned_Barcoded,Deduplicated_reads" > scChIPseq_table.csv
+echo -e "Sample_id,Sample_name,Tot_frag,Cells>1000reads,Reads(median)/cell,Aligned,Aligned_Barcoded,Deduplicated_reads" > scChIPseq_table.csv
 
 for sample in $all_samples
 do
@@ -51,8 +51,8 @@ do
     index_2_not_1_3=$(echo "$match_index_2 $match_index_1_2" | awk ' { printf "%.2f", $1-$2 } ')
     index_3_not_1_2=$(echo "$match_index_3 $match_barcode" | awk ' { printf "%.2f", $1-$2 } ')
     no_index_found=$(echo "$total_frag $match_barcode $index_1_2_not_3 $index_1_not_2_not_3 $index_2_not_1_3 $index_3_not_1_2" | awk ' { printf "%.2f", $1-$2-$3-$4-$5-$6 } ')
-    uniquely_mapped_and_barcoded_percent=$(echo "$uniquely_mapped_and_barcoded $total_frag" | awk ' { printf "%.2f", 100*$1/$2 } ')
-    unique_reads_percent=$(echo "$unique_reads $total_frag" | awk ' { printf "%.2f", 100*$1/$2 } ')
+    uniquely_mapped_and_barcoded_percent=$(echo "$uniquely_mapped_and_barcoded $total_frag" | awk ' { printf "%.2f", 1000*$1/$2 } ')
+    unique_reads_percent=$(echo "$unique_reads $total_frag" | awk ' { printf "%.2f", 1000*$1/$2 } ')
 
     # Table
     echo "${sample},$sname,$match_barcode,$index_1_2_not_3,$index_1_not_2_not_3,$index_2_not_1_3,$index_3_not_1_2,$no_index_found" >> scChIPseq_barcode.csv
@@ -71,39 +71,39 @@ do
     ## Data for cell thresholds
     # total cells 
     nbCell=$(wc -l < cellThresholds/${sample}_rmDup.count)
-    # nb cells with more than 100 reads
-    n100=$( sed 's/^\s*//g' cellThresholds/${sample}_rmDup.count | awk -v limit=100 '$1>=limit && NR>1{c++} END{print c+0}')
+    # nb cells with more than 1000 reads
+    n1000=$( sed 's/^\s*//g' cellThresholds/${sample}_rmDup.count | awk -v limit=1000 '$1>=limit && NR>1{c++} END{print c+0}')
 
-    # Median reads per cell with more than 100 reads
-    if (( $n100>1 ))
+    # Median reads per cell with more than 1000 reads
+    if (( $n1000>1 ))
     then 
-        awk -v limit=100 '$1>=limit && NR>1 {print $1}' cellThresholds/${sample}_rmDup.count | sort -n > list_nbReads_over100
-        mod=$(($n100%2))
+        awk -v limit=1000 '$1>=limit && NR>1 {print $1}' cellThresholds/${sample}_rmDup.count | sort -n > list_nbReads_over1000
+        mod=$(($n1000%2))
         if (( $mod == 0 ))
         then
             # get the first number that cut in two the number of read range
-            line_first=$(( $n100/2 ))
-            first_num=$(sed "${line_first}q;d" list_nbReads_over100)
+            line_first=$(( $n1000/2 ))
+            first_num=$(sed "${line_first}q;d" list_nbReads_over1000)
             # get the second number that cut in two the number of read range
             line_sec=$(( $line_first+1 ))
-            sec_num=$(sed "${line_sec}q;d" list_nbReads_over100)
+            sec_num=$(sed "${line_sec}q;d" list_nbReads_over1000)
             
             #median=$( echo "scale=0; (($first_num+$sec_num)/2)" | bc -l )
             median=$(echo "$first_num $sec_num" | awk ' { printf "%.1f", ($1+$2)/2 } ')
         else
             #median=$( echo "scale=0; (($nbcell+1)/2)" | bc -l )
-            line_median=$(( $n100/2 ))
-            median=$(sed "${line_median}q;d" list_nbReads_over100)
+            line_median=$(( $n1000/2 ))
+            median=$(sed "${line_median}q;d" list_nbReads_over1000)
         fi
     else
         # if there is one cell take the first line == number of reads within this cell
         # if there is no cell, it will write 0
-        awk -v limit=100 '$1>=limit && NR>1 {print $1}' cellThresholds/${sample}_rmDup.count | sort -n > list_nbReads_over100
-        median=$(cat list_nbReads_over100)
+        awk -v limit=1000 '$1>=limit && NR>1 {print $1}' cellThresholds/${sample}_rmDup.count | sort -n > list_nbReads_over1000
+        median=$(cat list_nbReads_over1000)
     fi
     
     ## Summary table
-    echo -e "${sample},$sname,$total_frag,$n100,$median,$uniquely_mapped_percent,$uniquely_mapped_and_barcoded_percent,$unique_reads_percent" >> scChIPseq_table.csv
+    echo -e "${sample},$sname,$total_frag,$n1000,$median,$uniquely_mapped_percent,$uniquely_mapped_and_barcoded_percent,$unique_reads_percent" >> scChIPseq_table.csv
 
 done
 
