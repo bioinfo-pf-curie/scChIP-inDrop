@@ -855,6 +855,7 @@ process gtfToTSSBed {
 
   script:
   """ 
+  # Add +/-window arround genes start sites
   create_transcript_annotation.sh $gtf ${params.tssWindow}
   """
 }

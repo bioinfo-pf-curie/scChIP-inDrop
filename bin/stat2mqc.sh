@@ -71,35 +71,35 @@ do
     ## Data for cell thresholds
     # total cells 
     nbCell=$(wc -l < cellThresholds/${sample}_rmDup.count)
-    # nb cells with more than 1000 reads
-    n100=$( sed 's/^\s*//g' cellThresholds/${sample}_rmDup.count | awk -v limit=1000 '$1>=limit && NR>1{c++} END{print c+0}')
+    # nb cells with more than 100 reads
+    n100=$( sed 's/^\s*//g' cellThresholds/${sample}_rmDup.count | awk -v limit=100 '$1>=limit && NR>1{c++} END{print c+0}')
 
-    # Median reads per cell with more than 1000 reads
+    # Median reads per cell with more than 100 reads
     if (( $n100>1 ))
     then 
-        awk -v limit=100 '$1>=limit && NR>1 {print $1}' cellThresholds/${sample}_rmDup.count | sort -n > list_nbReads_over1000
+        awk -v limit=100 '$1>=limit && NR>1 {print $1}' cellThresholds/${sample}_rmDup.count | sort -n > list_nbReads_over100
         mod=$(($n100%2))
         if (( $mod == 0 ))
         then
             # get the first number that cut in two the number of read range
             line_first=$(( $n100/2 ))
-            first_num=$(sed "${line_first}q;d" list_nbReads_over1000)
+            first_num=$(sed "${line_first}q;d" list_nbReads_over100)
             # get the second number that cut in two the number of read range
             line_sec=$(( $line_first+1 ))
-            sec_num=$(sed "${line_sec}q;d" list_nbReads_over1000)
+            sec_num=$(sed "${line_sec}q;d" list_nbReads_over100)
             
             #median=$( echo "scale=0; (($first_num+$sec_num)/2)" | bc -l )
             median=$(echo "$first_num $sec_num" | awk ' { printf "%.1f", ($1+$2)/2 } ')
         else
             #median=$( echo "scale=0; (($nbcell+1)/2)" | bc -l )
             line_median=$(( $n100/2 ))
-            median=$(sed "${line_median}q;d" list_nbReads_over1000)
+            median=$(sed "${line_median}q;d" list_nbReads_over100)
         fi
     else
         # if there is one cell take the first line == number of reads within this cell
         # if there is no cell, it will write 0
-        awk -v limit=1000 '$1>=limit && NR>1 {print $1}' cellThresholds/${sample}_rmDup.count | sort -n > list_nbReads_over1000
-        median=$(cat list_nbReads_over1000)
+        awk -v limit=100 '$1>=limit && NR>1 {print $1}' cellThresholds/${sample}_rmDup.count | sort -n > list_nbReads_over100
+        median=$(cat list_nbReads_over100)
     fi
     
     ## Summary table
