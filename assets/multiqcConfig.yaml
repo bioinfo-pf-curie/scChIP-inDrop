@@ -31,7 +31,7 @@ custom_data:
               scale: 'YlGn'
               format: '{:,.0f}'
               placement: 3000
-            Cells>100reads:
+            Cells>1000reads:
               title: 'Cells > 1000reads'
               scale: 'YlGn'
               format: '{:,.0f}'
