@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: Hadj Abed
+    given-names: Louisa
+  - family-names: Prompsy  
+    given-names: Pacôme
+  - family-names: Servant
+    given-names: Nicolas
+  - family-names: Vallot
+    given-names: Céline 
+  - family-names: Frederic 
+    given-names: Jarlier
+  - family-names: Kamoun
+    given-names: Choumouss
+title: "scChIP - preprocessing of single-cell chromatin Immuno-Precipitation sequencing data from raw reads (fastq, paired end) to count matrix."
+version: 1.1.0
+date-released: 2023-03-01
